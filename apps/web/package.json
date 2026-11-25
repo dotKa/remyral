@@ -11,7 +11,7 @@
     "bundle:report": "node scripts/bundle-report.mjs --budget 350",
     "csp:codemirror": "node scripts/csp-codemirror.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "node ../../scripts/tsc-heap.mjs -p tsconfig.json",
     "e2e": "playwright test",
     "e2e:install": "playwright install chromium"
   },

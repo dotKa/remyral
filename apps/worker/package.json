@@ -17,7 +17,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "node ../../scripts/tsc-heap.mjs -p tsconfig.json",
     "bundle": "node scripts/bundle.mjs"
   },
   "dependencies": {
