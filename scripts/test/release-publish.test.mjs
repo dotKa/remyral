@@ -90,8 +90,11 @@ esac
 chmodSync(join(bin, 'ssh'), 0o755);
 
 function publish(args, env = {}) {
-  const base = { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}`, HOME: work };
-  for (const k of Object.keys(base)) if (k.startsWith('REMYRAL_DEPLOY_')) delete base[k];
+  const base = Object.fromEntries(
+    Object.entries({ ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}`, HOME: work }).filter(
+      ([k]) => !k.startsWith('REMYRAL_DEPLOY_'),
+    ),
+  );
   base.REMYRAL_DEPLOY_HOST = 'deploy.example.test';
   delete base.REMYRAL_RELEASE_PUBLIC_KEYS;
   delete base.REMYRAL_ENV;

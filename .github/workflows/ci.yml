@@ -17,6 +17,8 @@ jobs:
         # Worker targets: Linux x64/arm64, macOS arm64, Windows x64 (ADR-0002).
         os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, windows-2025]
     runs-on: ${{ matrix.os }}
+    # Upper bound well above a normal run, so a hung step cannot hold a runner for the 6 h default.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
