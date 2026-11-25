@@ -373,7 +373,10 @@ describe('p19-ide W1: the diff reviewer', { timeout: 30_000 }, () => {
     });
     const diff = await screen.findByTestId('code-diff');
     expect(diff.dataset.mode).toBe('side');
-    expect(diff.querySelector('pre[data-side="new"]')?.textContent).toContain('d = 4');
+    // The panes fill in after the diff frame renders.
+    await waitFor(() => {
+      expect(diff.querySelector('pre[data-side="new"]')?.textContent).toContain('d = 4');
+    });
     await user.click(screen.getByRole('button', { name: 'Satır içi' }));
     expect(screen.getByTestId('code-diff').dataset.mode).toBe('inline');
     expect(window.localStorage.getItem('remyral.diffMode')).toBe('inline');

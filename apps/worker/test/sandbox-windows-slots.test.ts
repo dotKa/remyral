@@ -730,7 +730,10 @@ describe('status, factory and helper wiring', () => {
         readState: () => Promise.resolve(JSON.stringify(stateDoc(4))),
         readRecord: () => Promise.resolve(passed(4)),
         writeRecord: () => Promise.resolve(),
+        // Hermetic on a Windows host: no token query, no icacls on this machine's login stores / account folders.
         tokenPrivileges: () => Promise.resolve({ checked: true, missing: [] }),
+        loginStores: [],
+        accountFolders: () => Promise.resolve([]),
       },
     });
     expect(runners.hostRestrictedConcurrency()).toBe(2);

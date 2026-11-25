@@ -231,7 +231,7 @@ describe('install.sh', { timeout: 120_000 }, () => {
 
   it('--dry-run: checks, verifies the signed release, prints the plan and changes nothing', async () => {
     const r = await ctl(installer(), [...INSTALL, '--data-dir', box.data, '--dry-run']);
-    expect(r.stderr).toBe('');
+    expect(r.stderr, r.stdout).toBe('');
     expect(r.code).toBe(0);
     expect(r.stdout).toContain('DRY RUN');
     expect(r.stdout).toContain('ok   Docker 27.3.1');
@@ -248,7 +248,7 @@ describe('install.sh', { timeout: 120_000 }, () => {
 
   it('installs: secrets with tight modes (never printed), pinned images, migrate, gate, one-time setup token', async () => {
     const r = await ctl(installer(), [...INSTALL, '--data-dir', box.data, '--yes']);
-    expect(r.stderr).toBe('');
+    expect(r.stderr, r.stdout).toBe('');
     expect(r.code).toBe(0);
     const stack = readFileSync(join(box.data, 'stack.env'), 'utf8');
     expect(statSync(join(box.data, 'stack.env')).mode & 0o777).toBe(0o600);
@@ -303,7 +303,7 @@ describe('install.sh', { timeout: 120_000 }, () => {
     const before = readFileSync(join(box.data, 'stack.env'), 'utf8');
     const totp = readFileSync(join(box.data, 'secrets/totp.key'));
     const r = await ctl(join(box.bin, 'remyral-ctl'), ['install', '--data-dir', box.data, '--yes']);
-    expect(r.stderr).toBe('');
+    expect(r.stderr, r.stdout).toBe('');
     expect(r.code).toBe(0);
     expect(readFileSync(join(box.data, 'stack.env'), 'utf8')).toBe(before);
     expect(readFileSync(join(box.data, 'secrets/totp.key'))).toEqual(totp);
@@ -338,7 +338,7 @@ describe('install.sh', { timeout: 120_000 }, () => {
       'new@example.com',
       '--yes',
     ]);
-    expect(r.stderr).toBe('');
+    expect(r.stderr, r.stdout).toBe('');
     expect(r.code).toBe(0);
     const after = readFileSync(file, 'utf8');
     for (const l of added) expect(after.split('\n')).toContain(l);
@@ -461,7 +461,7 @@ describe('install.sh', { timeout: 120_000 }, () => {
       box.data,
       '--yes',
     ]);
-    expect(r.stderr).toBe('');
+    expect(r.stderr, r.stdout).toBe('');
     expect(r.code).toBe(0);
     const traefik = readFileSync(join(box.data, 'proxy/traefik.yml'), 'utf8');
     expect(traefik).not.toContain('certResolver');
@@ -493,7 +493,7 @@ describe('remyral-ctl upgrade and rollback', { timeout: 120_000 }, () => {
 
   it('--check: reports the newer release and caches the signed feed for the console', async () => {
     const r = await ctl(installed, ['upgrade', '--check', '--data-dir', box.data]);
-    expect(r.stderr).toBe('');
+    expect(r.stderr, r.stdout).toBe('');
     expect(r.stdout).toContain('update available: 1.0.0 → 1.1.0');
     expect(readFileSync(join(box.data, 'update/feed.json'))).toEqual(
       readFileSync(join(releases, 'feed.json')),
@@ -547,7 +547,7 @@ describe('remyral-ctl upgrade and rollback', { timeout: 120_000 }, () => {
   it('upgrades: stop master, backup, migrate, start, gate; records the backup', async () => {
     setState({ migrateTo: { '1.1.0': '9999' } });
     const r = await ctl(installed, ['upgrade', '--data-dir', box.data, '--yes']);
-    expect(r.stderr).toBe('');
+    expect(r.stderr, r.stdout).toBe('');
     expect(r.code).toBe(0);
     expect(r.stdout).toContain('OK: Remyral 1.1.0 runs');
     expect(readFileSync(join(box.data, 'state/current'), 'utf8').trim()).toBe('1.1.0');
@@ -715,7 +715,7 @@ describe(
       const r = await ctl(installer(), [...INSTALL, '--data-dir', box.data, '--yes'], {
         env: { REMYRAL_CTL_SYSTEMD_DIR: systemd, REMYRAL_CTL_ADDRESSES: '203.0.113.7 127.0.0.1 fe80::1' },
       });
-      expect(r.stderr).toBe('');
+      expect(r.stderr, r.stdout).toBe('');
       expect(r.code).toBe(0);
       setState({ users: 1 });
       installed = join(box.bin, 'remyral-ctl');
