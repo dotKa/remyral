@@ -106,7 +106,8 @@ describe('per-runtime rendering of a stdio server', () => {
     expect(args[0]).toBe('-c');
     const o = args[1] ?? '';
     expect(o).toBe(
-      `mcp_servers.x-files={ command = "${files.command}", args = ["${files.args[0] ?? ''}", "${files.args[1] ?? ''}"], ` +
+      // TOML basic strings: the paths are escaped like JSON strings (backslashes of Windows paths doubled).
+      `mcp_servers.x-files={ command = ${JSON.stringify(files.command)}, args = [${JSON.stringify(files.args[0] ?? '')}, ${JSON.stringify(files.args[1] ?? '')}], ` +
         'env_vars = ["HTTPS_PROXY", "NO_PROXY"], enabled = true, startup_timeout_sec = 30, tool_timeout_sec = 120, ' +
         'default_tools_approval_mode = "prompt", enabled_tools = ["read_file", "write_file"], ' +
         'disabled_tools = ["delete_file"] }',

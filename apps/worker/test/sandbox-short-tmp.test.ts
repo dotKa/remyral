@@ -6,12 +6,15 @@ import { HostRestrictedRunner, SHORT_TMP_MAX } from '../src/sandbox/host/runner.
 import { DEFAULT_LIMITS } from '../src/sandbox/types.js';
 import { tempDir } from './helpers.js';
 
+const describePosix = process.platform === 'win32' ? describe.skip : describe;
+
 /**
  * p21-short-tmp (docs/design/p21-service-egress.md §6): a deep attempt dir made `$TMPDIR` too long for Unix socket
  * paths — `tsx` in a service failed with `listen EINVAL … .pipe`. An unconfined attempt gets a short private dir
  * of its own (removed with the attempt); a restricted one without a bubblewrap view keeps its own tmp.
  */
-describe('host runner: short $TMPDIR (p21-short-tmp)', () => {
+// POSIX: the short private tmp lives below /tmp.
+describePosix('host runner: short $TMPDIR (p21-short-tmp)', () => {
   const identity = { verified: true, username: 'remyral', uid: 1001, problems: [] };
 
   async function confine(mode: 'restricted' | 'unconfined', jobId: string) {

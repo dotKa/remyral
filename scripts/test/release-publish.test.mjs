@@ -11,6 +11,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { assertRollout, currentSrcDir, envConfig, releaseImportArgs } from '../deploy/plan.mjs';
 import { keyId, verifyReleaseDocument } from '../release/verify.mjs';
 
+const describePosix = process.platform === 'win32' ? describe.skip : describe;
+
 const SCRIPT = fileURLToPath(new URL('../release/publish.mjs', import.meta.url));
 const TAG = 'aaaaaaaaaaaa';
 const SRC = `/opt/remyral-src-${TAG}`;
@@ -157,7 +159,8 @@ describe('publish.mjs plan helpers', () => {
   });
 });
 
-describe('publish.mjs', () => {
+// The ssh stand-in is a /bin/sh script found through a POSIX PATH.
+describePosix('publish.mjs', () => {
   const good = releaseDir('good', releaseDoc(k, '1.0.17'));
 
   it('--dry-run --offline verifies locally and prints the exact remote command, contacting nothing', async () => {
@@ -165,8 +168,7 @@ describe('publish.mjs', () => {
     const r = await publish([
       '--dir',
       good,
-      '--public-key',
-      k.pub,
+      `--public-key=${k.pub}`,
       '--rollout',
       'stable:100',
       '--dry-run',
@@ -248,24 +250,23 @@ describe('publish.mjs', () => {
         [
           '--dir',
           releaseDir('tampered', releaseDoc(k, '1.0.18', { tamperArtifact: true })),
-          '--public-key',
-          k.pub,
+          `--public-key=${k.pub}`,
         ],
         /artifact does not match the manifest — not published/,
       ],
       [
-        ['--dir', releaseDir('kit', releaseDoc(k, '1.0.18', { tamperKit: true })), '--public-key', k.pub],
+        ['--dir', releaseDir('kit', releaseDoc(k, '1.0.18', { tamperKit: true })), `--public-key=${k.pub}`],
         /does not match the signed installer index/,
       ],
       [
-        ['--dir', releaseDir('foreign', releaseDoc(foreign, '1.0.18')), '--public-key', k.pub],
+        ['--dir', releaseDir('foreign', releaseDoc(foreign, '1.0.18')), `--public-key=${k.pub}`],
         /signed by unknown key/,
       ],
       [['--dir', good], /no release public key/],
-      [['--dir', good, '--public-key', k.pub, '--rollout', 'stable:150'], /--rollout must be/],
-      [['--dir', good, '--public-key', k.pub, '--offline'], /--offline is only valid with --dry-run/],
-      [['--dir', join(work, 'missing'), '--public-key', k.pub], /release\.json not found/],
-      [['--public-key', k.pub], /--dir .* is required/],
+      [['--dir', good, `--public-key=${k.pub}`, '--rollout', 'stable:150'], /--rollout must be/],
+      [['--dir', good, `--public-key=${k.pub}`, '--offline'], /--offline is only valid with --dry-run/],
+      [['--dir', join(work, 'missing'), `--public-key=${k.pub}`], /release\.json not found/],
+      [[`--public-key=${k.pub}`], /--dir .* is required/],
       [['--dir', good, '--bogus'], /Unknown option/],
     ];
     for (const [args, message] of cases) {
@@ -276,7 +277,7 @@ describe('publish.mjs', () => {
     const big = join(work, 'big');
     mkdirSync(big);
     writeFileSync(join(big, 'release.json'), Buffer.alloc(48 * 1024 * 1024 + 1, 0x20));
-    const r = await publish(['--dir', big, '--public-key', k.pub]);
+    const r = await publish(['--dir', big, `--public-key=${k.pub}`]);
     expect(r.code).toBe(1);
     expect(r.stderr).toMatch(/at most 50331648/);
     expect(existsSync(calls)).toBe(false);
@@ -291,7 +292,7 @@ describe('publish.mjs', () => {
       `#!/bin/sh\ncase "$*" in *release-import.js*) cat >/dev/null; echo 'error: release refused (signature_invalid): nope' >&2; exit 1 ;; *deploy.env*) ;; *) cat '${join(work, 'state-only.json')}' ;; esac\n`,
     );
     chmodSync(join(failing, 'ssh'), 0o755);
-    const r = await publish(['--dir', good, '--public-key', k.pub], {
+    const r = await publish(['--dir', good, `--public-key=${k.pub}`], {
       PATH: `${failing}:${process.env.PATH ?? ''}`,
     });
     expect(r.code).toBe(1);

@@ -11,6 +11,8 @@ import {
 import { ADMIN_BINDING_MARKER } from '../src/machine-admin/binding.js';
 import { ADMIN_HELPER_MARKER } from '../src/machine-admin/shared.js';
 
+const describePosix = process.platform === 'win32' ? describe.skip : describe;
+
 /**
  * p17-worker-1-1-1: the root/SYSTEM helper readiness probe (fakes per OS; real-OS behaviour of `schtasks /Query` by
  * the Windows service account is UNVERIFIED).
@@ -53,7 +55,8 @@ afterEach(() => {
   resetHelperProbeCache();
 });
 
-describe('Linux', () => {
+// Simulates a Linux host (POSIX paths in the commands).
+describePosix('Linux', () => {
   const install = '/opt/remyral-worker';
   const ready = {
     files: { [`${install}/remyral-worker-updater.mjs`]: HELPER },

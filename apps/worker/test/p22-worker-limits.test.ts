@@ -27,6 +27,8 @@ import {
 import { DEFAULT_LIMITS, type SandboxContext } from '../src/sandbox/types.js';
 import { tempDir } from './helpers.js';
 
+const describePosix = process.platform === 'win32' ? describe.skip : describe;
+
 /**
  * p22-worker-limits (docs/design/p22-worker-limits.md): the Linux private network namespace with an egress relay
  * (p19-linux-net-isolation), the login-store view of subscription-login attempts (p19-linux-local-login-parallel), the
@@ -41,7 +43,8 @@ const files = (map: Record<string, 'dir' | 'file'>): Lstat => {
     );
 };
 
-describe('bubblewrap view: private network and login-store home', () => {
+// Builds Linux paths (bubblewrap) with this host's path module: not meaningful on a Windows host. The relay is a Unix socket below a POSIX /tmp.
+describePosix('bubblewrap view: private network and login-store home', () => {
   const spec: HostBwrapSpec = {
     workspace: '/srv/ws/jobs/j1/a1',
     sandboxDir: '/srv/ws/sandboxes/j1/a1',
@@ -214,7 +217,8 @@ describe('bubblewrap view: private network and login-store home', () => {
   });
 });
 
-describe('the forwarder and the network probe as real processes (no namespace here)', () => {
+// Builds Linux paths (bubblewrap) with this host's path module: not meaningful on a Windows host. The relay is a Unix socket below a POSIX /tmp.
+describePosix('the forwarder and the network probe as real processes (no namespace here)', () => {
   it('the probe reaches the stand-in proxy through relay + forwarder; its own loopback works; exit code passes on', async () => {
     const proxy = createServer((c) => c.end('relay-m1\n'));
     await new Promise<void>((r) => proxy.listen(0, '127.0.0.1', r));
@@ -264,7 +268,8 @@ describe('the forwarder and the network probe as real processes (no namespace he
   });
 });
 
-describe('controller: the network self-check (sandbox.linuxPrivateNetwork)', () => {
+// Builds Linux paths (bubblewrap) with this host's path module: not meaningful on a Windows host. The relay is a Unix socket below a POSIX /tmp.
+describePosix('controller: the network self-check (sandbox.linuxPrivateNetwork)', () => {
   const okFs = [
     'started',
     'own_workspace',
@@ -349,7 +354,8 @@ describe('controller: the network self-check (sandbox.linuxPrivateNetwork)', () 
   });
 });
 
-describe('host runner: private network and login-store view', () => {
+// Builds Linux paths (bubblewrap) with this host's path module: not meaningful on a Windows host. The relay is a Unix socket below a POSIX /tmp.
+describePosix('host runner: private network and login-store view', () => {
   const setup = async (o: { privateNetwork?: boolean; loginStoreView?: boolean } = {}) => {
     const data = await realpath(await tempDir('p22r-'));
     const root = join(data, 'workspaces');

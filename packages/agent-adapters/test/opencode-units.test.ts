@@ -288,7 +288,8 @@ describe('OpenCode capabilities (ADR-0008)', () => {
 
 describe('OpenCode workspace guard (project config is loaded despite OPENCODE_DISABLE_PROJECT_CONFIG)', () => {
   it('finds .opencode / opencode.json(c) in the workspace and its ancestors, except in the worker home', async () => {
-    const root = realpathSync(mkdtempSync(join(tmpdir(), 'remyral-oc-guard-')));
+    // native: the code's fs.promises.realpath also expands Windows 8.3 short names (RUNNER~1).
+    const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'remyral-oc-guard-')));
     const ws = join(root, 'repo', 'ws');
     mkdirSync(join(ws, 'src'), { recursive: true });
     expect(await findOpenCodeProjectConfig(ws, '/nonexistent-home')).toEqual([]);

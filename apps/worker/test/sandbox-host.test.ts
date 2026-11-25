@@ -18,6 +18,9 @@ import {
 import { DEFAULT_LIMITS } from '../src/sandbox/types.js';
 import { tempDir } from './helpers.js';
 
+const describePosix = process.platform === 'win32' ? describe.skip : describe;
+const itPosix = process.platform === 'win32' ? it.skip : it;
+
 const facts = (over: Partial<IdentityFacts> = {}): IdentityFacts => ({
   platform: 'darwin',
   username: '_remyral',
@@ -87,7 +90,8 @@ describe('dedicated worker OS user (ADR-0007)', () => {
   });
 });
 
-describe('Seatbelt profile (macOS host-restricted)', () => {
+// Builds macOS Seatbelt paths with this host's path module: not meaningful on a Windows host.
+describePosix('Seatbelt profile (macOS host-restricted)', () => {
   const spec = {
     workspace: '/r/jobs/j/a',
     sandboxDir: '/r/sandboxes/j/a',
@@ -162,7 +166,8 @@ describe('host limits', () => {
     expect(() => posixLimitsPrelude({ ...DEFAULT_LIMITS, pids: 0 }, 'linux')).toThrow(SandboxRequestError);
   });
 
-  it('the prelude runs under this /bin/sh and applies the process limit', async () => {
+  // Needs /bin/sh.
+  itPosix('the prelude runs under this /bin/sh and applies the process limit', async () => {
     const [sh, c, script, name] = posixLimitsPrelude(DEFAULT_LIMITS, process.platform);
     const { execFile } = await import('node:child_process');
     const out = await new Promise<string>((resolve, reject) => {

@@ -15,6 +15,9 @@ import { WorkerStore } from '../src/store/store.js';
 import { MemoryTransport } from '../src/transport/memory.js';
 import { captureLines, nodeOps, pathHost, tempDir } from './helpers.js';
 
+// The daemon's start (store, device key, vault, …) can take seconds on a busy Windows runner.
+const START = { timeout: 15_000 };
+
 let seq = 0;
 function master(type: string, payload: unknown, workerId = 'w-1'): MasterToWorker {
   return MasterToWorker.parse({
@@ -68,7 +71,7 @@ describe('runWorker (daemon skeleton)', () => {
     });
     await vi.waitFor(() => {
       expect(daemon).toBeDefined();
-    });
+    }, START);
     const d = daemon as unknown as WorkerDaemon;
     expect(d.machine.state).toBe('offline');
 
@@ -144,7 +147,7 @@ describe('runWorker (daemon skeleton)', () => {
     });
     await vi.waitFor(() => {
       expect(daemon).toBeDefined();
-    });
+    }, START);
     const d = daemon as unknown as WorkerDaemon;
     transport.emit({ kind: 'connected', enrolled: true });
     transport.emit({
@@ -177,7 +180,7 @@ describe('runWorker (daemon skeleton)', () => {
     });
     await vi.waitFor(() => {
       expect(daemon).toBeDefined();
-    });
+    }, START);
     const d = daemon as unknown as WorkerDaemon;
     transport.emit({
       kind: 'message',

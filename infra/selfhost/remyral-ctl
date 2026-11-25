@@ -28,7 +28,7 @@
 # Test hooks (scripts/test/selfhost-ctl.test.mjs; never needed in production): REMYRAL_CTL_ALLOW_NONROOT=1,
 # REMYRAL_CTL_OS, REMYRAL_CTL_ARCH, REMYRAL_CTL_MEMINFO, REMYRAL_CTL_TRUST (space-separated keys), REMYRAL_CTL_BIN_DIR,
 # REMYRAL_CTL_SYSTEMD_DIR, REMYRAL_CTL_GATE_TRIES, REMYRAL_CTL_SLEEP, REMYRAL_CTL_DOMAIN_GATE_TRIES,
-# REMYRAL_CTL_ALIAS_GRACE (seconds), REMYRAL_CTL_ADDRESSES (space-separated).
+# REMYRAL_CTL_ALIAS_GRACE (seconds), REMYRAL_CTL_ADDRESSES (space-separated), REMYRAL_CTL_FREE_KB (free disk, KiB).
 #
 # Domain changes from the console (p17-domain-wizard, ADR-0063 amendment 2026-10-24): the master writes a request into
 # <data>/host/requests, signed with its lease-signing key (domain `remyral-host-domain-change/v1`). `apply-pending`
@@ -509,7 +509,7 @@ check_prereqs() { # check_prereqs install|upgrade
   fi
   probe="$DATA_DIR"
   while [ ! -d "$probe" ]; do probe="$(dirname "$probe")"; done
-  avail_kb="$(df -Pk "$probe" | awk 'NR == 2 { print $4 }')"
+  avail_kb="${REMYRAL_CTL_FREE_KB:-$(df -Pk "$probe" | awk 'NR == 2 { print $4 }')}"
   avail=$((avail_kb / 1024 / 1024))
   if [ "$avail" -lt "$MIN_DISK_GIB" ]; then problem "free disk under $probe: ${avail} GiB (at least ${MIN_DISK_GIB} GiB needed)"
   elif [ "$avail" -lt "$WARN_DISK_GIB" ]; then note "ok   free disk ${avail} GiB (${WARN_DISK_GIB} GiB recommended)"

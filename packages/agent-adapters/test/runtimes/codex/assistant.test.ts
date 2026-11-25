@@ -54,7 +54,8 @@ function bridge(answer = '{"workers":2}'): AssistantToolBridge & Calls {
 
 function engine(extra: Partial<CodexAssistantEngineOptions> = {}) {
   return new CodexAssistantEngine({
-    command: () => ({ command: FAKE, args: [] }),
+    // Through node: Windows does not run a shebang script by itself.
+    command: () => ({ command: process.execPath, args: [FAKE] }),
     stateRoot: join(root, 'state'),
     sourceEnv: { PATH: process.env.PATH, HOME: process.env.HOME },
     ...extra,

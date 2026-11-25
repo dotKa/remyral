@@ -6,7 +6,7 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
@@ -26,7 +26,8 @@ const FAKE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'pi', 'fa
 const root = mkdtempSync(join(tmpdir(), 'remyral-pi-fake-'));
 
 afterAll(() => {
-  rmSync(root, { recursive: true, force: true });
+  // Windows: a just-ended child can still hold a handle for a moment (EPERM / EBUSY); rmSync retries those.
+  rmSync(root, { recursive: true, force: true, maxRetries: 10 });
 });
 
 const FAST = {
@@ -106,7 +107,7 @@ describe('pi adapter (fixture process)', { timeout: 30_000 }, () => {
     expect(gate).toMatch(/remyral-permission-gate\.mjs$/);
     expect(existsSync(gate)).toBe(true);
     expect(argv[argv.indexOf('--session-id') + 1]).toBe(ref.runtimeSessionId);
-    expect(argv[argv.indexOf('--session-dir') + 1]?.startsWith('/')).toBe(true);
+    expect(isAbsolute(argv[argv.indexOf('--session-dir') + 1] ?? '')).toBe(true);
     expect(argv.join(' ')).not.toContain(secret.reveal());
     await a.cleanup(ref);
     expect(existsSync(gate)).toBe(false);
@@ -190,7 +191,7 @@ describe('pi adapter (fixture process)', { timeout: 30_000 }, () => {
     const argv = JSON.parse(readFileSync(argvFile, 'utf8')) as string[];
     expect(argv).toContain('--no-skills');
     const dir = argv[argv.indexOf('--skill') + 1] ?? '';
-    expect(dir.endsWith('/skills/release-notes')).toBe(true);
+    expect(dir.endsWith(join('skills', 'release-notes'))).toBe(true);
     expect(dir.startsWith(ws)).toBe(false);
     expect(readFileSync(join(dir, 'SKILL.md'), 'utf8')).toContain('name: release-notes');
     await a.cleanup(ref);

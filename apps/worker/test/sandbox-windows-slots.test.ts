@@ -107,6 +107,8 @@ function controller(
     readState: () => Promise.resolve(JSON.stringify(stateDoc(n))),
     readRecord: () => Promise.resolve(passed(n)),
     writeRecord: () => Promise.resolve(),
+    // Hermetic: on a Windows host the default asks this process's token (whoami /priv) for the slot privileges.
+    tokenPrivileges: () => Promise.resolve({ checked: true, missing: [] }),
     ...over,
   });
 }
@@ -168,8 +170,8 @@ describe('slots.json', () => {
   it('parses a valid pool and attaches the credential files', () => {
     const s = slots(2, '/cfg/job-slots');
     expect(s.map((x) => [x.user, x.credentialFile])).toEqual([
-      ['remyral-job-1', '/cfg/job-slots/remyral-job-1.cred'],
-      ['remyral-job-2', '/cfg/job-slots/remyral-job-2.cred'],
+      ['remyral-job-1', join('/cfg/job-slots', 'remyral-job-1.cred')],
+      ['remyral-job-2', join('/cfg/job-slots', 'remyral-job-2.cred')],
     ]);
   });
 
@@ -728,6 +730,7 @@ describe('status, factory and helper wiring', () => {
         readState: () => Promise.resolve(JSON.stringify(stateDoc(4))),
         readRecord: () => Promise.resolve(passed(4)),
         writeRecord: () => Promise.resolve(),
+        tokenPrivileges: () => Promise.resolve({ checked: true, missing: [] }),
       },
     });
     expect(runners.hostRestrictedConcurrency()).toBe(2);

@@ -15,6 +15,8 @@ import { SandboxRequestError } from '../src/sandbox/errors.js';
 import { DEFAULT_LIMITS } from '../src/sandbox/types.js';
 import { tempDir } from './helpers.js';
 
+const describePosix = process.platform === 'win32' ? describe.skip : describe;
+
 function options(over: Partial<AssistantSandboxOptions> = {}): AssistantSandboxOptions {
   return {
     mode: 'auto',
@@ -161,7 +163,8 @@ describe('assistant egress allowlist', () => {
   });
 });
 
-describe('assistant Seatbelt profile', () => {
+// Builds macOS Seatbelt paths with this host's path module: not meaningful on a Windows host.
+describePosix('assistant Seatbelt profile', () => {
   it('writes only to the session, hides the data dir, the workspace root and other logins, no network', () => {
     const sb = buildAssistantSeatbeltProfile({ ...spec, proxyPort: 41234 });
     // No path is interpolated into the profile text: every path is a -D parameter.

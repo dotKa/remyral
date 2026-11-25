@@ -1,10 +1,11 @@
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { InvalidSpawnContextError, parkedRelativePath, resolveParkedPath } from '../src/index.js';
 
 /** p10-approval-pause: parked session paths stay inside the adapter's state dir. */
 describe('parked session paths', () => {
-  const stateDir = join('/', 'var', 'lib', 'remyral', 'state');
+  // Absolute like a real state dir (on Windows `join('/', …)` would leave out the drive).
+  const stateDir = resolve('/', 'var', 'lib', 'remyral', 'state');
 
   it('round-trips a path inside the state dir', () => {
     const abs = join(stateDir, 'cfg-abc', 'projects');

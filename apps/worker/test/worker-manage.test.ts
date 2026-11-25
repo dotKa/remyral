@@ -32,6 +32,8 @@ import { type Exec, PrivilegedPreparer } from '../src/update/helper/prepare.js';
 import { MANAGE_HELPER_MARKER, ManageResult, manageResultPath } from '../src/update/manage-shared.js';
 import { tempDir } from './helpers.js';
 
+const itPosix = process.platform === 'win32' ? it.skip : it;
+
 const logger = createLogger({ sink: () => undefined });
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 
@@ -132,40 +134,44 @@ async function result(install: string): Promise<ManageResult> {
 }
 
 describe('privileged helper: worker.uninstall', () => {
-  it('verifies the signature, writes accepted with the plan, then starts the fixed script via systemd-run; never twice', async () => {
-    const l = await layout();
-    const k = keys();
-    const { helper, spawned } = helperFor(l, k);
-    const cmd = command('wrk_1', k.privateKey, { kind: 'worker.uninstall', purge: true });
-    await hand(l, cmd);
-    const r = await helper.processRequest();
-    expect(r).toMatchObject({ state: 'accepted', commandId: cmd.commandId });
-    const written = await result(l.install);
-    expect(written.steps.map((s) => s.id)).toEqual([
-      'service_stop',
-      'triggers_remove',
-      'service_remove',
-      'program_remove',
-      'data_purge',
-      'user_remove',
-    ]);
-    expect(spawned).toHaveLength(1);
-    expect(spawned[0]?.slice(0, 5)).toEqual([
-      'systemd-run',
-      '--unit',
-      `remyral-worker-uninstall-${cmd.commandId.slice(0, 8)}`,
-      '--collect',
-      '--quiet',
-    ]);
-    const script = await readFile(join(l.install, 'state', 'uninstall.sh'), 'utf8');
-    expect(script).toContain('systemctl stop remyral-worker.service');
-    expect(script).toContain(`rm -rf ${shQuote(l.install)} /usr/local/bin/remyral-worker`);
-    expect(script).toContain('userdel remyral-worker');
-    // Replay: the same command id is never run again.
-    await hand(l, cmd);
-    expect(await helper.processRequest()).toBeNull();
-    expect(spawned).toHaveLength(1);
-  });
+  // Simulates a Linux host (systemd-run, POSIX paths).
+  itPosix(
+    'verifies the signature, writes accepted with the plan, then starts the fixed script via systemd-run; never twice',
+    async () => {
+      const l = await layout();
+      const k = keys();
+      const { helper, spawned } = helperFor(l, k);
+      const cmd = command('wrk_1', k.privateKey, { kind: 'worker.uninstall', purge: true });
+      await hand(l, cmd);
+      const r = await helper.processRequest();
+      expect(r).toMatchObject({ state: 'accepted', commandId: cmd.commandId });
+      const written = await result(l.install);
+      expect(written.steps.map((s) => s.id)).toEqual([
+        'service_stop',
+        'triggers_remove',
+        'service_remove',
+        'program_remove',
+        'data_purge',
+        'user_remove',
+      ]);
+      expect(spawned).toHaveLength(1);
+      expect(spawned[0]?.slice(0, 5)).toEqual([
+        'systemd-run',
+        '--unit',
+        `remyral-worker-uninstall-${cmd.commandId.slice(0, 8)}`,
+        '--collect',
+        '--quiet',
+      ]);
+      const script = await readFile(join(l.install, 'state', 'uninstall.sh'), 'utf8');
+      expect(script).toContain('systemctl stop remyral-worker.service');
+      expect(script).toContain(`rm -rf ${shQuote(l.install)} /usr/local/bin/remyral-worker`);
+      expect(script).toContain('userdel remyral-worker');
+      // Replay: the same command id is never run again.
+      await hand(l, cmd);
+      expect(await helper.processRequest()).toBeNull();
+      expect(spawned).toHaveLength(1);
+    },
+  );
 
   it('refuses a forged or expired command into manage-result.json (and runs nothing)', async () => {
     const l = await layout();

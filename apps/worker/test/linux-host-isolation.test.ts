@@ -26,6 +26,8 @@ import { buildSandboxStatus } from '../src/sandbox/status.js';
 import { DEFAULT_LIMITS } from '../src/sandbox/types.js';
 import { tempDir } from './helpers.js';
 
+const describePosix = process.platform === 'win32' ? describe.skip : describe;
+
 /**
  * p19-linux-host-isolation (ADR-0066, docs/design/p19-linux-host-isolation.md): per-attempt bubblewrap views on Linux,
  * the cross-attempt self-check, profile slots / selection with `bwrap`, the host runner's argv, status and Prepare.
@@ -85,7 +87,8 @@ const fakeStart = (
   };
 };
 
-describe('bubblewrap view of one attempt (buildHostBwrapArgs)', () => {
+// Builds Linux paths (bubblewrap) with this host's path module: not meaningful on a Windows host.
+describePosix('bubblewrap view of one attempt (buildHostBwrapArgs)', () => {
   const spec: HostBwrapSpec = {
     workspace: '/var/lib/rw/workspaces/jobs/j1/a1',
     sandboxDir: '/var/lib/rw/workspaces/sandboxes/j1/a1',
@@ -467,7 +470,8 @@ describe('profile slots and selection with bubblewrap views', () => {
   });
 });
 
-describe('host runner on Linux with an active view', () => {
+// Builds Linux paths (bubblewrap) with this host's path module: not meaningful on a Windows host.
+describePosix('host runner on Linux with an active view', () => {
   const active = (pidNamespace = true): LinuxIsolationController => {
     const c = new LinuxIsolationController({
       mode: 'auto',

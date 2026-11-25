@@ -230,8 +230,8 @@ describe('local blob store (p17-object-storage)', () => {
     const body = randomBytes(1000);
     await store.put('artifacts/j/a/ws-x', body);
     const st = await stat(join(dir, 'artifacts', 'j', 'a', 'ws-x'));
-    expect(st.mode & 0o777).toBe(0o600);
-    expect((await stat(join(dir, 'artifacts'))).mode & 0o777).toBe(0o700);
+    if (process.platform !== 'win32') expect(st.mode & 0o777).toBe(0o600);
+    if (process.platform !== 'win32') expect((await stat(join(dir, 'artifacts'))).mode & 0o777).toBe(0o700);
     expect((await store.get('artifacts/j/a/ws-x', 2000)).equals(body)).toBe(true);
     expect((await store.range('artifacts/j/a/ws-x', 990, 50)).equals(body.subarray(990))).toBe(true);
     await store.delete('artifacts/j/a/ws-x');

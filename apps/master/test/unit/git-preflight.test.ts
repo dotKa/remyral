@@ -12,6 +12,8 @@ import { classifyFailure } from '../../src/self-heal/classify.js';
 import { parseLsRemote, type ProbeExec, RemoteProbe } from '../../src/self-heal/remote-probe.js';
 import { RepoAccessPreflight } from '../../src/self-heal/repo-access.js';
 
+const itPosix = process.platform === 'win32' ? it.skip : it;
+
 /** p22-git-preflight (docs/design/p22-git-preflight.md): the anonymous probe, the preflight verdicts, the hints. */
 
 const URL_A = 'https://github.com/acme/app.git';
@@ -295,25 +297,32 @@ describe('git egress: the probe and the lost-attempt inspector never reach a non
     expect(metadata.calls).toHaveLength(0);
   });
 
-  it('the lost-attempt inspector answers unknown for a non-public host without running git', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'rw-lsr-'));
-    try {
-      const marker = join(dir, 'ran');
-      const git = join(dir, 'git');
-      await writeFile(
-        git,
-        `#!/bin/sh\ntouch '${marker}'\nprintf '%s\\trefs/heads/rac/j1/a1\\n' ${'a'.repeat(40)}\n`,
-        { mode: 0o755 },
-      );
-      const branch = 'rac/j1/a1';
-      const priv = new GitLsRemoteInspector({ gitBinary: git, resolve: () => Promise.resolve(['10.1.2.3']) });
-      expect(await priv.inspect('https://git.internal.example/acme/app.git', branch)).toBe('unknown');
-      expect(await priv.inspect('ssh://git@git.internal.example/acme/app.git', branch)).toBe('unknown');
-      await expect(stat(marker)).rejects.toThrow();
-      const pub = new GitLsRemoteInspector({ gitBinary: git, resolve: publicDns });
-      expect(await pub.inspect(URL_A, branch)).toBe('present');
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
-  });
+  // The stand-in git is a /bin/sh script.
+  itPosix(
+    'the lost-attempt inspector answers unknown for a non-public host without running git',
+    async () => {
+      const dir = await mkdtemp(join(tmpdir(), 'rw-lsr-'));
+      try {
+        const marker = join(dir, 'ran');
+        const git = join(dir, 'git');
+        await writeFile(
+          git,
+          `#!/bin/sh\ntouch '${marker}'\nprintf '%s\\trefs/heads/rac/j1/a1\\n' ${'a'.repeat(40)}\n`,
+          { mode: 0o755 },
+        );
+        const branch = 'rac/j1/a1';
+        const priv = new GitLsRemoteInspector({
+          gitBinary: git,
+          resolve: () => Promise.resolve(['10.1.2.3']),
+        });
+        expect(await priv.inspect('https://git.internal.example/acme/app.git', branch)).toBe('unknown');
+        expect(await priv.inspect('ssh://git@git.internal.example/acme/app.git', branch)).toBe('unknown');
+        await expect(stat(marker)).rejects.toThrow();
+        const pub = new GitLsRemoteInspector({ gitBinary: git, resolve: publicDns });
+        expect(await pub.inspect(URL_A, branch)).toBe('present');
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  );
 });

@@ -286,7 +286,9 @@ describe('p15-git-central: SSH deploy key lifecycle', () => {
       expect(env.GIT_SSH_COMMAND).toContain('-F none');
       expect(env.GIT_SSH_COMMAND).toContain('IdentitiesOnly=yes');
       expect(env.GIT_SSH_COMMAND).toContain('StrictHostKeyChecking=yes');
-      expect(env.GIT_SSH_COMMAND).toContain(`UserKnownHostsFile='${ssh.knownHostsFile}'`);
+      // git's shell takes the paths with forward slashes on Windows (sshCommand).
+      const knownHostsPath = isWindows ? ssh.knownHostsFile.split('\\').join('/') : ssh.knownHostsFile;
+      expect(env.GIT_SSH_COMMAND).toContain(`UserKnownHostsFile='${knownHostsPath}'`);
       expect(env.GIT_SSH_COMMAND).not.toContain('OPENSSH PRIVATE KEY');
       return 'ok';
     });

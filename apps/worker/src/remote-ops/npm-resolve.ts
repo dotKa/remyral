@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, posix, win32 } from 'node:path';
 import type { RunFn } from './process.js';
 
 /**
@@ -24,10 +24,12 @@ export class NpmResolveError extends Error {
 
 /** npm's CLI next to a Node binary from the official archives (lib/node_modules on POSIX, node_modules on Windows). */
 export function npmCliNextTo(nodePath: string, platform: NodeJS.Platform = process.platform): string {
-  const dir = dirname(nodePath);
+  // The path module of `platform`, not of this process (the same answer for a Linux layout on any host).
+  const p = platform === 'win32' ? win32 : posix;
+  const dir = p.dirname(nodePath);
   return platform === 'win32'
-    ? join(dir, 'node_modules', 'npm', 'bin', 'npm-cli.js')
-    : join(dir, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js');
+    ? p.join(dir, 'node_modules', 'npm', 'bin', 'npm-cli.js')
+    : p.join(dir, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js');
 }
 
 export const NPM_RESOLVE_TIMEOUT_MS = 10 * 60_000;

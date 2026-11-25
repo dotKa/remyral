@@ -309,7 +309,7 @@ describe('age recipients', () => {
     writeFileSync(join(dir, 'secrets/totp.key'), 'abc');
     expect(findIdentities(dir)).toEqual([]);
     writeFileSync(join(dir, 'secrets/sub/identity.txt'), '# created\nAGE-SECRET-KEY-1ABC\n');
-    expect(findIdentities(dir)).toEqual(['secrets/sub/identity.txt']);
+    expect(findIdentities(dir)).toEqual([join('secrets', 'sub', 'identity.txt')]);
   });
 });
 

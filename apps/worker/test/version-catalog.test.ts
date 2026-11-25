@@ -33,6 +33,9 @@ import { PLAYWRIGHT_CFT_BUILD, RECIPES, recipeLayout } from '../src/tools/recipe
 import { MemoryTransport } from '../src/transport/memory.js';
 import { nodeOps, pathHost, tempDir } from './helpers.js';
 
+// The daemon's start (store, device key, vault, …) can take seconds on a busy Windows runner.
+const START = { timeout: 15_000 };
+
 const logger = createLogger({ level: 'silent', sink: () => undefined });
 
 function keyPair(): { pub: string; priv: KeyObject } {
@@ -341,7 +344,7 @@ describe('APPLY_VERSION_CATALOG in the running daemon', { timeout: 60_000 }, () 
     });
     await vi.waitFor(() => {
       expect(daemon).toBeDefined();
-    });
+    }, START);
     let seq = 0;
     const master = (type: string, payload: unknown, control = false) =>
       MasterToWorker.parse({
@@ -373,7 +376,7 @@ describe('APPLY_VERSION_CATALOG in the running daemon', { timeout: 60_000 }, () 
       );
     await vi.waitFor(() => {
       expect(caps().length).toBeGreaterThan(0);
-    });
+    }, START);
     expect(caps()[0]?.payload.features).toContain('version-catalog-v1');
     expect(caps()[0]?.payload.versionCatalog).toMatchObject({ enabled: true, keys: 1, sequence: 0 });
     const before = caps().length;

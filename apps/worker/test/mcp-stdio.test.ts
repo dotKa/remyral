@@ -36,6 +36,24 @@ import { type RunFn, type RunOptions, runProcess } from '../src/remote-ops/proce
 import { FileSecretStore } from '../src/secrets/store.js';
 import { SecretString } from '../src/secrets/ref.js';
 import { captureLines, nodeOps, tempDir } from './helpers.js';
+
+/** Variables libuv adds to a child's environment on Windows when the parent has them (uv_spawn). */
+const LIBUV_WINDOWS_ENV =
+  process.platform === 'win32'
+    ? [
+        'HOMEDRIVE',
+        'HOMEPATH',
+        'LOGONSERVER',
+        'SYSTEMDRIVE',
+        'USERDOMAIN',
+        'USERNAME',
+        'USERPROFILE',
+        'WINDIR',
+        'SYSTEMROOT',
+        'TEMP',
+        'PATH',
+      ]
+    : [];
 import { fixtureServer, type Registry, sha256hex, sri512, tgz } from './remote-ops-fixtures.js';
 
 /**
@@ -650,7 +668,7 @@ describe('launcher (minimal env, no shell, secrets only in the 0600 spec file)',
     expect(got.env.REMYRAL_MCP_OTHER_TOKEN).toBeUndefined();
     for (const k of Object.keys(got.env)) {
       expect(
-        ['ECHO_TOKEN', 'MODE', ...MCP_LAUNCH_ENV_ALLOWLIST].includes(k) ||
+        ['ECHO_TOKEN', 'MODE', ...MCP_LAUNCH_ENV_ALLOWLIST, ...LIBUV_WINDOWS_ENV].includes(k) ||
           k.startsWith('__') ||
           k === 'SHLVL' ||
           k === 'PWD' ||

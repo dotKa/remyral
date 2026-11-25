@@ -150,7 +150,7 @@ describe('sign.mjs installers / verify-installers', () => {
         readFileSync(join(dir, 'rel/installers/index.json')),
       ),
     ).toBe(true);
-    expect(sign('verify-installers', '--dir', join(dir, 'rel'), '--public-key', pub)).toMatch(
+    expect(sign('verify-installers', '--dir', join(dir, 'rel'), `--public-key=${pub}`)).toMatch(
       /OK installer index 2\.0\.0/,
     );
   });
@@ -192,7 +192,7 @@ describe('sign.mjs installers / verify-installers', () => {
     writeFileSync(k, Buffer.concat([orig, Buffer.from('x')]));
     const r = spawnSync(
       process.execPath,
-      [SIGN, 'verify-installers', '--dir', join(dir, 'rel'), '--public-key', pub],
+      [SIGN, 'verify-installers', '--dir', join(dir, 'rel'), `--public-key=${pub}`],
       { encoding: 'utf8' },
     );
     expect(r.status).toBe(1);
@@ -203,7 +203,7 @@ describe('sign.mjs installers / verify-installers', () => {
     writeFileSync(idx, text.replace('"2.0.0"', '"2.0.1"'));
     const f = spawnSync(
       process.execPath,
-      [SIGN, 'verify-installers', '--dir', join(dir, 'rel'), '--public-key', pub],
+      [SIGN, 'verify-installers', '--dir', join(dir, 'rel'), `--public-key=${pub}`],
       { encoding: 'utf8' },
     );
     expect(f.stderr).toMatch(/BAD installer index signature/);

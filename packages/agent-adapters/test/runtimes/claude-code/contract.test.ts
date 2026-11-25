@@ -1,3 +1,4 @@
+import { describe } from 'vitest';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -26,7 +27,8 @@ const posix = process.platform !== 'win32';
 // The capabilities are `unverified` until the live run (ADR-0008), so the
 // contract kit runs with policy allowUnverified — exactly how a worker would
 // have to run this adapter today.
-if (posix) {
+// A suite with no tests fails the run; on Windows it is reported as skipped instead.
+describe.skipIf(!posix)('claude-code contract (POSIX: the fake CLI is a shebang script)', () => {
   defineAdapterContractSuite(
     'claude-code (fake SDK typed by sdk.d.ts 0.3.310, real owned CLI process, secret-ref)',
     (scenario) =>
@@ -52,4 +54,4 @@ if (posix) {
       }),
     // local-login must not receive provider credentials; the canary is a neutral name.
   );
-}
+});

@@ -167,8 +167,8 @@ describe('per-runtime renderings', () => {
       },
     });
     const path = await writeMcpPrivateFile(d, 'claude.json', JSON.stringify(cfg));
-    expect(statSync(path).mode & 0o777).toBe(0o600);
-    expect(statSync(d.configDir).mode & 0o777).toBe(0o700);
+    if (process.platform !== 'win32') expect(statSync(path).mode & 0o777).toBe(0o600);
+    if (process.platform !== 'win32') expect(statSync(d.configDir).mode & 0o777).toBe(0o700);
     expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual(cfg);
     await expect(writeMcpPrivateFile(d, '../escape.json', '{}')).rejects.toBeInstanceOf(
       InvalidSpawnContextError,

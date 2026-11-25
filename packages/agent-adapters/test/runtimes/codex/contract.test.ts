@@ -1,5 +1,5 @@
 import { rmSync } from 'node:fs';
-import { afterAll } from 'vitest';
+import { afterAll, describe } from 'vitest';
 import { createCodexAdapter } from '../../../src/index.js';
 import { defineAdapterContractSuite } from '../../../src/testing/index.js';
 import { codexTestStateDir, FAKE_APP_SERVER } from '../../fixtures/codex/helpers.js';
@@ -17,7 +17,8 @@ const prompts = {
   approval: 'Contract test: approval for one sensitive action.',
 };
 
-if (posix) {
+// A suite with no tests fails the run; on Windows it is reported as skipped instead.
+describe.skipIf(!posix)('codex contract (POSIX: the fake app-server is a shebang script)', () => {
   // Capabilities are `unverified` until the live run (ADR-0008): run with policy allowUnverified.
   defineAdapterContractSuite(
     'codex (fake app-server speaking the generated 0.164.0 protocol, real owned process, secret-ref)',
@@ -36,4 +37,4 @@ if (posix) {
     () => createCodexAdapter({ authMode: 'local-login', codexPath: FAKE_APP_SERVER }),
     { prompts },
   );
-}
+});
