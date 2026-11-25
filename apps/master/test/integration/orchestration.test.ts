@@ -351,6 +351,10 @@ describeIntegration(
       // Infeasible: no worker has the runtime, and none runs linux.
       const impossible = await submit(jobSpec({ runtime: 'pi', requirements: { os: ['linux'] } }));
       await expect.poll(() => state(impossible), { timeout: 15_000 }).toBe('FAILED');
+      // The schedule status is written right after the transition: wait for it as well.
+      await expect
+        .poll(async () => (await detail(impossible)).orchestration?.schedule?.status, { timeout: 15_000 })
+        .toBe('infeasible');
       const d = await detail(impossible);
       const last = d.transitions.at(-1);
       expect(last).toMatchObject({ trigger: 'infeasible', actor: { type: 'system', id: 'scheduler' } });
