@@ -298,10 +298,10 @@ describe('Makine → Sandbox ve politika (Diyalog)', () => {
 
   it('p19-unconfined-parallel: "Sandbox’sız işler paralel çalışabilir" needs unconfined and a worker that knows it', async () => {
     const user = userEvent.setup();
-    const base = configSandbox(W) as Record<string, unknown>;
+    const base = configSandbox(W);
     // Unconfined off: the setting is shown but cannot be switched.
     const off = renderApp({ path: `/machines/${W}?tab=sandbox`, initialState: owner, routes: routes() });
-    const offBox = (await screen.findByTestId('unconfined-parallel')) as HTMLInputElement;
+    const offBox = await screen.findByTestId<HTMLInputElement>('unconfined-parallel');
     expect(offBox.checked).toBe(false);
     expect(offBox.disabled).toBe(true);
     expect(screen.getByText('Önce sınırsız profile izin verin.')).toBeTruthy();
@@ -315,7 +315,7 @@ describe('Makine → Sandbox ve politika (Diyalog)', () => {
         [`GET ${B}/sandbox`]: ok({ ...base, unconfined: { allowed: true, generation: 3 } }),
       }),
     });
-    expect(((await screen.findByTestId('unconfined-parallel')) as HTMLInputElement).disabled).toBe(true);
+    expect((await screen.findByTestId<HTMLInputElement>('unconfined-parallel')).disabled).toBe(true);
     expect(screen.getByText(/önce makineyi güncelleyin/)).toBeTruthy();
     old.unmount();
 
@@ -332,7 +332,7 @@ describe('Makine → Sandbox ve politika (Diyalog)', () => {
         [`PUT ${B}/sandbox/unconfined`]: ok({}),
       }),
     });
-    const box = (await screen.findByTestId('unconfined-parallel')) as HTMLInputElement;
+    const box = await screen.findByTestId<HTMLInputElement>('unconfined-parallel');
     expect(box.disabled).toBe(false);
     expect(screen.getByText(/En çok paralel iş/)).toBeTruthy();
     await user.click(box);

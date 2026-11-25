@@ -18,12 +18,11 @@ import { effectivePolicy, type SecurityPolicyDocument } from '../../src/security
  * draft executor only for the user's own turn. The executor's step-up and the per-command pass are covered by the
  * integration tests (machine-admin.test.ts, chat-machine-admin.test.ts).
  */
-const subject = (role: 'owner' | 'admin' | 'operator' | 'viewer'): Subject =>
-  ({
-    userId: '11111111-1111-4111-8111-111111111111',
-    role,
-    memberships: new Map(),
-  }) as unknown as Subject;
+const subject = (role: 'owner' | 'admin' | 'operator' | 'viewer'): Subject => ({
+  userId: '11111111-1111-4111-8111-111111111111',
+  role,
+  memberships: new Map(),
+});
 
 const human: TurnHuman = { mfaAt: null, ip: '127.0.0.1', userAgent: 'vitest' };
 

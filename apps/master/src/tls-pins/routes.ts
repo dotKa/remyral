@@ -68,7 +68,7 @@ export function tlsPinRoutes(deps: { readonly service: TlsPinService; readonly c
             'Trust the certificate a failed job of this project reported as untrusted (its exact SHA-256, for that host:port only). Admin, step-up, audited.',
           security: csrf,
           params: ProjectParams,
-          body: z.strictObject({ jobId: z.string().uuid() }),
+          body: z.strictObject({ jobId: z.uuid() }),
           response: { 200: PinsBody, ...errors },
         },
       },
@@ -92,7 +92,7 @@ export function tlsPinRoutes(deps: { readonly service: TlsPinService; readonly c
           summary:
             'Stop trusting a pinned certificate (requests to that host:port are verified strictly again).',
           security: csrf,
-          params: ProjectParams.extend({ pinId: z.string().uuid() }),
+          params: ProjectParams.extend({ pinId: z.uuid() }),
           response: { 200: PinsBody, ...errors },
         },
       },

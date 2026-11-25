@@ -163,7 +163,7 @@ describe('the inherited machine administration (policy switches)', () => {
     expect(inheritedMachineAdmin(effectivePolicy({ preset: 'siki' }), 'plan', grant)).toBe(false);
     expect(
       inheritedMachineAdmin(
-        effectivePolicy({ preset: 'serbest', autonomy: { goalGrants: false } } as SecurityPolicyDocument),
+        effectivePolicy({ preset: 'serbest', autonomy: { goalGrants: false } }),
         'plan',
         grant,
       ),
@@ -253,7 +253,7 @@ describe('ChatDirectActions with goal-bound grants', () => {
       scope: check.state === 'out_of_scope' ? check.scope : '',
     });
     expect(out).toMatchObject({ executed: false, reason: 'out_of_scope' });
-    expect(out.executed === false && out.message).toContain('ONE decision');
+    expect(!out.executed && out.message).toContain('ONE decision');
     expect(s.contexts).toEqual([]);
     expect(s.audits.at(-1)).toMatchObject({
       outcome: 'denied',
@@ -264,9 +264,7 @@ describe('ChatDirectActions with goal-bound grants', () => {
   it('switch off (Sıkı): the check is off and a grant passed anyway is not used for machine administration', async () => {
     const s = setup({ preset: 'siki' }, [row()]);
     expect(await s.actions.goal(USER, 't1', machineTask('w-1'))).toEqual({ state: 'off' });
-    const s2 = setup({ preset: 'serbest', autonomy: { goalGrants: false } } as SecurityPolicyDocument, [
-      row(),
-    ]);
+    const s2 = setup({ preset: 'serbest', autonomy: { goalGrants: false } }, [row()]);
     await s2.actions.execute(subject, 'admin', undefined, machineTask('w-1'), 'plan', {}, row());
     expect(s2.contexts[0]?.machineAdminByPolicy).toBeUndefined();
   });

@@ -303,7 +303,7 @@ class ClaudeAssistantSession implements AssistantSession {
       }
       // p22-assistant-tools: a session whose platform tools did not load must not answer (it would only tell the
       // user it cannot reach them) — the turn fails as a machine failure and the master re-runs it.
-      const own = (msg.mcp_servers ?? []).find((m) => m.name === ASSISTANT_MCP_SERVER);
+      const own = msg.mcp_servers.find((m) => m.name === ASSISTANT_MCP_SERVER);
       if (own !== undefined && own.status !== 'connected' && own.status !== 'pending') {
         this.#fatal = `the assistant tools did not load (${own.status})`;
         void this.close();

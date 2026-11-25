@@ -82,7 +82,7 @@ describe('"Senden bekleyen": intervention cards (p20-outcome)', () => {
     expect(within(card).getByTestId('goal-need-asked').textContent).toContain(
       'Önizleme adresi yanıt veriyor',
     );
-    const happened = within(card).getByTestId('goal-need-happened').textContent ?? '';
+    const happened = within(card).getByTestId('goal-need-happened').textContent;
     expect(happened).toContain(TR.goals.reason.follow_up_cap);
     expect(happened).toContain('Servis durdu (failed): exit 1');
     expect(within(card).getByTestId('goal-need-you').textContent).toContain(TR.goals.action.follow_up_cap);

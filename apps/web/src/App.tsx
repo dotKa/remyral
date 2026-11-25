@@ -105,7 +105,11 @@ function LegacyParams(props: { readonly children: ReactNode }): ReactNode {
   const cleaned = withoutLegacyParams(loc.search);
   if (cleaned === null) return props.children;
   return (
-    <Navigate replace to={{ pathname: loc.pathname, search: cleaned, hash: loc.hash }} state={loc.state} />
+    <Navigate
+      replace
+      to={{ pathname: loc.pathname, search: cleaned, hash: loc.hash }}
+      state={loc.state as unknown}
+    />
   );
 }
 

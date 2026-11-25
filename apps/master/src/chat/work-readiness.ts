@@ -130,8 +130,9 @@ export function assessWork(
 ): WorkVerdict {
   const checks: WorkCheck[] = [];
   const prepare: WorkPrepare[] = [];
-  let ask: WorkVerdict['ask'] = null;
-  let blocked: WorkVerdict['blocked'] = null;
+  // Set through the closures below: the casts keep TypeScript from narrowing both to their initial null.
+  let ask = null as WorkVerdict['ask'];
+  let blocked = null as WorkVerdict['blocked'];
   const askOnce = (a: NonNullable<WorkVerdict['ask']>) => {
     ask ??= a;
   };

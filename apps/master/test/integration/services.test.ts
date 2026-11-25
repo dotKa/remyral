@@ -627,7 +627,7 @@ describeIntegration('services (integration, p15-services)', { timeout: 180_000 }
     expect(next.payload.revision).toBe(updated.payload.revision + 1);
     expect(next.payload.spec.network).toMatchObject({
       mode: 'allowlist',
-      hosts: expect.arrayContaining(['registry.npmjs.org']),
+      hosts: expect.arrayContaining(['registry.npmjs.org']) as unknown,
     });
 
     // p21-service-exit: a one-shot command that exited by itself (policy never → stopped, still wanted) is ended for

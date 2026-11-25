@@ -52,7 +52,6 @@ describeIntegration('p22-slow-tools: a slow tool call (integration)', { timeout:
     if (slow) await new Promise((r) => setTimeout(r, 1_500));
     return gh.fetch(url);
   };
-  const commit = gh.commitOf('anthropics/skills');
   const engine = new FakeAssistantEngine();
   let h: Harness;
   let url: string;

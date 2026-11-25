@@ -5590,7 +5590,7 @@ export async function createMasterApp(deps: MasterDeps): Promise<FastifyInstance
           app.log.error({ err }, 'cost brake pass failed');
         });
         const breaker = rolloutBreaker;
-        if (breaker !== null && breaker !== undefined) {
+        if (breaker !== null) {
           await gated('ops-safety-rollout-breaker', () => breaker.evaluate()).catch((err: unknown) => {
             app.log.error({ err }, 'rollout breaker pass failed');
           });

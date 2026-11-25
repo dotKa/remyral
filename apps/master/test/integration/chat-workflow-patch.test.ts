@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { Role } from '../../src/auth/users.js';
 import { loadSubject } from '../../src/authz/authorizer.js';
 import { ChatStore } from '../../src/chat/store.js';

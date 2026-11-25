@@ -34,7 +34,7 @@ function card(n: number, over: Partial<ApprovalRequest> = {}): OpsItem {
       status: 'pending',
       ...over,
     } as ApprovalRequest,
-  } as OpsItem;
+  };
 }
 
 function item(n: number, mergeState: string | null, files = 26): Record<string, unknown> {
@@ -76,10 +76,8 @@ describe('delivery choice (composer)', () => {
   });
 
   it('"run again" keeps the delivery', () => {
-    expect(draftFromPrefill({ project: 'p', spec: { delivery: 'outputs' } } as never).delivery).toBe(
-      'outputs',
-    );
-    expect(draftFromPrefill({ project: 'p', spec: {} } as never).delivery).toBeUndefined();
+    expect(draftFromPrefill({ project: 'p', spec: { delivery: 'outputs' } }).delivery).toBe('outputs');
+    expect(draftFromPrefill({ project: 'p', spec: {} }).delivery).toBeUndefined();
   });
 });
 

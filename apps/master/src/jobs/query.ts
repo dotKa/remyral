@@ -459,7 +459,8 @@ export class JobQuery {
         summary: string | null;
         error_code: string | null;
         error_params: unknown;
-        preview_stopped: boolean;
+        // NULL when the job has no error code (NULL AND …).
+        preview_stopped: boolean | null;
         result_late: boolean;
         recovery: { decision: string; reason: string; at: string } | null;
         runtime_choice: unknown;

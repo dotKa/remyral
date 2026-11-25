@@ -315,8 +315,8 @@ export function defaultOutcome(origin: GoalOrigin, lang: 'tr' | 'en', title: str
 /** Plain, bounded model / person text for a goal column. */
 export function goalText(s: string | null | undefined, max: number): string | null {
   if (s === null || s === undefined) return null;
-  // eslint-disable-next-line no-control-regex
   const one = s
+    // eslint-disable-next-line no-control-regex -- control characters are what this strips
     .replace(/[\u0000-\u001f\u007f]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

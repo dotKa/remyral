@@ -101,7 +101,7 @@ export class ChatImageTools {
     caption: string | undefined,
   ): Promise<ShowImageResult> {
     const params: unknown[] = [jobId];
-    let where = '';
+    let where: string;
     if (ids !== undefined && ids.length > 0) {
       params.push(ids);
       where = ' AND f.artifact_id = ANY($2::text[])';

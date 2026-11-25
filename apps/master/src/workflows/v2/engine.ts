@@ -5466,7 +5466,7 @@ export function runAttention(nodes: readonly NodeRunRow[]): RunAttention[] {
   for (const n of [...latest.values()].sort((a, b) => a.node_id.localeCompare(b.node_id))) {
     if (n.state !== 'succeeded' || !isAiInput(n.input)) continue;
     const o = n.output;
-    if (o !== null && o !== undefined && !isPureOutput(o) && o.outcome !== undefined)
+    if (o !== null && !isPureOutput(o) && o.outcome !== undefined)
       add({ node: n.node_id, kind: o.outcome.kind, note: o.outcome.note });
     for (const v of n.input.snapshot ?? []) {
       if (v.clippedFrom === undefined) continue;

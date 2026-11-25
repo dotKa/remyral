@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 import { AuditLog } from '../../src/audit/audit.js';
 import { loadSubject } from '../../src/authz/authorizer.js';
 import { ChatStore } from '../../src/chat/store.js';
@@ -248,7 +248,10 @@ describeIntegration('p22-run-attention (integration)', { timeout: 300_000 }, () 
     const r = await workflowRunResult(h.db.pool, runId);
     expect(r?.state).toBe('succeeded');
     expect(r?.attention).toEqual([]);
-    const stored = await h.db.pool.query('SELECT attention FROM workflow_runs WHERE id = $1', [runId]);
+    const stored = await h.db.pool.query<{ attention: unknown }>(
+      'SELECT attention FROM workflow_runs WHERE id = $1',
+      [runId],
+    );
     expect(stored.rows[0]?.attention).toBeNull();
     expect(resultMeta(r as never)).not.toHaveProperty('attention');
   });
@@ -268,7 +271,11 @@ describeIntegration('p22-run-attention (integration)', { timeout: 300_000 }, () 
     expect(r?.state).toBe('succeeded');
     expect(r?.attention).toEqual([
       { node: 'yaz', kind: 'none', note: 'the input body ended mid-result' },
-      { node: 'yaz', kind: 'input_cut', note: expect.stringMatching(/^seed\.summary: 49152 \/ \d+ chars$/) },
+      {
+        node: 'yaz',
+        kind: 'input_cut',
+        note: expect.stringMatching(/^seed\.summary: 49152 \/ \d+ chars$/) as unknown,
+      },
     ]);
     expect(resultMeta(r as never)).toMatchObject({ attention: r?.attention });
     expect(resultText(r as never, 'tr')).toContain('**Workflow bitti ama dikkat istiyor:**');

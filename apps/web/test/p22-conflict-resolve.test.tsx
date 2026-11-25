@@ -40,7 +40,9 @@ describe('p22-conflict-resolve: job page', () => {
     const button = await screen.findByTestId('dy-job-conflict-resolve');
     expect(button.textContent).toContain('Çakışmayı çöz');
     await userEvent.click(button);
-    await waitFor(() => expect(r.started).toEqual([NEW]));
+    await waitFor(() => {
+      expect(r.started).toEqual([NEW]);
+    });
     expect(r.requests.some((q) => q.method === 'POST' && q.url.endsWith('/resolve-conflicts'))).toBe(true);
   });
 
