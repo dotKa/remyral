@@ -92,7 +92,7 @@ describe('pi: external MCP servers (p14-mcp-core)', { timeout: 30_000 }, () => {
     });
     expect(regs[0]?.missingEnv).toEqual([]);
     // The agent dir is private to the run (the user's ~/.pi/agent/mcp.json is never read).
-    expect(regs[0]?.agentDir).toMatch(/\/run\/pi-[^/]+\/agent$/);
+    expect(regs[0]?.agentDir).toMatch(/[\\/]run[\\/]pi-[^\\/]+[\\/]agent$/);
     expect(events.some((e) => e.event.kind === 'approval_request')).toBe(false);
     expect(mcpCalls(events)).toEqual([
       expect.objectContaining({

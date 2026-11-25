@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   appServerArgs,
@@ -213,10 +213,15 @@ describe('codex: repository skills are disabled by path', () => {
     }
     writeFileSync(join(ws, 'SKILL.md'), 'not in a skills dir');
     const found = await findRepositorySkillFiles(ws);
-    expect(found.map((p) => p.slice(ws.length + 1))).toEqual([
-      '.agents/skills/a/SKILL.md',
-      'sub/.codex/skills/b/nested/SKILL.md',
-    ]);
+    // Native separators from the code; compared in / form.
+    expect(
+      found.map((p) =>
+        p
+          .slice(ws.length + 1)
+          .split(sep)
+          .join('/'),
+      ),
+    ).toEqual(['.agents/skills/a/SKILL.md', 'sub/.codex/skills/b/nested/SKILL.md']);
     const args = appServerArgs({
       authMode: 'secret-ref',
       workspaceRoot: ws,

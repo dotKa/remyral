@@ -144,13 +144,14 @@ describe('daemon telemetry (p2-heartbeat-caps)', () => {
     });
   });
 
+  // On Windows the first sample waits for one PowerShell memory query (bounded at 15 s in pressure.ts).
   it('samples host load within protocol bounds', async () => {
     const load = await sampleLoad(await tempDir());
     expect(load.cpuPercent).toBeGreaterThanOrEqual(0);
     expect(load.cpuPercent).toBeLessThanOrEqual(100);
     expect(load.memoryFreeBytes).toBeGreaterThan(0);
     expect(load.diskFreeBytes).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it('p15-merge-approvals: reports free disk vs. the minimum under the workspace root (current minimum, bounded)', async () => {
     let min = 20 * 1024 ** 3;

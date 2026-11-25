@@ -14,6 +14,8 @@ import { WorkerStore } from '../src/store/store.js';
 import { FakeSystem, fail, ok } from './fake-system.js';
 import { nodeOps, patchOps, pathHost, tempDir } from './helpers.js';
 
+const itPosix = process.platform === 'win32' ? it.skip : it;
+
 const systemctl = (state: string, pid: number, extra = '') =>
   `LoadState=loaded\nActiveState=${state}\nSubState=running\nMainPID=${String(pid)}\nExecMainCode=0\nExecMainStatus=0\nNRestarts=1\nUnitFileState=enabled\nUser=remyral-worker\n${extra}`;
 
@@ -38,7 +40,8 @@ const linuxHost = () => pathHost({ platform: 'linux', isPrivileged: true });
 const linuxSys = (stdout: string) => new FakeSystem({ platform: 'linux', exec: () => ok(stdout) });
 
 describe('service status', () => {
-  it('live: the service main pid wrote the status file', async () => {
+  // Simulates a Linux service (POSIX paths).
+  itPosix('live: the service main pid wrote the status file', async () => {
     const { configPath, dataDir } = await setup({ status: { pid: 4242 } });
     const r = await collectServiceStatus(linuxSys(systemctl('active', 4242)), nodeOps(), linuxHost(), {
       configPath,
@@ -59,7 +62,8 @@ describe('service status', () => {
     expect(text).toContain('empty (never paired)');
   });
 
-  it('stale: a crashed daemon left its last state behind (new pid after restart)', async () => {
+  // Simulates a Linux service (POSIX paths).
+  itPosix('stale: a crashed daemon left its last state behind (new pid after restart)', async () => {
     const { configPath } = await setup({ status: { pid: 1111 } });
     const r = await collectServiceStatus(linuxSys(systemctl('active', 2222)), nodeOps(), linuxHost(), {
       configPath,
@@ -69,7 +73,8 @@ describe('service status', () => {
     expect(formatServiceStatus(r)).toContain('STALE: daemon pid 1111 is gone');
   });
 
-  it('stopped gracefully; exit code 3 for an installed but stopped service', async () => {
+  // Simulates a Linux service (POSIX paths).
+  itPosix('stopped gracefully; exit code 3 for an installed but stopped service', async () => {
     const { configPath } = await setup({ status: { pid: 1111, state: 'stopped' } });
     const out: string[] = [];
     const code = await main(
@@ -84,7 +89,8 @@ describe('service status', () => {
     expect(out.join('')).toContain('stopped gracefully');
   });
 
-  it('exit code 0 and JSON output for a running service', async () => {
+  // Simulates a Linux service (POSIX paths).
+  itPosix('exit code 0 and JSON output for a running service', async () => {
     const { configPath } = await setup({ status: { pid: 7 } });
     const out: string[] = [];
     const code = await main(
@@ -118,7 +124,8 @@ describe('service status', () => {
     expect(await main(['service', 'status', '--self-test'], linuxSys(''), io, host)).toBe(2);
   });
 
-  it('summarizes the durable store read-only (enrollment, leases, cursors, outbox)', async () => {
+  // Simulates a Linux service (POSIX paths).
+  itPosix('summarizes the durable store read-only (enrollment, leases, cursors, outbox)', async () => {
     const { configPath, dataDir } = await setup({ status: { pid: 9 } });
     const { store } = await WorkerStore.open(nodeOps(), dataDir);
     await store.setIdentity({
@@ -155,20 +162,24 @@ describe('service status', () => {
     expect(await nodeOps().readFile(join(dataDir, 'state.json'), 100)).toEqual(Buffer.from('{broken'));
   });
 
-  it('explains permission problems (non-root owner running status)', async () => {
+  // Simulates a Linux service (POSIX paths).
+  itPosix('explains permission problems (non-root owner running status)', async () => {
     const { configPath, dataDir } = await setup({ status: { pid: 5 } });
     const denied = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
     const ops = patchOps({
       readFile: (path, max) =>
         path.startsWith(dataDir) ? Promise.reject(denied) : nodeOps().readFile(path, max),
     });
-    const r = await collectServiceStatus(linuxSys(systemctl('active', 5)), ops, linuxHost(), { configPath });
+    const r = await collectServiceStatus(linuxSys(systemctl('active', 5)), ops, linuxHost(), {
+      configPath,
+    });
     if ('error' in r) throw new Error(r.error);
     expect(r.worker.error).toContain('permission denied (run as root/Administrator, or as the service user)');
     expect(r.store).toEqual({ error: expect.stringContaining('permission denied') as unknown });
   });
 
-  it('reports an invalid config but still asks the service manager', async () => {
+  // Simulates a Linux service (POSIX paths).
+  itPosix('reports an invalid config but still asks the service manager', async () => {
     const { configPath } = await setup();
     await writeFile(configPath, JSON.stringify({ masterUrl: 'http://x', workspaceRoot: 'rel' }));
     const r = await collectServiceStatus(linuxSys(systemctl('active', 1)), nodeOps(), linuxHost(), {

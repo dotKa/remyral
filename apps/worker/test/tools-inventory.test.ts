@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createLogger } from '@remyral/observability';
 import { satisfiedToolNames } from '@remyral/protocol';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createNodeFileOps } from '../src/fs/ops.js';
 import type { RunFn } from '../src/remote-ops/process.js';
 import { detectTools } from '../src/tools/detect.js';
@@ -291,7 +291,11 @@ describe('the inventory is cached, persisted and refreshed on demand', () => {
       { name: 'browser', version: '141.0.3537.71' },
       { name: 'edge', version: '141.0.3537.71' },
     ]);
-    // A restarted worker reads the persisted inventory without detecting again.
+    // A restarted worker reads the persisted inventory without detecting again (once it is written: the report
+    // is served from memory before the file is).
+    await vi.waitFor(async () => {
+      await readFile(join(dir, 'tools', 'inventory.json'));
+    });
     const again = await open();
     expect((await again.report()).tools[0]?.name).toBe('edge');
     expect(calls).toBe(1);

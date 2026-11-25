@@ -337,7 +337,9 @@ describeIntegration('chat turns across a worker reconnect (integration)', { time
       const res = await owner.req('GET', `/workers/${primary}`);
       const d = res.json<{ disconnects: { cause: string; pongWaitMs?: number }[] }>().disconnects;
       expect(d[0]?.cause).toBe('pong_timeout');
-      expect(d[0]?.pongWaitMs).toBeGreaterThanOrEqual(300);
+      // At least the 300 ms pong timeout, measured with Date.now: its whole milliseconds against the timer's
+      // monotonic clock can read one less (299 seen on a CI runner).
+      expect(d[0]?.pongWaitMs).toBeGreaterThanOrEqual(299);
     } finally {
       await workerP?.stop().catch(() => undefined);
       workerP = undefined;

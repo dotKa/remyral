@@ -27,6 +27,9 @@ import { WorkerStore } from '../src/store/store.js';
 import { MemoryTransport } from '../src/transport/memory.js';
 import { nodeOps, pathHost, tempDir } from './helpers.js';
 
+// The daemon's start (store, device key, vault, …) can take seconds on a busy Windows runner.
+const START = { timeout: 15_000 };
+
 const DOC: WorkerConfigDocument = {
   schemaVersion: 1,
   projects: { alpha: { repositories: ['https://github.com/acme/alpha.git'] } },
@@ -107,7 +110,7 @@ describe('panel-managed configuration in the running daemon (ADR-0015)', { timeo
     });
     await vi.waitFor(() => {
       expect(daemon).toBeDefined();
-    });
+    }, START);
     const d = daemon as unknown as WorkerDaemon;
     transport.emit({ kind: 'connected', enrolled: false });
     transport.emit({
@@ -129,7 +132,7 @@ describe('panel-managed configuration in the running daemon (ADR-0015)', { timeo
       );
     await vi.waitFor(() => {
       expect(caps().length).toBeGreaterThan(0);
-    });
+    }, START);
     expect(caps()[0]?.payload).toMatchObject({
       maxParallelJobs: 2,
       projects: [],

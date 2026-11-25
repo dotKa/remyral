@@ -145,7 +145,8 @@ describe('catalog.mjs keygen / sign / verify / publish', () => {
     const r = run(CATALOG, ['keygen', '--out', keyDir]);
     expect(r.status).toBe(0);
     pub = readFileSync(join(keyDir, 'catalog-key.pub'), 'utf8').trim();
-    expect(statSync(join(keyDir, 'catalog-key.pem')).mode & 0o777).toBe(0o600);
+    if (process.platform !== 'win32')
+      expect(statSync(join(keyDir, 'catalog-key.pem')).mode & 0o777).toBe(0o600);
     expect(r.stdout).toContain(keyIdOf(pub));
     expect(run(CATALOG, ['keygen', '--out', keyDir]).status).toBe(1);
   });
@@ -187,17 +188,17 @@ describe('catalog.mjs keygen / sign / verify / publish', () => {
 
   it('verify refuses a foreign key and tampered bytes; publish copies only a verified, newer catalog', () => {
     const other = generateKeyPairSync('ed25519').publicKey.export({ format: 'jwk' }).x;
-    expect(run(CATALOG, ['verify', '--site', site, '--public-key', other]).status).toBe(1);
-    expect(run(CATALOG, ['verify', '--site', site, '--public-key', pub]).stdout).toContain(
+    expect(run(CATALOG, ['verify', '--site', site, `--public-key=${other}`]).status).toBe(1);
+    expect(run(CATALOG, ['verify', '--site', site, `--public-key=${pub}`]).stdout).toContain(
       'OK version catalog 2',
     );
-    expect(run(CATALOG, ['publish', '--site', site, '--to', dest, '--public-key', pub]).status).toBe(0);
-    expect(run(CATALOG, ['publish', '--site', site, '--to', dest, '--public-key', pub]).status).toBe(1);
+    expect(run(CATALOG, ['publish', '--site', site, '--to', dest, `--public-key=${pub}`]).status).toBe(0);
+    expect(run(CATALOG, ['publish', '--site', site, '--to', dest, `--public-key=${pub}`]).status).toBe(1);
     const tampered = join(work, 'tampered');
     cpSync(site, tampered, { recursive: true });
     const p = join(tampered, 'catalog', 'catalog.json');
     writeFileSync(p, readFileSync(p, 'utf8').replace('"verified": true', '"verified": false'));
-    expect(run(CATALOG, ['verify', '--site', tampered, '--public-key', pub]).status).toBe(1);
+    expect(run(CATALOG, ['verify', '--site', tampered, `--public-key=${pub}`]).status).toBe(1);
   });
 });
 

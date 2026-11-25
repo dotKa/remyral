@@ -21,6 +21,7 @@ import {
 } from '../src/index.js';
 
 const FAKE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'pi', 'fake-pi-assistant.mjs');
+const WITH_ENV = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'pi', 'with-env.mjs');
 const root = mkdtempSync(join(tmpdir(), 'remyral-pi-assistant-'));
 
 afterAll(() => {
@@ -29,14 +30,14 @@ afterAll(() => {
 
 const FAST = { startupMs: 10_000, turnMs: 10_000, cancelGraceMs: 500 };
 
-/** `env` reaches the stand-in through `/usr/bin/env` (the engine passes only an allowlisted environment). */
+/** `env` reaches the stand-in through with-env.mjs (the engine passes only an allowlisted environment). */
 function engine(extra: Partial<PiAssistantEngineOptions> = {}, env: Record<string, string> = {}) {
   const pre = Object.entries(env).map(([k, v]) => `${k}=${v}`);
   return new PiAssistantEngine({
     command: () =>
       pre.length === 0
         ? { command: process.execPath, args: [FAKE] }
-        : { command: '/usr/bin/env', args: [...pre, process.execPath, FAKE] },
+        : { command: process.execPath, args: [WITH_ENV, ...pre, FAKE] },
     stateRoot: join(root, 'state'),
     settings: () => ({ model: 'remyral-faux/scripted' }),
     ...extra,

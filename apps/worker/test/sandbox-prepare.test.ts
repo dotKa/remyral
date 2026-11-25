@@ -21,6 +21,8 @@ import {
 import { prepareResultPath } from '../src/sandbox/prepare-shared.js';
 import { tempDir } from './helpers.js';
 
+const itPosix = process.platform === 'win32' ? it.skip : it;
+
 const logger = createLogger({ sink: () => undefined });
 
 function keys() {
@@ -77,7 +79,8 @@ function fakeExec(
 }
 
 describe('privileged prepare (helper, p5-sandbox-ops)', () => {
-  it('runs the fixed Linux allowlist after verifying the master signature, never twice', async () => {
+  // Simulates a Linux host (POSIX paths).
+  itPosix('runs the fixed Linux allowlist after verifying the master signature, never twice', async () => {
     const l = await layout('linux');
     const k = keys();
     const execLog: string[][] = [];
@@ -290,6 +293,7 @@ describe('privileged prepare (helper, p5-sandbox-ops)', () => {
 });
 
 describe('worker-side prepare', () => {
+  // The real sandbox checks of this host run (on Windows they start PowerShell / icacls).
   it('reports every step, hands the signed command to the helper and relays its steps', async () => {
     const l = await layout(process.platform);
     const k = keys();
@@ -376,7 +380,7 @@ describe('worker-side prepare', () => {
       'unconfined',
     ]);
     expect(restarted).toBe(1);
-  });
+  }, 30_000);
 
   it('without a prepare-capable helper the privileged part needs the owner (one installer re-run)', async () => {
     const l = await layout(process.platform);

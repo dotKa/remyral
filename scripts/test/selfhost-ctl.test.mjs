@@ -19,7 +19,11 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe as vitestDescribe, expect, it } from 'vitest';
+
+// The control-plane tools are bash scripts for Linux hosts (remyral-ctl, install.sh): every suite here is skipped
+// on Windows.
+const describe = process.platform === 'win32' ? vitestDescribe.skip : vitestDescribe;
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const TOOL = join(ROOT, 'scripts/release/control-plane.mjs');
@@ -129,6 +133,8 @@ function ctl(script, args, { env = {}, meminfoFile = meminfo } = {}) {
           REMYRAL_CTL_OS: 'Linux',
           REMYRAL_CTL_ARCH: 'x86_64',
           REMYRAL_CTL_MEMINFO: meminfoFile,
+          // The free disk of the test machine is not what these tests check (64 GiB, above the 10 GiB minimum).
+          REMYRAL_CTL_FREE_KB: String(64 * 1024 * 1024),
           REMYRAL_CTL_BIN_DIR: box.bin,
           REMYRAL_CTL_SYSTEMD_DIR: join(box.root, 'no-systemd'),
           REMYRAL_CTL_GATE_TRIES: '2',
@@ -186,18 +192,18 @@ describe('control-plane release tool', { timeout: 60_000 }, () => {
     expect(readFileSync(join(dir, 'install.sh'))).toEqual(readFileSync(join(dir, 'remyral-ctl')));
     expect(statSync(join(dir, 'install.sh')).mode & 0o111).not.toBe(0);
     expect(readFileSync(join(dir, 'NOTES.md'), 'utf8')).toMatch(/^# Remyral 1\.1\.0\n/);
-    expect(tool(['verify', '--dir', dir, '--public-key', vendor.pub])).toMatch(
+    expect(tool(['verify', '--dir', dir, `--public-key=${vendor.pub}`])).toMatch(
       /^OK remyral-control-plane 1\.1\.0/,
     );
   });
 
   it('refuses to verify with a foreign key, a tampered file, or to overwrite a published version', () => {
     const dir = join(releases, '1.1.0');
-    expect(() => tool(['verify', '--dir', dir, '--public-key', intruder.pub])).toThrow(/unknown key/);
+    expect(() => tool(['verify', '--dir', dir, `--public-key=${intruder.pub}`])).toThrow(/unknown key/);
     const copy = join(work, 'tampered');
     cpSync(dir, copy, { recursive: true });
     appendFileSync(join(copy, 'compose.yaml'), '\n# changed\n');
-    expect(() => tool(['verify', '--dir', copy, '--public-key', vendor.pub])).toThrow(/does not match/);
+    expect(() => tool(['verify', '--dir', copy, `--public-key=${vendor.pub}`])).toThrow(/does not match/);
     expect(() => bundle('1.1.0')).toThrow(/already holds a release/);
   });
 

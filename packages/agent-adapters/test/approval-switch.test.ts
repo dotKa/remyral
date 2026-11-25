@@ -24,6 +24,8 @@ import { collectUntilStopped, readUntil } from '../src/testing/index.js';
 import { FAKE_CLI, FakeClaudeSdk, type FakeTurnScript } from './fixtures/claude-code/fake-sdk.js';
 import { assistantText } from './fixtures/claude-code/sdk-messages.js';
 
+const describePosix = process.platform === 'win32' ? describe.skip : describe;
+
 /** p6-approval-mode-switch (docs/design/p6-approval-mode-switch.md §2.6): how each adapter applies a mode change. */
 
 const root = mkdtempSync(join(tmpdir(), 'remyral-approval-switch-'));
@@ -31,7 +33,8 @@ afterAll(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-describe('Claude Code: live permission mode (SDK Query.setPermissionMode)', () => {
+// The stand-in CLI (FAKE_CLI) is a shebang script, which Windows does not run by itself.
+describePosix('Claude Code: live permission mode (SDK Query.setPermissionMode)', () => {
   const opened: { adapter: ClaudeCodeAdapter; ref: SessionRef }[] = [];
   afterEach(async () => {
     for (const { adapter, ref } of opened.splice(0)) await adapter.cleanup(ref);

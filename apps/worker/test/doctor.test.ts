@@ -12,6 +12,8 @@ import { createNodeFileOps } from '../src/fs/ops.js';
 import { runProbe } from '../src/probe/probe.js';
 import { FakeSystem, ok } from './fake-system.js';
 
+const itPosix = process.platform === 'win32' ? it.skip : it;
+
 /**
  * p16-doctor (docs/design/p16-doctor.md §3): `remyral-worker doctor` with fixtures — a healthy machine, an offline
  * master, a name that does not resolve, a wrong clock, a world-writable data directory, an unreadable config; the
@@ -248,18 +250,28 @@ describe('worker doctor (p16-doctor)', () => {
     expect(masterOrigin(null)).toBeNull();
   });
 
-  it('reads the config without creating or changing anything', async () => {
+  // Simulates a Linux host (POSIX config locations).
+  itPosix('reads the config without creating or changing anything', async () => {
     const d = await mkdtemp(join(tmpdir(), 'rw-doctor-'));
     dirs.push(d);
     const ops = createNodeFileOps();
-    const host = { platform: 'linux' as const, env: () => undefined, homedir: () => d, isPrivileged: false };
+    const host = {
+      platform: 'linux' as const,
+      env: () => undefined,
+      homedir: () => d,
+      isPrivileged: false,
+    };
     const missing = await readDoctorConfig(ops, host, join(d, 'nope.json'));
     expect(missing.error).toContain('does not exist');
     const data = join(d, 'data');
     await import('node:fs/promises').then((fs) =>
       fs.writeFile(
         join(d, 'c.json'),
-        JSON.stringify({ masterUrl: 'wss://m.example.com/ws', workspaceRoot: join(d, 'ws'), dataDir: data }),
+        JSON.stringify({
+          masterUrl: 'wss://m.example.com/ws',
+          workspaceRoot: join(d, 'ws'),
+          dataDir: data,
+        }),
       ),
     );
     const c = await readDoctorConfig(ops, host, join(d, 'c.json'));

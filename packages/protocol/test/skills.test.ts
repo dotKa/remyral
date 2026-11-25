@@ -90,7 +90,8 @@ describe('skills signing script ↔ verifier', () => {
     expect(v.manifest.files.map((f) => [f.path, f.executable])).toEqual([
       ['SKILL.md', false],
       ['references/style.md', false],
-      ['scripts/collect.sh', true],
+      // The packer takes the executable flag from the file mode; Windows file modes carry no x bits.
+      ['scripts/collect.sh', process.platform !== 'win32'],
     ]);
     expect(v.manifestSha256).toBe(skillSha256(Buffer.from(bundle.manifest, 'base64')));
     expect(run('verify', '--bundle', join(dir, 'bundle.json'), '--public-key', pub)).toContain(

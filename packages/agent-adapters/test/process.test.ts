@@ -112,7 +112,11 @@ describe('spawnOwnedProcess (real children on this host)', () => {
     const secret = new SecretValue('s3cr3t-value-123');
     const proc = await spawnOwnedProcess({
       command: process.execPath,
-      args: ['-e', 'process.stdout.write("key=" + process.env.MY_KEY + " home=" + typeof process.env.HOME)'],
+      // The home variable is inherited (USERPROFILE on Windows, where HOME is usually unset).
+      args: [
+        '-e',
+        `process.stdout.write("key=" + process.env.MY_KEY + " home=" + typeof process.env.${process.platform === 'win32' ? 'USERPROFILE' : 'HOME'})`,
+      ],
       cwd: process.cwd(),
       secretEnv: { MY_KEY: secret },
     });
