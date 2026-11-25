@@ -1,0 +1,960 @@
+/*
+ * p12-diyalog-cmdk (docs/design/p12-diyalog.md §17.2): the open / close motion of the Diyalog UI, in one place.
+ *
+ * Every presence surface (drawer, side panel, sheet, dropdown, scrim) is rendered by `usePresence` (motion.ts) with
+ * `data-state="open|closed"`: it enters from `@starting-style` and leaves by transitioning to its closed style, then
+ * unmounts on `transitionend`. Transitions (not keyframes) so a quick reopen retargets from where it is. Only
+ * `transform` and `opacity` move — except the wide conversation list and details columns, which change their
+ * `width` (the thread has to give them the room; their content keeps its width, clipped, and slides with transform).
+ *
+ * Modal dialogs (DyDialog, native `<dialog>`) rise from 0.98 / slide in with a backdrop fade and leave the same way:
+ * DyDialog keeps the dialog modal (inert) with its last content until the exit transition ends.
+ *
+ * The command palette never animates (opened by keyboard many times a day — it must feel instant).
+ *
+ * Reduced motion: no transition, no animation — and `usePresence` then unmounts in the same commit.
+ */
+/* p17-panel-motion: durations, easings and the stagger step (motion only — never colours or fonts). */
+@import './motion-tokens.css';
+
+[data-ui='diyalog'] {
+  /* Strong ease-out (`--dy-ease`, diyalog.css) for entering / leaving; the iOS drawer curve for edge drawers; a
+     strong ease-in-out for on-screen resizing. */
+  --dy-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dy-ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ------------------------------------------------------------------ scrim / backdrop: fade */
+.dy-m-fade {
+  transition: opacity 160ms ease;
+}
+.dy-m-fade[data-state='open'] {
+  transition-duration: 200ms;
+}
+.dy-m-fade[data-state='closed'] {
+  opacity: 0;
+}
+@starting-style {
+  .dy-m-fade[data-state='open'] {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ dropdown (bell, account): from its button */
+.dy-m-pop {
+  transform-origin: top right;
+  transition:
+    opacity 120ms ease,
+    transform 140ms var(--dy-ease);
+}
+.dy-m-pop[data-state='open'] {
+  transition:
+    opacity 150ms ease,
+    transform 180ms var(--dy-ease);
+}
+.dy-m-pop[data-state='closed'] {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.97);
+}
+@starting-style {
+  .dy-m-pop[data-state='open'] {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+/* Phones: the dropdown is a sheet under the top bar across the width — it grows from its top edge. */
+@media (width < 40rem) {
+  .dy-m-pop {
+    transform-origin: top center;
+  }
+}
+
+/* ------------------------------------------------------------------ bottom sheet (menus / dropdowns on phones) */
+.dy-m-sheet {
+  transition: transform 160ms var(--dy-ease);
+}
+.dy-m-sheet[data-state='open'] {
+  transition: transform 200ms var(--dy-ease-drawer);
+}
+.dy-m-sheet[data-state='closed'] {
+  transform: translateY(calc(100% + 1rem));
+}
+@starting-style {
+  .dy-m-sheet[data-state='open'] {
+    transform: translateY(calc(100% + 1rem));
+  }
+}
+
+/* ------------------------------------------------------------------ edge drawers / sheets (below lg) */
+@media (width < 64rem) {
+  .dy-m-drawer-left,
+  .dy-m-drawer-right {
+    transition: transform 160ms var(--dy-ease);
+  }
+  .dy-m-drawer-left[data-state='open'],
+  .dy-m-drawer-right[data-state='open'] {
+    transition: transform 200ms var(--dy-ease-drawer);
+  }
+  .dy-m-drawer-left[data-state='closed'] {
+    transform: translateX(-100%);
+  }
+  .dy-m-drawer-right[data-state='closed'] {
+    transform: translateX(100%);
+  }
+  @starting-style {
+    .dy-m-drawer-left[data-state='open'] {
+      transform: translateX(-100%);
+    }
+    .dy-m-drawer-right[data-state='open'] {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ wide columns (lg+): list and details */
+@media (width >= 64rem) {
+  .dy-m-column {
+    overflow: clip;
+    transition:
+      width 200ms var(--dy-ease-move),
+      border-color 200ms ease;
+  }
+  .dy-m-column[data-state='closed'] {
+    width: 0;
+    border-color: transparent;
+  }
+  @starting-style {
+    .dy-m-column[data-state='open'] {
+      width: 0;
+      border-color: transparent;
+    }
+  }
+  /* The column's content keeps its width (no reflow while the column resizes) and slides a little with it. */
+  .dy-m-column > .dy-m-inner {
+    transition:
+      opacity 180ms ease,
+      transform 200ms var(--dy-ease-move);
+  }
+  .dy-m-column[data-state='closed'] > .dy-m-inner {
+    opacity: 0;
+    transform: translateX(var(--dy-m-from, -12px));
+  }
+  @starting-style {
+    .dy-m-column[data-state='open'] > .dy-m-inner {
+      opacity: 0;
+      transform: translateX(var(--dy-m-from, -12px));
+    }
+  }
+  .dy-m-column[data-side='right'] {
+    --dy-m-from: 12px;
+  }
+}
+
+/* ------------------------------------------------------------------ modal dialogs and side sheets */
+/*
+ * DyDialog (and the step-up dialog, `.dy-dialog`; every confirm dialog is a DyDialog): transitions, so a close during
+ * the entry retargets and a reopen during the exit turns back from where it is. Entry from `@starting-style` when
+ * showModal() puts it in the top layer: the panel rises 8 px from 0.98 scale and fades in (`--dy-m-dialog` 200 ms,
+ * `--dy-m-out`) over the backdrop's fade; exit the reverse, faster (`--dy-m-dialog-exit` 150 ms), to
+ * `[data-state='closed']` while it is still modal and inert (DyDialog / usePresence close it on transitionend, or a
+ * fallback timer). At rest it has no transform, so a list floating out of it (`position: fixed`, floating.ts) is not
+ * clipped. The token fallbacks are the same values (the backdrop does not inherit custom properties everywhere).
+ */
+[data-ui='diyalog'] dialog.dy-dialog {
+  transition:
+    opacity var(--dy-m-dialog-exit, 150ms) ease,
+    transform var(--dy-m-dialog-exit, 150ms) var(--dy-m-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+[data-ui='diyalog'] dialog.dy-dialog[open]:not([data-state='closed']) {
+  transition:
+    opacity var(--dy-m-dialog, 200ms) ease,
+    transform var(--dy-m-dialog, 200ms) var(--dy-m-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+[data-ui='diyalog'] dialog.dy-dialog[data-state='closed'] {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+}
+@starting-style {
+  [data-ui='diyalog'] dialog.dy-dialog[open] {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+[data-ui='diyalog'] dialog.dy-dialog::backdrop {
+  transition: opacity 150ms ease;
+}
+[data-ui='diyalog'] dialog.dy-dialog[open]:not([data-state='closed'])::backdrop {
+  transition: opacity 200ms ease;
+}
+[data-ui='diyalog'] dialog.dy-dialog[data-state='closed']::backdrop {
+  opacity: 0;
+}
+@starting-style {
+  [data-ui='diyalog'] dialog.dy-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+/* Side sheets: slide in from the right edge (the iOS drawer curve), out faster. */
+[data-ui='diyalog'] dialog.dy-dialog[data-size='sheet'] {
+  transition: transform 160ms var(--dy-ease);
+}
+[data-ui='diyalog'] dialog.dy-dialog[data-size='sheet'][open]:not([data-state='closed']) {
+  transition: transform 200ms var(--dy-ease-drawer);
+}
+[data-ui='diyalog'] dialog.dy-dialog[data-size='sheet'][data-state='closed'] {
+  opacity: 1;
+  transform: translateX(100%);
+}
+@starting-style {
+  [data-ui='diyalog'] dialog.dy-dialog[data-size='sheet'][open] {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+}
+
+/* ------------------------------------------------------------------ reduced motion: nothing moves */
+@media (prefers-reduced-motion: reduce) {
+  .dy-m-fade,
+  .dy-m-pop,
+  .dy-m-sheet,
+  .dy-m-drawer-left,
+  .dy-m-drawer-right,
+  .dy-m-column,
+  .dy-m-column > .dy-m-inner {
+    transition: none !important;
+  }
+  [data-ui='diyalog'] dialog.dy-dialog,
+  [data-ui='diyalog'] dialog.dy-dialog::backdrop {
+    transition: none !important;
+  }
+}
+[data-motion='reduce']
+  :is(.dy-m-fade, .dy-m-pop, .dy-m-sheet, .dy-m-drawer-left, .dy-m-drawer-right, .dy-m-column, .dy-m-inner) {
+  transition: none !important;
+}
+[data-motion='reduce'] dialog.dy-dialog,
+[data-motion='reduce'] dialog.dy-dialog::backdrop {
+  transition: none !important;
+}
+
+/*
+ * ================================================================== p17-panel-motion (docs/design/p17-panel-motion.md)
+ * The live moments of the panel, after the website's chat scene ("Sohbet, kontrol paneliniz olur"): a request becomes a
+ * card, the card's state changes, its steps fill, log lines arrive, a code fills in, a machine connects. CSS does the
+ * moving; motionKit.tsx only decides when (never on the first render of a list, never for a bulk load) and measures
+ * what CSS cannot (a card's height, a row's old place). Only transform and opacity move (a blur bridges a state
+ * swap); the one exception is a card's height (motionKit useSmoothHeight), which has no transform equivalent.
+ */
+
+/* ------------------------------------------------------------------ thread arrivals */
+/* Items that arrive together follow each other (Thread sets --dy-i, at most 5 steps of --dy-m-stagger). */
+[data-ui='diyalog'] .dy-thread-item.dy-enter {
+  animation-delay: calc(var(--dy-i, 0) * var(--dy-m-stagger));
+}
+/* The person's own message slides in from their side. */
+[data-ui='diyalog'] .dy-thread-item.dy-enter[data-enter='me'] {
+  animation: dy-m-from-end var(--dy-m-enter) var(--dy-m-out) both;
+  animation-delay: calc(var(--dy-i, 0) * var(--dy-m-stagger));
+}
+/* A card (a job draft, a set of cards, a question) tips up into place from just below — the scene's "pop". */
+[data-ui='diyalog'] .dy-thread-item.dy-enter[data-enter='card'] {
+  transform-origin: 50% 0;
+  animation: dy-m-card var(--dy-m-card) var(--dy-m-out) both;
+  animation-delay: calc(var(--dy-i, 0) * var(--dy-m-stagger));
+}
+/* p19-chat-stream-motion: a set of cards stays in place as a row; its cards tip up one after another (--dy-ci). */
+[data-ui='diyalog'] .dy-thread-item.dy-enter[data-enter='card']:has(.dy-strip-card) {
+  animation: dy-m-fade-in var(--dy-m-swap) ease both;
+}
+[data-ui='diyalog'] .dy-thread-item.dy-enter[data-enter='card'] .dy-strip-card {
+  transform-origin: 50% 0;
+  animation: dy-m-card var(--dy-m-card) var(--dy-m-out) both;
+  animation-delay: calc((var(--dy-i, 0) + var(--dy-ci, 0)) * var(--dy-m-stagger));
+}
+/* The finished answer replaces the text that was streaming in the same place, and a sent message its pending bubble
+   (p17-chat-send-motion, `settle`): neither may arrive a second time. */
+[data-ui='diyalog'] .dy-thread-item.dy-enter:is([data-enter='quiet'], [data-enter='settle']) {
+  animation: none;
+}
+/* A job result card fills in after its loading line (opacity only — this also runs when a long thread opens); one that
+   arrives with a new thread item also tips up like a card. */
+[data-ui='diyalog'] .dy-m-result {
+  animation: dy-m-fade-in var(--dy-m-swap) ease both;
+}
+[data-ui='diyalog'] .dy-thread-item[data-fresh] .dy-m-result {
+  transform-origin: 50% 0;
+  animation: dy-m-card var(--dy-m-card) var(--dy-m-out) both;
+}
+
+/* p17-needs-page: a decision that arrives while "Senden bekleyen" is open tips up like a thread card (the first draw
+   and a bulk load stand still: motionKit useArrivals). */
+[data-ui='diyalog'] .dy-m-arrive {
+  transform-origin: 50% 0;
+  animation: dy-m-card var(--dy-m-card) var(--dy-m-out) both;
+  animation-delay: calc(var(--dy-i, 0) * var(--dy-m-stagger));
+}
+
+/* ------------------------------------------------------------------ height: a card follows its content */
+/* While useSmoothHeight eases the box, it clips (a little margin keeps focus rings and shadows). */
+[data-ui='diyalog'] .dy-m-height[data-dy-resizing] {
+  overflow: clip;
+  overflow-clip-margin: 8px;
+}
+
+/* ------------------------------------------------------------------ state swap: Onay bekliyor → Çalışıyor */
+/* A state chip / label that changed (never on first render): the new word comes in through a 2 px blur. */
+[data-ui='diyalog'] .dy-m-swap {
+  animation: dy-m-swap var(--dy-m-swap) var(--dy-m-out) both;
+}
+
+/* p17-settings-tabs: a tab's body after a tab switch (DyTabs; never on the first render) rises 4 px into place while it
+   fades in — the same swap duration, so switching tabs feels like the state chips, not like a page load. */
+[data-ui='diyalog'] .dy-m-tab {
+  animation: dy-m-tab var(--dy-m-swap) var(--dy-m-out) both;
+}
+
+/* ------------------------------------------------------------------ fills: steps, slots, meters */
+/* A step segment fills from the left when its step starts / ends (transform; the first render stands still). */
+[data-ui='diyalog'] .dy-m-fill {
+  transform-origin: left center;
+  transition:
+    transform var(--dy-m-fill) var(--dy-m-out),
+    background-color var(--dy-m-fill) ease;
+}
+/* Slot cells change one after another from the left (each carries --dy-i): a meter filling. */
+[data-ui='diyalog'] .dy-m-slot {
+  transition:
+    background-color var(--dy-m-fill) ease,
+    border-color var(--dy-m-fill) ease;
+  transition-delay: calc(var(--dy-i, 0) * 40ms);
+}
+/* A meter's fill (usage, disk): scaled, not resized. */
+[data-ui='diyalog'] .dy-m-meter {
+  transform-origin: left center;
+  transition: transform var(--dy-m-fill) var(--dy-m-out);
+}
+
+/* ------------------------------------------------------------------ live log lines */
+/* A line that arrived while the log was open slides in from the left edge (the stream's direction). */
+[data-ui='diyalog'] .dy-m-line {
+  animation: dy-m-line var(--dy-m-line) var(--dy-m-out) both;
+  animation-delay: calc(var(--dy-i, 0) * 40ms);
+}
+
+/* ------------------------------------------------------------------ authenticator code */
+/* The field answers focus with a soft ring (no layout). */
+[data-ui='diyalog'] .dy-m-code {
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+[data-ui='diyalog'] .dy-m-code:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dy-teal) 22%, transparent);
+}
+[data-ui='diyalog'] .dy-m-code[data-verified] {
+  border-color: var(--dy-green);
+}
+/* A wrong code: one short shake (two identical keyframes, so a second wrong code restarts it without a remount). */
+[data-ui='diyalog'] [data-shake='a'] {
+  animation: dy-m-shake-a var(--dy-m-shake) var(--dy-m-out);
+}
+[data-ui='diyalog'] [data-shake='b'] {
+  animation: dy-m-shake-b var(--dy-m-shake) var(--dy-m-out);
+}
+/* Six ticks under the field fill as the digits come in (the scene's code filling in). */
+[data-ui='diyalog'] .dy-m-ticks > i {
+  transform: scaleX(0.25);
+  transform-origin: left center;
+  transition:
+    transform 140ms var(--dy-m-out),
+    background-color 150ms ease;
+}
+[data-ui='diyalog'] .dy-m-ticks > i[data-on] {
+  transform: none;
+}
+/* The check that confirms an accepted code. */
+[data-ui='diyalog'] .dy-m-check {
+  animation: dy-m-check 200ms var(--dy-m-out) both;
+}
+
+/* ------------------------------------------------------------------ machines: connecting → Hazır */
+/* A machine waiting to pair / updating: a ring pulses out of its state mark (constant, opacity + scale). */
+[data-ui='diyalog'] .dy-m-ping {
+  position: relative;
+}
+[data-ui='diyalog'] .dy-m-ping::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 1.5px solid currentColor;
+  border-radius: 9999px;
+  opacity: 0;
+  pointer-events: none;
+  animation: dy-m-ping var(--dy-m-pulse) var(--dy-m-out) infinite;
+}
+
+/* ------------------------------------------------------------------ chat send (p17-chat-send-motion) */
+/* The pending bubble lands from the composer: sendMotion.ts runs a FLIP (data-flown); without one (no Web Animations,
+   no composer) it rises from just below its place. Origin: the bubble's corner nearest the composer. */
+[data-ui='diyalog'] .dy-m-send {
+  transform-origin: 100% 100%;
+  animation: dy-m-send var(--dy-m-enter) var(--dy-m-out) both;
+}
+[data-ui='diyalog'] .dy-m-send[data-flown] {
+  animation: none;
+}
+/* The sent message settles into the pending bubble's place: the corner grows its tail, the time and tools fade in. */
+[data-ui='diyalog'] .dy-thread-item[data-enter='settle'] [data-role='me'] > .dy-m-bubble {
+  animation: dy-m-tail var(--dy-m-swap) var(--dy-m-out) both;
+}
+[data-ui='diyalog'] .dy-thread-item[data-enter='settle'] [data-role='me'] .dy-m-meta,
+[data-ui='diyalog']
+  .dy-thread-item[data-fresh][data-enter='quiet']
+  [data-role='assistant']
+  :is(time, .dy-m-meta) {
+  animation: dy-m-fade-in var(--dy-m-swap) ease both;
+}
+/* p19-chat-stream-motion: the answer being written ends in a soft caret (after its last paragraph / list item). */
+[data-ui='diyalog']
+  .dy-m-streaming
+  [data-testid='markdown']
+  > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
+[data-ui='diyalog'] .dy-m-streaming [data-testid='markdown'] > :is(ul, ol):last-child > li:last-child::after {
+  content: '';
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 0.15em;
+  vertical-align: -0.12em;
+  border-radius: 2px;
+  background: var(--dy-teal, currentColor);
+  opacity: 0.55;
+  animation: dy-m-caret 1s ease-in-out infinite;
+}
+/* The typing dots hand over to the first words of the answer (opacity only; the box eases its height). */
+[data-ui='diyalog'] .dy-m-handoff {
+  animation: dy-m-fade-in var(--dy-m-swap) ease both;
+}
+/* Composer: the text being sent lifts and fades (a transition — typing on stays possible and retargets it); once sent,
+   the empty field comes up from just below. */
+[data-ui='diyalog'] .dy-m-field {
+  transition:
+    opacity var(--dy-m-press) ease,
+    transform var(--dy-m-press) var(--dy-m-out);
+}
+[data-ui='diyalog'] .dy-m-field[data-sending] {
+  opacity: 0.45;
+  transform: translateY(-3px);
+}
+[data-ui='diyalog'] .dy-m-field[data-sent='a'] {
+  animation: dy-m-sent-a var(--dy-m-swap) var(--dy-m-out);
+}
+[data-ui='diyalog'] .dy-m-field[data-sent='b'] {
+  animation: dy-m-sent-b var(--dy-m-swap) var(--dy-m-out);
+}
+/* The send button stays pressed while the message is on its way and springs back when it is sent. */
+[data-ui='diyalog'] .dy-m-send-btn[data-sending] {
+  transform: scale(0.92);
+}
+
+/* ------------------------------------------------------------------ image lightbox (p17-chat-drawer) */
+/* A presence surface (usePresence): the backdrop fades in and the image rises from 0.96 (`--dy-m-enter`); it leaves
+   faster (`--dy-m-swap`). Not under the scope root selector: the lightbox may sit in a modal <dialog> or, as a last
+   resort, in <body> — the variables then fall back to the values written here. */
+.dy-m-lightbox {
+  transition: opacity var(--dy-m-swap, 180ms) ease;
+}
+.dy-m-lightbox[data-state='open'] {
+  transition-duration: var(--dy-m-enter, 200ms);
+}
+.dy-m-lightbox[data-state='closed'] {
+  opacity: 0;
+}
+.dy-m-lightbox > .dy-m-lb-stage {
+  transition: transform var(--dy-m-swap, 180ms) var(--dy-m-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+.dy-m-lightbox[data-state='open'] > .dy-m-lb-stage {
+  transition-duration: var(--dy-m-enter, 200ms);
+}
+.dy-m-lightbox[data-state='closed'] > .dy-m-lb-stage {
+  transform: scale(0.96);
+}
+@starting-style {
+  .dy-m-lightbox[data-state='open'] {
+    opacity: 0;
+  }
+  .dy-m-lightbox[data-state='open'] > .dy-m-lb-stage {
+    transform: scale(0.96);
+  }
+}
+/* The image fades in once loaded; ←/→ (and a swipe) slide the new one in from the side it comes from. */
+.dy-m-lb-img {
+  transition: opacity var(--dy-m-swap, 180ms) ease;
+}
+.dy-m-lb-img[data-dir='next'] {
+  animation: dy-m-lb-next var(--dy-m-enter, 200ms) var(--dy-m-out, cubic-bezier(0.23, 1, 0.32, 1)) both;
+}
+.dy-m-lb-img[data-dir='prev'] {
+  animation: dy-m-lb-prev var(--dy-m-enter, 200ms) var(--dy-m-out, cubic-bezier(0.23, 1, 0.32, 1)) both;
+}
+@keyframes dy-m-lb-next {
+  from {
+    opacity: 0;
+    transform: translateX(24px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dy-m-lb-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-24px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Reduced motion (system or in-app): the lightbox appears, switches and leaves at once. */
+@media (prefers-reduced-motion: reduce) {
+  .dy-m-lightbox,
+  .dy-m-lightbox > .dy-m-lb-stage,
+  .dy-m-lb-img {
+    transition: none !important;
+  }
+  .dy-m-lb-img[data-dir] {
+    animation: none !important;
+  }
+}
+[data-motion='reduce'] :is(.dy-m-lightbox, .dy-m-lightbox > .dy-m-lb-stage, .dy-m-lb-img) {
+  transition: none !important;
+}
+[data-motion='reduce'] .dy-m-lb-img[data-dir] {
+  animation: none !important;
+}
+
+@keyframes dy-m-send {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dy-m-tail {
+  from {
+    border-bottom-right-radius: 14px;
+  }
+}
+@keyframes dy-m-sent-a {
+  from {
+    opacity: 0.3;
+    transform: translateY(4px);
+  }
+}
+@keyframes dy-m-sent-b {
+  from {
+    opacity: 0.3;
+    transform: translateY(4px);
+  }
+}
+@keyframes dy-m-from-end {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dy-m-caret {
+  50% {
+    opacity: 0.15;
+  }
+}
+@keyframes dy-m-card {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) translateY(14px) rotateX(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dy-m-tab {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@keyframes dy-m-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes dy-m-swap {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes dy-m-line {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dy-m-shake-a {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+@keyframes dy-m-shake-b {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+@keyframes dy-m-check {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dy-m-ping {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.7);
+  }
+  80%,
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+/* ------------------------------------------------------------------ reduced motion: nothing moves */
+/* Changes still read: a swapped state or a new line fades in (opacity only); everything else is instant. */
+@media (prefers-reduced-motion: reduce) {
+  [data-ui='diyalog'] .dy-thread-item.dy-enter:is([data-enter='me'], [data-enter='card']),
+  [data-ui='diyalog'] .dy-thread-item.dy-enter .dy-strip-card,
+  [data-ui='diyalog'] .dy-m-streaming [data-testid='markdown'] :is(p, h1, h2, h3, h4, h5, h6, li)::after,
+  [data-ui='diyalog'] .dy-m-arrive,
+  [data-ui='diyalog'] .dy-thread-item[data-fresh] .dy-m-result,
+  [data-ui='diyalog'] :is([data-shake], .dy-m-check),
+  [data-ui='diyalog'] .dy-m-ping::after,
+  [data-ui='diyalog'] :is(.dy-m-send, .dy-m-field[data-sent], .dy-m-bubble) {
+    animation: none;
+  }
+  /* Chat send: no lift, no press-down; the time line, tools and the first words still fade (opacity only). */
+  [data-ui='diyalog'] .dy-m-field {
+    transition: opacity var(--dy-m-press) ease;
+  }
+  [data-ui='diyalog'] .dy-m-field[data-sending],
+  [data-ui='diyalog'] .dy-m-send-btn[data-sending] {
+    transform: none;
+  }
+  [data-ui='diyalog'] :is(.dy-m-swap, .dy-m-line, .dy-m-tab) {
+    animation-name: dy-m-fade-in;
+    animation-delay: 0s;
+  }
+  [data-ui='diyalog'] :is(.dy-m-fill, .dy-m-slot, .dy-m-meter),
+  [data-ui='diyalog'] .dy-m-ticks > i {
+    transition: none;
+  }
+}
+[data-motion='reduce'] :is(.dy-thread-item.dy-enter, .dy-m-arrive, .dy-m-result, [data-shake], .dy-m-check),
+[data-motion='reduce'] .dy-strip-card,
+[data-motion='reduce'] .dy-m-streaming [data-testid='markdown'] :is(p, h1, h2, h3, h4, h5, h6, li)::after,
+[data-motion='reduce'] .dy-m-ping::after,
+[data-motion='reduce'] :is(.dy-m-send, .dy-m-field[data-sent], .dy-m-bubble) {
+  animation: none !important;
+}
+[data-motion='reduce'] .dy-m-field {
+  transition: opacity var(--dy-m-press) ease !important;
+}
+[data-motion='reduce'] :is(.dy-m-field, .dy-m-send-btn)[data-sending] {
+  transform: none !important;
+}
+[data-motion='reduce'] :is(.dy-m-swap, .dy-m-line, .dy-m-tab) {
+  animation-name: dy-m-fade-in !important;
+  animation-delay: 0s !important;
+}
+[data-motion='reduce'] :is(.dy-m-fill, .dy-m-slot, .dy-m-meter),
+[data-motion='reduce'] .dy-m-ticks > i {
+  transition: none !important;
+}
+
+/* ------------------------------------------------------------------ toasts (p17-toasts-shortcuts) */
+/*
+ * DyToaster (docs/design/p17-toasts-shortcuts.md §2.4): a toast rises 8 px from 0.98 and fades in like a dialog
+ * (`--dy-m-toast`, `--dy-m-out`) and leaves faster (`--dy-m-toast-exit`), sliding toward its edge. Transitions from
+ * `@starting-style`, so a replace during the entry retargets; `usePresence` unmounts on transitionend. A swipe moves
+ * it with the finger (`--dy-toast-x`, no transition while dragging). Reduced motion: no transform, no transition —
+ * it appears and goes at once.
+ */
+[data-ui='diyalog'] .dy-m-toast {
+  transform: translateX(var(--dy-toast-x, 0px));
+  transition:
+    opacity var(--dy-m-toast-exit, 150ms) ease,
+    transform var(--dy-m-toast-exit, 150ms) var(--dy-m-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+[data-ui='diyalog'] .dy-m-toast[data-state='open'] {
+  transition:
+    opacity var(--dy-m-toast, 200ms) ease,
+    transform var(--dy-m-toast, 200ms) var(--dy-m-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+[data-ui='diyalog'] .dy-m-toast[data-swiping] {
+  transition: none;
+}
+[data-ui='diyalog'] .dy-m-toast[data-state='closed'] {
+  opacity: 0;
+  transform: translateX(calc(var(--dy-toast-x, 0px) + var(--dy-toast-out, 24px))) scale(0.98);
+}
+@starting-style {
+  [data-ui='diyalog'] .dy-m-toast[data-state='open'] {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ui='diyalog'] .dy-m-toast,
+  [data-ui='diyalog'] .dy-m-toast[data-state] {
+    transition: none !important;
+    transform: none;
+  }
+}
+[data-motion='reduce'] .dy-m-toast,
+[data-motion='reduce'] .dy-m-toast[data-state] {
+  transition: none !important;
+  transform: none !important;
+}
+
+/* ================================================================== p18-plan-mode (docs/design/p18-plan-mode.md §4)
+ * The plan panel: the column / drawer reuse `.dy-m-column` / `.dy-m-drawer-right`; the dock's height and the lists use
+ * SmoothHeight; here only what is the plan's own. Tokens only; reduced motion (system or in-app) turns every one of
+ * these off — state swaps and new rows then fade by opacity alone (the shared reduced-motion rules above).
+ */
+/* The progress ring fills by its dash offset; the bar is a `.dy-m-meter` (scaleX). */
+[data-ui='diyalog'] .dy-plan-ring {
+  transition: stroke-dashoffset var(--dy-m-fill) var(--dy-m-out);
+}
+/* The current item: an accent bar grows from its middle and the row takes a tint. */
+[data-ui='diyalog'] .dy-plan-row {
+  position: relative;
+  transition: background-color var(--dy-m-swap) var(--dy-m-out);
+}
+[data-ui='diyalog'] .dy-plan-row::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 2px;
+  width: 3px;
+  border-radius: 9999px;
+  background: var(--dy-teal);
+  transform: scaleY(0);
+  transition: transform var(--dy-m-swap) var(--dy-m-out);
+}
+[data-ui='diyalog'] .dy-plan-row[data-current] {
+  background: color-mix(in srgb, var(--dy-teal-soft) 70%, transparent);
+}
+[data-ui='diyalog'] .dy-plan-row[data-current]::before {
+  transform: scaleY(1);
+}
+/* A done item's title goes quiet; a blocked one stays readable (amber note, no shake). */
+[data-ui='diyalog'] .dy-plan-row .dy-plan-title {
+  transition: color var(--dy-m-swap) ease;
+}
+[data-ui='diyalog'] .dy-plan-row:is([data-status='done'], [data-status='skipped']) .dy-plan-title {
+  color: var(--dy-muted);
+}
+[data-ui='diyalog'] .dy-plan-row[data-status='skipped'] .dy-plan-title {
+  text-decoration: line-through;
+}
+/* Chevrons turn (mini ↔ expanded, phases). */
+[data-ui='diyalog'] .dy-plan-chev {
+  transition: transform var(--dy-m-swap) var(--dy-m-out);
+}
+/* The phone sheet: rises like a bottom sheet, snaps between 50 % and 90 % of the screen by transform (220 ms
+   in-out), follows the finger without a transition while dragged, leaves faster. */
+/* W3: the panel inside the (untransformed, window-sized) dialog moves — so the panel's menus are placed against the
+   window at either snap. */
+/* p22-classic-removal §7: the panel stands on the on-screen keyboard (`--dy-kb`, iOS keeps the layout viewport when it
+   opens; 0 elsewhere) and the half snap shrinks by it, so a field in the sheet is never under the keyboard. */
+[data-ui='diyalog'] dialog.dy-plan-sheet .dy-plan-sheet-panel {
+  --dy-sheet-snap: max(0px, calc(40dvh - var(--dy-kb, 0px)));
+  bottom: var(--dy-kb, 0px);
+  height: calc(90dvh - var(--dy-kb, 0px));
+  transform: translateY(calc(var(--dy-sheet-snap) + var(--dy-sheet-drag, 0px)));
+  transition: transform var(--dy-m-height) var(--dy-m-in-out);
+}
+/* p22-classic-removal §7: at the half snap the panel is moved down by the snap, so its lower part is off the screen.
+   The list ends at the screen's edge instead (margin = the snap): its last rows can be scrolled into view and a
+   focused field is never placed in the hidden part (which made the browser scroll the page to reach it). */
+[data-ui='diyalog'] dialog.dy-plan-sheet .dy-plan-sheet-scroll {
+  margin-bottom: var(--dy-sheet-snap);
+}
+[data-ui='diyalog'] dialog.dy-plan-sheet[data-snap='full'] .dy-plan-sheet-panel {
+  --dy-sheet-snap: 0px;
+}
+[data-ui='diyalog'] dialog.dy-plan-sheet[data-dragging] .dy-plan-sheet-panel {
+  transition: none;
+}
+[data-ui='diyalog'] dialog.dy-plan-sheet .dy-plan-sheet-panel[data-state='closed'] {
+  transform: translateY(calc(100% + 1rem));
+  transition: transform 160ms var(--dy-ease);
+}
+@starting-style {
+  [data-ui='diyalog'] dialog.dy-plan-sheet[open] .dy-plan-sheet-panel {
+    transform: translateY(calc(100% + 1rem));
+  }
+}
+[data-ui='diyalog'] dialog.dy-plan-sheet::backdrop {
+  transition: opacity 200ms ease;
+}
+[data-ui='diyalog'] dialog.dy-plan-sheet[data-state='closed']::backdrop {
+  opacity: 0;
+}
+/* The composer in plan mode: a violet edge (no motion beyond the border colour). */
+[data-ui='diyalog'] [data-plan-mode] {
+  transition: border-color var(--dy-m-swap) ease;
+}
+/* p18-plan-mode W3 — editing. A lifted row (moved by its handle) rises: shadow + a 1.02 scale (the pointer's row
+   follows it by an inline translate; the others glide by useFlip, --dy-m-flip). A keyboard-lifted row shows the same
+   lift in place. The "Geri al" bar rises from the panel's bottom edge and its line runs down the undo time (paused
+   while hovered / focused). Diff rows: an added one fades its tint in; a removed one is struck and dimmed. */
+[data-ui='diyalog'] .dy-plan-row[data-lifted] {
+  z-index: 2;
+  background: var(--dy-card);
+  box-shadow: var(--dy-shadow-pop, 0 8px 24px rgb(0 0 0 / 0.16));
+  transition:
+    box-shadow var(--dy-m-press) var(--dy-m-out),
+    background-color var(--dy-m-press) var(--dy-m-out);
+}
+[data-ui='diyalog'] .dy-plan-row[data-lifted='keyboard'] {
+  transform: scale(1.02);
+  outline: 2px solid var(--dy-teal);
+  outline-offset: -2px;
+}
+[data-ui='diyalog'] .dy-plan-row[data-lifted='pointer'] {
+  cursor: grabbing;
+  will-change: transform;
+}
+[data-ui='diyalog'] .dy-plan-undo {
+  animation: dy-m-card var(--dy-m-enter) var(--dy-m-out) both;
+}
+[data-ui='diyalog'] .dy-plan-undo-clock {
+  transform-origin: left center;
+  animation: dy-plan-undo-clock var(--dy-undo-ms, 6s) linear both;
+}
+[data-ui='diyalog'] .dy-plan-undo[data-paused] .dy-plan-undo-clock {
+  animation-play-state: paused;
+}
+@keyframes dy-plan-undo-clock {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+[data-ui='diyalog'] .dy-plan-diff[data-change='added'] {
+  animation: dy-plan-diff-in var(--dy-m-swap) var(--dy-m-out) both;
+}
+@keyframes dy-plan-diff-in {
+  from {
+    background-color: transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ui='diyalog'] :is(.dy-plan-ring, .dy-plan-row, .dy-plan-row::before, .dy-plan-chev, .dy-plan-title),
+  [data-ui='diyalog'] dialog.dy-plan-sheet,
+  [data-ui='diyalog'] dialog.dy-plan-sheet .dy-plan-sheet-panel,
+  [data-ui='diyalog'] dialog.dy-plan-sheet::backdrop {
+    transition: none !important;
+  }
+  [data-ui='diyalog'] :is(.dy-plan-undo, .dy-plan-undo-clock, .dy-plan-diff) {
+    animation: none !important;
+  }
+  [data-ui='diyalog'] .dy-plan-row[data-lifted='keyboard'] {
+    transform: none;
+  }
+}
+[data-motion='reduce'] :is(.dy-plan-ring, .dy-plan-row, .dy-plan-row::before, .dy-plan-chev, .dy-plan-title),
+[data-motion='reduce'] dialog.dy-plan-sheet,
+[data-motion='reduce'] dialog.dy-plan-sheet .dy-plan-sheet-panel,
+[data-motion='reduce'] dialog.dy-plan-sheet::backdrop {
+  transition: none !important;
+}
+[data-motion='reduce'] :is(.dy-plan-undo, .dy-plan-undo-clock, .dy-plan-diff) {
+  animation: none !important;
+}
+[data-motion='reduce'] .dy-plan-row[data-lifted='keyboard'] {
+  transform: none;
+}
+/* p18-plan-mode W4 — a chat card's "Plan maddesi" link shows its item: the row takes a teal tint that fades out
+   (one --dy-m-enter); under reduced motion it only keeps an outline while marked. */
+[data-ui='diyalog'] .dy-plan-row[data-focused] {
+  outline: 2px solid var(--dy-teal);
+  outline-offset: -2px;
+  animation: dy-plan-focus var(--dy-m-enter) var(--dy-m-out) both;
+}
+@keyframes dy-plan-focus {
+  from {
+    background-color: var(--dy-teal-soft);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ui='diyalog'] .dy-plan-row[data-focused] {
+    animation: none !important;
+  }
+}
+[data-motion='reduce'] .dy-plan-row[data-focused] {
+  animation: none !important;
+}

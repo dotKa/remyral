@@ -1,0 +1,40 @@
+{
+  "$comment": "Published checksums of the four pinned agent runtimes (p7-supply-chain, T-SUP-1; ADR-0023 removed OpenHands and its PyPI/OCI pins). npm: the registry's dist.integrity of the pinned top-level package (transitive and platform packages: the committed package-lock.json next to each image). Checked offline against pins/locks/docs and, with --online, against the registry: node scripts/security/runtime-pins.mjs [--online]. Captured 2026-10-14; bumped 2026-10-26 (p17-pin-bump, registry dist.integrity re-read).",
+  "claude-code": {
+    "version": "2.1.310",
+    "npm": {
+      "name": "@anthropic-ai/claude-agent-sdk",
+      "version": "0.3.310",
+      "integrity": "sha512-fo+sr+9Ks73P001f6XKRQlyzfIBAJMgXArLUkH5Tu98NikRDZeGtFQVj23d5/hj2ijpFgzffrr4fHywY9qUkoQ=="
+    },
+    "optionalCli": {
+      "name": "@anthropic-ai/claude-code",
+      "version": "2.1.310",
+      "integrity": "sha512-EySpBwaocdU1nc9r7JH+GOlnMsbXc764d3HX7NL8fr7qqdxz2MiXI9hqf/rzeE/XgU23HHFltIqhb+Fq6G1CVw=="
+    }
+  },
+  "codex": {
+    "version": "0.164.0",
+    "npm": {
+      "name": "@openai/codex",
+      "version": "0.164.0",
+      "integrity": "sha512-TWj7UGyPRe3Pj/A3ddNAxs1te3a/W/xAd+J0LHrrFTmsSfahGMOLF/vn88D3QCIgAT3B1rm1y/Z3NYE0rx6cZQ=="
+    }
+  },
+  "pi": {
+    "version": "1.4.0",
+    "npm": {
+      "name": "@earendil-works/pi-coding-agent",
+      "version": "1.4.0",
+      "integrity": "sha512-Z41LpZ3yYHSC/UUps6Mr39UMFPwH8elhJBG9DY1P7kuzsE5qSK/6eMj2EHzO5evJRQWLbKSqUMw+4nCNtIyiQg=="
+    }
+  },
+  "opencode": {
+    "version": "1.19.4",
+    "npm": {
+      "name": "opencode-ai",
+      "version": "1.19.4",
+      "integrity": "sha512-O3rTc9OCd6CeeJohCAjFYD3MX5U0weKzKnySfsJ9sw9uAbNZZK4meIcjd+7k3inmZB5G2qONSen3yA45yECiFA=="
+    }
+  }
+}

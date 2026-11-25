@@ -1,0 +1,24 @@
+{
+  "name": "@remyral/scheduler",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Pure, DB-free job state machine (explicit transition table, guards, Mermaid diagram). See docs/design/p4-job-store.md.",
+  "exports": {
+    ".": {
+      "@remyral/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "docs:diagram": "UPDATE_STATE_DIAGRAM=1 vitest run test/diagram.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "vitest": "5.0.4"
+  }
+}

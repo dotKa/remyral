@@ -1,0 +1,726 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Remana control-plane monitoring (p1-monitoring, p6-alerts): log groups with retention and masking, alert topic, uptime health check, dashboard and host alarms. docs/ops/monitoring.md",
+  "Parameters": {
+    "Environment": {
+      "Type": "String",
+      "Default": "prod",
+      "AllowedPattern": "^[a-z0-9-]{1,20}$",
+      "Description": "REMANA_ENV of the stack (log groups /remana/<env>/..., compose project remana-<env>)."
+    },
+    "InstanceId": {
+      "Type": "AWS::EC2::Instance::Id",
+      "Description": "The control-plane EC2 instance (host metrics and CPU credit alarms)."
+    },
+    "Domain": {
+      "Type": "String",
+      "AllowedPattern": "^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$",
+      "Description": "Public console domain, required (uptime check of https://<Domain>/api/status), e.g. console.example.com."
+    },
+    "AlertEmail": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Optional e-mail subscribed to the alert topic (confirm the subscription e-mail). Empty: none."
+    },
+    "ContainerLogRetentionDays": {
+      "Type": "Number",
+      "Default": 30,
+      "AllowedValues": [7, 14, 30, 60, 90, 180, 365],
+      "Description": "Retention of shipped container logs."
+    },
+    "MetricsLogRetentionDays": {
+      "Type": "Number",
+      "Default": 7,
+      "AllowedValues": [1, 3, 5, 7, 14, 30],
+      "Description": "Retention of the EMF metric log events (the extracted metrics are kept by CloudWatch Metrics)."
+    },
+    "EnableUptimeHealthCheck": {
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": ["true", "false"],
+      "Description": "Route 53 HTTPS health check of /api/status with an alarm (about USD 2.75/month)."
+    }
+  },
+  "Conditions": {
+    "HasAlertEmail": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "AlertEmail"
+            },
+            ""
+          ]
+        }
+      ]
+    },
+    "UptimeCheck": {
+      "Fn::Equals": [
+        {
+          "Ref": "EnableUptimeHealthCheck"
+        },
+        "true"
+      ]
+    }
+  },
+  "Resources": {
+    "AlertTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": {
+          "Fn::Sub": "remana-${Environment}-alerts"
+        },
+        "DisplayName": {
+          "Fn::Sub": "Remana ${Environment} alerts"
+        }
+      }
+    },
+    "AlertEmailSubscription": {
+      "Type": "AWS::SNS::Subscription",
+      "Condition": "HasAlertEmail",
+      "Properties": {
+        "TopicArn": {
+          "Ref": "AlertTopic"
+        },
+        "Protocol": "email",
+        "Endpoint": {
+          "Ref": "AlertEmail"
+        }
+      }
+    },
+    "ContainerLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/remana/${Environment}/containers"
+        },
+        "RetentionInDays": {
+          "Ref": "ContainerLogRetentionDays"
+        },
+        "DataProtectionPolicy": {
+          "Name": "remana-log-masking",
+          "Description": "Defence in depth behind the in-process redaction: mask credentials and personal data that reach CloudWatch Logs anyway (viewing unmasked needs logs:Unmask).",
+          "Version": "2021-06-01",
+          "Configuration": {
+            "CustomDataIdentifier": [
+              {
+                "Name": "AnthropicKey",
+                "Regex": "sk-ant-[A-Za-z0-9_-]{16,}"
+              },
+              {
+                "Name": "OpenAiKey",
+                "Regex": "sk-(proj-|or-)?[A-Za-z0-9_-]{20,}"
+              },
+              {
+                "Name": "GitHubToken",
+                "Regex": "(gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{22,})"
+              },
+              {
+                "Name": "GitLabToken",
+                "Regex": "glpat-[A-Za-z0-9_-]{20,}"
+              },
+              {
+                "Name": "UrlCredentials",
+                "Regex": "[A-Za-z][A-Za-z0-9+.-]{0,19}://[^\\s/?#@:]{0,128}:[^\\s/?#@]{1,256}@"
+              },
+              {
+                "Name": "BearerToken",
+                "Regex": "[Bb]earer\\s{1,16}[A-Za-z0-9._~+/-]{16,}=*"
+              },
+              {
+                "Name": "Jwt",
+                "Regex": "eyJ[A-Za-z0-9_-]{5,}\\.eyJ[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]*"
+              }
+            ]
+          },
+          "Statement": [
+            {
+              "Sid": "audit",
+              "DataIdentifier": [
+                "arn:aws:dataprotection::aws:data-identifier/AwsSecretKey",
+                "arn:aws:dataprotection::aws:data-identifier/PrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/OpenSshPrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/PgpPrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/PkcsPrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/PuttyPrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                "AnthropicKey",
+                "OpenAiKey",
+                "GitHubToken",
+                "GitLabToken",
+                "UrlCredentials",
+                "BearerToken",
+                "Jwt"
+              ],
+              "Operation": {
+                "Audit": {
+                  "FindingsDestination": {}
+                }
+              }
+            },
+            {
+              "Sid": "mask",
+              "DataIdentifier": [
+                "arn:aws:dataprotection::aws:data-identifier/AwsSecretKey",
+                "arn:aws:dataprotection::aws:data-identifier/PrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/OpenSshPrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/PgpPrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/PkcsPrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/PuttyPrivateKey",
+                "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                "AnthropicKey",
+                "OpenAiKey",
+                "GitHubToken",
+                "GitLabToken",
+                "UrlCredentials",
+                "BearerToken",
+                "Jwt"
+              ],
+              "Operation": {
+                "Deidentify": {
+                  "MaskConfig": {}
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "MetricsLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/remana/${Environment}/metrics"
+        },
+        "RetentionInDays": {
+          "Ref": "MetricsLogRetentionDays"
+        }
+      }
+    },
+    "ErrorLogMetricFilter": {
+      "Type": "AWS::Logs::MetricFilter",
+      "Properties": {
+        "LogGroupName": {
+          "Ref": "ContainerLogGroup"
+        },
+        "FilterPattern": "{ $.level >= 50 }",
+        "MetricTransformations": [
+          {
+            "MetricNamespace": {
+              "Fn::Sub": "Remana/Logs/${Environment}"
+            },
+            "MetricName": "ErrorLines",
+            "MetricValue": "1",
+            "DefaultValue": 0,
+            "Unit": "Count"
+          }
+        ]
+      }
+    },
+    "UptimeHealthCheck": {
+      "Type": "AWS::Route53::HealthCheck",
+      "Condition": "UptimeCheck",
+      "Properties": {
+        "HealthCheckConfig": {
+          "Type": "HTTPS_STR_MATCH",
+          "FullyQualifiedDomainName": {
+            "Ref": "Domain"
+          },
+          "Port": 443,
+          "ResourcePath": "/api/status",
+          "SearchString": "\"status\":\"ok\"",
+          "EnableSNI": true,
+          "RequestInterval": 30,
+          "FailureThreshold": 3
+        },
+        "HealthCheckTags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Sub": "remana-${Environment}-status"
+            }
+          }
+        ]
+      }
+    },
+    "Dashboard": {
+      "Type": "AWS::CloudWatch::Dashboard",
+      "Properties": {
+        "DashboardName": {
+          "Fn::Sub": "remana-${Environment}"
+        },
+        "DashboardBody": {
+          "Fn::Sub": "{\"widgets\":[{\"type\":\"metric\",\"x\":0,\"y\":0,\"width\":12,\"height\":6,\"properties\":{\"title\":\"CPU % and CPU credit balance (t3)\",\"region\":\"${AWS::Region}\",\"stat\":\"Average\",\"period\":300,\"metrics\":[[\"AWS/EC2\",\"CPUUtilization\",\"InstanceId\",\"${InstanceId}\"],[\"AWS/EC2\",\"CPUCreditBalance\",\"InstanceId\",\"${InstanceId}\",{\"yAxis\":\"right\"}],[\"Remana/Host\",\"cpu_usage_steal\",\"InstanceId\",\"${InstanceId}\"]]}},{\"type\":\"metric\",\"x\":12,\"y\":0,\"width\":12,\"height\":6,\"properties\":{\"title\":\"Memory, swap, disk %\",\"region\":\"${AWS::Region}\",\"stat\":\"Average\",\"period\":300,\"metrics\":[[\"Remana/Host\",\"mem_used_percent\",\"InstanceId\",\"${InstanceId}\"],[\"Remana/Host\",\"swap_used_percent\",\"InstanceId\",\"${InstanceId}\"],[\"Remana/Host\",\"disk_used_percent\",\"InstanceId\",\"${InstanceId}\"]]}},{\"type\":\"metric\",\"x\":0,\"y\":6,\"width\":12,\"height\":6,\"properties\":{\"title\":\"Containers healthy (1 = ok)\",\"region\":\"${AWS::Region}\",\"stat\":\"Minimum\",\"period\":60,\"metrics\":[[\"Remana/Containers\",\"Healthy\",\"Environment\",\"${Environment}\",\"Service\",\"master\"],[\"...\",\"web\"],[\"...\",\"postgres\"],[\"...\",\"redis\"]]}},{\"type\":\"metric\",\"x\":12,\"y\":6,\"width\":12,\"height\":6,\"properties\":{\"title\":\"Container CPU % / memory % of limit\",\"region\":\"${AWS::Region}\",\"stat\":\"Average\",\"period\":300,\"metrics\":[[\"Remana/Containers\",\"CpuPercent\",\"Environment\",\"${Environment}\",\"Service\",\"master\"],[\"...\",\"postgres\"],[\"Remana/Containers\",\"MemoryPercent\",\"Environment\",\"${Environment}\",\"Service\",\"master\"],[\"...\",\"postgres\"],[\"...\",\"redis\"]]}},{\"type\":\"metric\",\"x\":0,\"y\":12,\"width\":12,\"height\":6,\"properties\":{\"title\":\"Error log lines (level >= 50)\",\"region\":\"${AWS::Region}\",\"stat\":\"Sum\",\"period\":300,\"metrics\":[[\"Remana/Logs/${Environment}\",\"ErrorLines\"]]}},{\"type\":\"log\",\"x\":12,\"y\":12,\"width\":12,\"height\":6,\"properties\":{\"title\":\"Recent master warnings/errors\",\"region\":\"${AWS::Region}\",\"query\":\"SOURCE '/remana/${Environment}/containers' | fields @timestamp, @logStream, level, component, msg | filter level >= 40 | sort @timestamp desc | limit 50\",\"view\":\"table\"}}]}"
+        }
+      }
+    },
+    "CpuCreditsLowAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-cpu-credits-low"
+        },
+        "AlarmDescription": "t3 CPU credit balance low: the instance will soon be throttled to its baseline (docs/ops/monitoring.md).",
+        "Namespace": "AWS/EC2",
+        "MetricName": "CPUCreditBalance",
+        "Dimensions": [
+          {
+            "Name": "InstanceId",
+            "Value": {
+              "Ref": "InstanceId"
+            }
+          }
+        ],
+        "Statistic": "Minimum",
+        "Period": 300,
+        "EvaluationPeriods": 2,
+        "DatapointsToAlarm": 2,
+        "ComparisonOperator": "LessThanThreshold",
+        "Threshold": 60,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "CpuHighAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-cpu-high"
+        },
+        "AlarmDescription": "CPU above 90 % for 15 minutes (burning credits).",
+        "Namespace": "AWS/EC2",
+        "MetricName": "CPUUtilization",
+        "Dimensions": [
+          {
+            "Name": "InstanceId",
+            "Value": {
+              "Ref": "InstanceId"
+            }
+          }
+        ],
+        "Statistic": "Average",
+        "Period": 300,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Threshold": 90,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "StatusCheckAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-status-check-failed"
+        },
+        "AlarmDescription": "EC2 instance or system status check failing.",
+        "Namespace": "AWS/EC2",
+        "MetricName": "StatusCheckFailed",
+        "Dimensions": [
+          {
+            "Name": "InstanceId",
+            "Value": {
+              "Ref": "InstanceId"
+            }
+          }
+        ],
+        "Statistic": "Maximum",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Threshold": 1,
+        "TreatMissingData": "breaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "DiskAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-disk-80"
+        },
+        "AlarmDescription": "Root disk above 80 % (Docker images, volumes, logs).",
+        "Namespace": "Remana/Host",
+        "MetricName": "disk_used_percent",
+        "Dimensions": [
+          {
+            "Name": "InstanceId",
+            "Value": {
+              "Ref": "InstanceId"
+            }
+          }
+        ],
+        "Statistic": "Maximum",
+        "Period": 300,
+        "EvaluationPeriods": 2,
+        "DatapointsToAlarm": 2,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Threshold": 80,
+        "TreatMissingData": "missing",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "MemoryAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-memory-90"
+        },
+        "AlarmDescription": "Memory above 90 % for 15 minutes (t3.medium: 4 GiB + 2 GiB swap).",
+        "Namespace": "Remana/Host",
+        "MetricName": "mem_used_percent",
+        "Dimensions": [
+          {
+            "Name": "InstanceId",
+            "Value": {
+              "Ref": "InstanceId"
+            }
+          }
+        ],
+        "Statistic": "Average",
+        "Period": 300,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Threshold": 90,
+        "TreatMissingData": "missing",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "SwapAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-swap-50"
+        },
+        "AlarmDescription": "Swap above 50 % for 15 minutes: memory pressure.",
+        "Namespace": "Remana/Host",
+        "MetricName": "swap_used_percent",
+        "Dimensions": [
+          {
+            "Name": "InstanceId",
+            "Value": {
+              "Ref": "InstanceId"
+            }
+          }
+        ],
+        "Statistic": "Average",
+        "Period": 300,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Threshold": 50,
+        "TreatMissingData": "missing",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "MasterUnhealthyAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-master-unhealthy"
+        },
+        "AlarmDescription": "Master container unhealthy or down for 3 minutes (missing data counts: the stats timer or the host is down).",
+        "Namespace": "Remana/Containers",
+        "MetricName": "Healthy",
+        "Dimensions": [
+          {
+            "Name": "Environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          },
+          {
+            "Name": "Service",
+            "Value": "master"
+          }
+        ],
+        "Statistic": "Minimum",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "ComparisonOperator": "LessThanThreshold",
+        "Threshold": 1,
+        "TreatMissingData": "breaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "PostgresUnhealthyAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-postgres-unhealthy"
+        },
+        "AlarmDescription": "Postgres container down or unhealthy for 3 minutes (missing data counts: the stats timer or the host is down).",
+        "Namespace": "Remana/Containers",
+        "MetricName": "Healthy",
+        "Dimensions": [
+          {
+            "Name": "Environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          },
+          {
+            "Name": "Service",
+            "Value": "postgres"
+          }
+        ],
+        "Statistic": "Minimum",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "ComparisonOperator": "LessThanThreshold",
+        "Threshold": 1,
+        "TreatMissingData": "breaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "RedisUnhealthyAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-redis-unhealthy"
+        },
+        "AlarmDescription": "Redis container down or unhealthy for 3 minutes (missing data counts: the stats timer or the host is down).",
+        "Namespace": "Remana/Containers",
+        "MetricName": "Healthy",
+        "Dimensions": [
+          {
+            "Name": "Environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          },
+          {
+            "Name": "Service",
+            "Value": "redis"
+          }
+        ],
+        "Statistic": "Minimum",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "ComparisonOperator": "LessThanThreshold",
+        "Threshold": 1,
+        "TreatMissingData": "breaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "WebUnhealthyAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-web-unhealthy"
+        },
+        "AlarmDescription": "Console (web) container down or unhealthy for 3 minutes (missing data counts: the stats timer or the host is down).",
+        "Namespace": "Remana/Containers",
+        "MetricName": "Healthy",
+        "Dimensions": [
+          {
+            "Name": "Environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          },
+          {
+            "Name": "Service",
+            "Value": "web"
+          }
+        ],
+        "Statistic": "Minimum",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "ComparisonOperator": "LessThanThreshold",
+        "Threshold": 1,
+        "TreatMissingData": "breaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "ErrorLogAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-error-logs"
+        },
+        "AlarmDescription": "More than 20 error-level log lines in 5 minutes.",
+        "Namespace": {
+          "Fn::Sub": "Remana/Logs/${Environment}"
+        },
+        "MetricName": "ErrorLines",
+        "Statistic": "Sum",
+        "Period": 300,
+        "EvaluationPeriods": 1,
+        "DatapointsToAlarm": 1,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Threshold": 20,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    },
+    "UptimeAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Condition": "UptimeCheck",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "remana-${Environment}-uptime"
+        },
+        "AlarmDescription": "https://<Domain>/api/status failing from the Route 53 health checkers (SLO-1).",
+        "Namespace": "AWS/Route53",
+        "MetricName": "HealthCheckStatus",
+        "Dimensions": [
+          {
+            "Name": "HealthCheckId",
+            "Value": {
+              "Ref": "UptimeHealthCheck"
+            }
+          }
+        ],
+        "Statistic": "Minimum",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "ComparisonOperator": "LessThanThreshold",
+        "Threshold": 1,
+        "TreatMissingData": "breaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "AlertTopic"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "AlertTopicArn": {
+      "Description": "SNS topic for alarms (subscribe e-mail/chat here).",
+      "Value": {
+        "Ref": "AlertTopic"
+      }
+    },
+    "ContainerLogGroupName": {
+      "Value": {
+        "Ref": "ContainerLogGroup"
+      }
+    },
+    "MetricsLogGroupName": {
+      "Value": {
+        "Ref": "MetricsLogGroup"
+      }
+    },
+    "DashboardName": {
+      "Value": {
+        "Ref": "Dashboard"
+      }
+    }
+  }
+}

@@ -1,0 +1,60 @@
+import type { Shape } from '../shape.js';
+import type tr from '../tr/installScripts.js';
+
+/** p19-install-scripts: reviewing and approving npm install scripts (Settings → Security, the chat card, MCP installs). */
+export default {
+  tab: 'Install scripts',
+  title: 'Approved install scripts',
+  hint: 'Some npm packages run their own code while they are installed (e.g. download a file built for the machine). The script of a package version approved here runs on the machines when a local MCP server that uses it is installed. An approval is for exactly that version and tarball; a new version needs its own.',
+  sandbox:
+    'On Linux machines the script runs inside bubblewrap: the file system is read-only, the machine’s data dir and protected homes are hidden, it may write only into the install; the network is open. macOS and Windows machines have no isolation for it.',
+  evaluateTitle: 'Evaluate a package',
+  name: 'Package',
+  version: 'Version',
+  namePlaceholder: 'e.g. frida',
+  versionPlaceholder: 'e.g. 17.23.2',
+  evaluate: 'Evaluate',
+  evaluating: 'Evaluating…',
+  reason: 'Reason (optional)',
+  approve: 'Approve',
+  stepUp: 'Install script approval',
+  approving: 'Approving…',
+  approved: (p) => `The install script of ${p.pkg} is approved.`,
+  revoke: 'Revoke',
+  revoked: (p) => `The approval of ${p.pkg} is revoked.`,
+  revokeTitle: (p) => `Revoke the approval of ${p.pkg}?`,
+  revokeBody:
+    'New installs no longer run this script; an install that still needs the package is refused. Installed servers stay until they are removed or installed again.',
+  empty: 'No install script is approved yet.',
+  active: 'Active',
+  revokedState: (p) => `Revoked (${p.who}, ${p.when})`,
+  by: (p) => `${p.who} · ${p.when}`,
+  viaChat: 'from the chat',
+  noScript: 'This version has no install script; nothing to approve.',
+  facts: {
+    scripts: 'Scripts',
+    gyp: 'Native build (binding.gyp → node-gyp rebuild)',
+    hosts: 'Addresses in the scripts',
+    hostsNone: 'none',
+    publisher: 'Publisher',
+    trusted: 'trusted publishing (CI, OIDC)',
+    provenance: 'Provenance',
+    yes: 'yes',
+    no: 'no',
+    signatures: 'Registry signatures',
+    repository: 'Repository',
+    published: 'Published',
+    integrity: 'Integrity',
+    maintainers: 'Maintainers',
+    unknown: 'unknown',
+  },
+  card: {
+    label: 'Install script approval',
+    kind: 'Install script',
+    note: 'If you approve, the install scripts of these versions run on the machines when a local MCP server that uses them is installed (Linux: inside bubblewrap; macOS / Windows: without isolation). The script texts are the package authors’; retry the install after approving.',
+    untrusted: 'Package author’s text',
+  },
+  failure: {
+    link: 'Evaluate the install scripts',
+  },
+} satisfies Shape<typeof tr>;

@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+.agentmagnify.local.json
+.turbo/
+playwright-report/
+test-results/
+# Screenshots written by the e2e specs (local review only).
+docs/design/screens/
+.claude/
+
+# p17-object-storage: the local blob directory of a development master (BLOB_DATA_DIR default).
+.data/
+
+# graphify knowledge graph / Obsidian vault (local, generated)
+graphify-out/

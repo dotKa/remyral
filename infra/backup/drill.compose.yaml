@@ -1,0 +1,35 @@
+# On-demand restore drill as its own compose project (p10-backup-restore §2, docs/ops/backup-restore.md §3):
+#
+#   docker compose -p remyral-prod-drill --env-file /data/remyral/prod/stack.env --env-file /data/remyral/prod/deploy/release.env \
+#     -f infra/backup/drill.compose.yaml run --rm drill [--backup remyral-prod-<stamp>]
+#
+# Restores the newest (or the named) local backup into a throw-away Postgres INSIDE this one-shot container,
+# checks it against its manifest, records the result in <backups>/status and drills/, and removes everything.
+# No network at all (`network_mode: none`), no port, no Docker socket; only the backups directory is mounted.
+# Shares the lock with the backup service, so it never overlaps a running backup.
+name: remyral-${REMYRAL_ENV:-prod}-drill
+
+services:
+  drill:
+    # From release.env (the deploy pins it by image ID); the local default exists only after a local build.
+    image: ${REMYRAL_BACKUP_IMAGE:-remyral-backup:local}
+    pull_policy: never
+    entrypoint: ['/usr/local/bin/remyral-backup', 'drill']
+    command: []
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID]
+    security_opt: ['no-new-privileges:true']
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    environment:
+      BACKUP_ENV: ${REMYRAL_ENV:-prod}
+      # p11-master-resilience: also replay the newest base backup + local WAL (standby drill).
+      BACKUP_WAL_ARCHIVE: ${PG_WAL_ARCHIVE:-off}
+    volumes:
+      - ${REMYRAL_BACKUP_DIR:-/data/remyral/${REMYRAL_ENV:-prod}/backups}:/backups
+    mem_limit: ${BACKUP_MEM_LIMIT:-768m}
+    shm_size: 128m
+    labels:
+      - traefik.enable=false

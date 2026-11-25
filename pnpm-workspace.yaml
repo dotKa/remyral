@@ -1,0 +1,26 @@
+packages:
+  - apps/*
+  - packages/*
+# Supply-chain settings (p7-supply-chain, docs/security/dependency-policy.md). pnpm >= 11 defaults to the
+# same values; they are explicit here so a pnpm default change cannot silently weaken them.
+minimumReleaseAge: 1440
+blockExoticSubdeps: true
+allowBuilds:
+  esbuild: false
+  msgpackr-extract: false
+minimumReleaseAgeExclude:
+  - '@typescript-eslint/eslint-plugin@8.71.2'
+  - '@typescript-eslint/parser@8.71.2'
+  - '@typescript-eslint/project-service@8.71.2'
+  - '@typescript-eslint/scope-manager@8.71.2'
+  - '@typescript-eslint/tsconfig-utils@8.71.2'
+  - '@typescript-eslint/type-utils@8.71.2'
+  - '@typescript-eslint/types@8.71.2'
+  - '@typescript-eslint/typescript-estree@8.71.2'
+  - '@typescript-eslint/utils@8.71.2'
+  - '@typescript-eslint/visitor-keys@8.71.2'
+  - '@vitest/mocker@5.0.4'
+  - '@vitest/spy@5.0.4'
+  - typescript-eslint@8.71.2
+  - vitest@5.0.4
+  - zod@4.6.7

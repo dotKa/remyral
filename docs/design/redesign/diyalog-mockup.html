@@ -1,0 +1,1057 @@
+<title>Remyral Diyalog Yönü</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,700;0,800;1,400&family=Atkinson+Hyperlegible+Mono:wght@400;500&display=swap');
+
+/* ---------- Tokens: light ---------- */
+:root{
+  color-scheme:light;
+  --bg:#EEF1F6; --thread:#F8F9FC; --card:#FFFFFF; --sunk:#F1F3F8; --line:#DCE1EA; --line-2:#C5CCD9;
+  --ink:#182031; --muted:#556079; --faint:#6E7891;
+  --me:#24304A; --me-ink:#FFFFFF;
+  --teal:#0D6C74; --teal-soft:#DDF0F0; --teal-ink:#0A5A61;
+  --amber:#B26A00; --amber-soft:#FFF1D6; --amber-ink:#7A4800;
+  --red:#C23B33; --red-soft:#FCE6E3; --red-ink:#9A2A23;
+  --green:#1D7A4C; --green-soft:#DDF2E6;
+  --violet:#6A4BD1; --violet-soft:#ECE7FC;
+  --cc:#7454D9; --cx:#13875F; --pi:#A87300; --oc:#2F6FC4;
+  --shadow:0 1px 2px rgba(24,32,49,.06),0 6px 18px -10px rgba(24,32,49,.22);
+  --ease:cubic-bezier(.23,1,.32,1);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#10141C; --thread:#151A24; --card:#1B212D; --sunk:#141922; --line:#2A3241; --line-2:#3A4457;
+  --ink:#E6EAF2; --muted:#A0AABD; --faint:#8791A5;
+  --me:#D7DEEC; --me-ink:#141A26;
+  --teal:#4DBFC4; --teal-soft:#16302F; --teal-ink:#7FD6D9;
+  --amber:#F0B048; --amber-soft:#2E2412; --amber-ink:#F6C877;
+  --red:#F07A70; --red-soft:#331A19; --red-ink:#F7A39B;
+  --green:#5CC98D; --green-soft:#16291F;
+  --violet:#A58EF7; --violet-soft:#241E3B;
+  --cc:#A58EF7; --cx:#47C795; --pi:#E2B04A; --oc:#6AA6F2;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -12px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#10141C; --thread:#151A24; --card:#1B212D; --sunk:#141922; --line:#2A3241; --line-2:#3A4457;
+  --ink:#E6EAF2; --muted:#A0AABD; --faint:#8791A5;
+  --me:#D7DEEC; --me-ink:#141A26;
+  --teal:#4DBFC4; --teal-soft:#16302F; --teal-ink:#7FD6D9;
+  --amber:#F0B048; --amber-soft:#2E2412; --amber-ink:#F6C877;
+  --red:#F07A70; --red-soft:#331A19; --red-ink:#F7A39B;
+  --green:#5CC98D; --green-soft:#16291F;
+  --violet:#A58EF7; --violet-soft:#241E3B;
+  --cc:#A58EF7; --cx:#47C795; --pi:#E2B04A; --oc:#6AA6F2;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 'Atkinson Hyperlegible Next',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.mono,code,kbd{font-family:'Atkinson Hyperlegible Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+button,input,textarea,select{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+.ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.muted{color:var(--muted)}
+h1,h2,h3{margin:0}
+
+/* ---------- Direction header band ---------- */
+.dh{background:var(--card);border-bottom:1px solid var(--line);padding:22px 32px 20px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.95fr) minmax(0,1fr);gap:32px;align-items:start}
+.dh-top{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.dh-num{min-width:30px;height:30px;padding:0 6px;border-radius:9px;background:var(--teal);color:#fff;display:grid;place-items:center;font:800 14px 'Atkinson Hyperlegible Next'}
+:root[data-theme="dark"] .dh-num{color:#0F1A1B}
+.dh h1{font-size:34px;font-weight:800;letter-spacing:-.025em;line-height:1}
+.dh-sub{font-weight:500;color:var(--muted)}
+.dh p{margin:0;color:var(--muted);max-width:66ch;font-size:14px}
+.dh-links{margin-left:auto;display:flex;gap:8px}
+.chipbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);background:var(--card);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;transition:transform 140ms var(--ease)}
+.chipbtn:active{transform:scale(.97)}
+.type-s{display:grid;gap:8px}
+.type-s .row{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap}
+.type-s small{color:var(--muted);font-size:12px}
+.t-d{font-weight:800;font-size:24px;letter-spacing:-.02em}
+.t-t{font-size:15px}
+.t-m{font-family:'Atkinson Hyperlegible Mono';font-size:13.5px}
+.sys{font-size:12.5px;color:var(--muted);line-height:1.55}
+.sys b{color:var(--ink);font-weight:700}
+.swatches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px 12px}
+.swatches span{display:flex;align-items:center;gap:7px;font:400 11.5px 'Atkinson Hyperlegible Mono';color:var(--muted);min-width:0}
+.swatches i{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid rgba(127,140,160,.35)}
+
+/* ---------- App frame ---------- */
+.app{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 312px;min-height:calc(100vh - 0px)}
+.main{min-width:0;display:flex;flex-direction:column;background:var(--thread);border-right:1px solid var(--line)}
+.topz{position:sticky;top:0;z-index:5}
+.bar{display:flex;align-items:center;gap:14px;padding:10px 24px;background:color-mix(in srgb,var(--thread) 86%,transparent);backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.01em}
+.mark{width:26px;height:26px;border-radius:8px;background:var(--teal);display:grid;place-items:center;color:#fff;flex:none}
+:root[data-theme="dark"] .mark{color:#0F1A1B}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mark,:root:not([data-theme="light"]) .dh-num{color:#0F1A1B}}
+.mark svg{width:16px;height:16px}
+.tabs{display:flex;gap:2px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:3px;min-width:0}
+.tab{appearance:none;border:0;background:none;border-radius:7px;padding:5px 12px;font-size:13.5px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tab[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(24,32,49,.1)}
+.tab .n{font:500 11.5px 'Atkinson Hyperlegible Mono';background:var(--amber-soft);color:var(--amber-ink);border-radius:999px;padding:0 6px}
+.bar .live{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
+.dot.breathe{animation:breathe 2.4s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.35}}
+
+.screen{display:none;flex:1;flex-direction:column;min-width:0}
+.screen.on{display:flex}
+.scroll{flex:1;padding:8px 24px 24px}
+.col{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+/* thread primitives */
+.ev{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:12.5px;margin:6px 0}
+.ev::before,.ev::after{content:"";height:1px;background:var(--line);flex:1}
+.ev span{display:flex;align-items:center;gap:6px;max-width:80%;text-align:center;overflow-wrap:anywhere;min-width:0;flex-wrap:wrap;justify-content:center}
+.ev time{font-family:'Atkinson Hyperlegible Mono'}
+.ev.warn{color:var(--red-ink)}
+.turn{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px}
+.av{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font:800 12px 'Atkinson Hyperlegible Next';color:#fff;flex:none}
+.av.r{background:var(--teal)}
+.av.cc{background:var(--cc)}
+:root[data-theme="dark"] .av{color:#121620}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .av{color:#121620}}
+.av svg{width:18px;height:18px}
+.who{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:4px}
+.who b{font-size:14px}
+.who time{font-family:'Atkinson Hyperlegible Mono';color:var(--faint);font-size:12px}
+.who .role{color:var(--muted)}
+.say{margin:0 0 10px;max-width:68ch;font-size:15.5px;line-height:1.55}
+.say:last-child{margin-bottom:0}
+.say strong{font-weight:700}
+.stack{display:flex;flex-direction:column;gap:12px}
+.me{align-self:flex-end;max-width:min(520px,88%);display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.me p{margin:0;background:var(--me);color:var(--me-ink);padding:9px 14px;border-radius:14px 14px 4px 14px;font-size:15px}
+.me small{font-size:12px;color:var(--faint)}
+.me small time{font-family:'Atkinson Hyperlegible Mono'}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;min-width:0}
+.card:target{outline:2px solid var(--teal);outline-offset:3px}
+.ch{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;flex-wrap:wrap}
+.kind{display:inline-flex;align-items:center;gap:6px;font-weight:700;border-radius:999px;padding:2px 10px 2px 7px}
+.k-amber{background:var(--amber-soft);color:var(--amber-ink)}
+.k-red{background:var(--red-soft);color:var(--red-ink)}
+.k-teal{background:var(--teal-soft);color:var(--teal-ink)}
+.k-violet{background:var(--violet-soft);color:var(--violet)}
+.k-green{background:var(--green-soft);color:var(--green)}
+.ch .meta{color:var(--muted)}
+.ch .right{margin-left:auto;color:var(--muted);font-family:'Atkinson Hyperlegible Mono';font-size:12.5px;white-space:nowrap}
+.cb{padding:2px 16px 14px}
+.cb h3{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.3;margin-bottom:4px}
+.cb h3 a{text-decoration:none}
+.cb h3 a:hover{text-decoration:underline}
+.sub{font-size:13.5px;color:var(--muted);display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center}
+.sub span{display:inline-flex;align-items:center;gap:5px}
+.rt{display:inline-flex;align-items:center;gap:5px}
+.rt::before{content:"";width:9px;height:9px;border-radius:3px;background:var(--c)}
+.rt.cc{--c:var(--cc)} .rt.cx{--c:var(--cx)} .rt.pi{--c:var(--pi)} .rt.oc{--c:var(--oc)}
+.quote{margin:12px 0 0;padding:10px 14px;background:var(--sunk);border-radius:10px;font-size:15px}
+.quote small{display:block;font-size:12.5px;color:var(--muted);margin-bottom:2px;font-weight:700}
+.cmd{margin-top:10px;display:flex;align-items:flex-start;gap:10px;background:#141A26;color:#E8ECF4;border-radius:10px;padding:10px 12px;font:400 13px/1.5 'Atkinson Hyperlegible Mono';min-width:0}
+:root[data-theme="dark"] .cmd{background:#0D1117;border:1px solid var(--line)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cmd{background:#0D1117;border:1px solid var(--line)}}
+.cmd code{flex:1;min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.cmd .pr{color:#7FD6D9;user-select:none}
+.cmd button{appearance:none;border:0;background:rgba(255,255,255,.08);color:#C9D2E3;border-radius:6px;padding:3px 7px;font-size:12px;cursor:pointer;display:flex;gap:5px;align-items:center;flex:none}
+.touch{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:2px}
+.touch li{display:grid;grid-template-columns:22px 66px minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:14px}
+.touch li .v{color:var(--muted);font-size:13px}
+.touch li code{font-size:13px;overflow-wrap:anywhere}
+.touch li .sz{font-family:'Atkinson Hyperlegible Mono';font-size:12.5px;color:var(--muted);white-space:nowrap}
+.touch li.out{background:var(--amber-soft)}
+.touch li.out .v,.touch li.out .sz{color:var(--amber-ink)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;white-space:nowrap}
+.tag.amber{background:var(--amber);color:#fff}
+:root[data-theme="dark"] .tag.amber{color:#1B1405}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tag.amber{color:#1B1405}}
+.rule{font-size:13px;color:var(--muted);margin-top:8px}
+.rule code{font-size:12.5px}
+.clock{margin-top:12px;display:grid;gap:6px}
+.clock .ln{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;flex-wrap:wrap}
+.clock .ln b{font-family:'Atkinson Hyperlegible Mono';font-weight:500;color:var(--amber-ink)}
+.track{height:6px;border-radius:999px;background:var(--sunk);overflow:hidden;position:relative}
+.track i{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:var(--amber);transform-origin:left;width:100%}
+.ticks{display:flex;justify-content:space-between;font:400 11.5px 'Atkinson Hyperlegible Mono';color:var(--faint)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line);background:var(--sunk);align-items:center}
+.btn{appearance:none;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);background:var(--card);border-radius:9px;padding:7px 13px;font-size:14px;font-weight:500;cursor:pointer;transition:transform 140ms var(--ease),background-color 140ms ease;text-decoration:none;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--ink);color:var(--card);border-color:var(--ink);font-weight:700}
+.btn.warn{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:700}
+.btn.danger{color:var(--red-ink)}
+:root[data-theme="dark"] .btn.warn{color:#1B1405}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.warn{color:#1B1405}}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted)}
+@media (hover:hover) and (pointer:fine){.btn:hover{border-color:var(--ink)} .btn.ghost:hover{color:var(--ink);border-color:transparent}}
+.acts .hint{margin-left:auto;font-size:12.5px;color:var(--muted)}
+.otp{display:none;width:100%;gap:10px;align-items:center;flex-wrap:wrap;padding-top:4px}
+.otp.open{display:flex}
+.otp label{font-size:13.5px;color:var(--muted)}
+.otp input{width:132px;letter-spacing:.3em;font-family:'Atkinson Hyperlegible Mono';font-size:16px;border:1px solid var(--line-2);border-radius:9px;padding:6px 10px;background:var(--card)}
+.reason{display:none;width:100%}
+.reason.open{display:block}
+.reason textarea{width:100%;min-height:60px;border:1px solid var(--line-2);border-radius:9px;padding:8px 10px;background:var(--card);resize:vertical}
+
+/* compact rows inside cards */
+.rows{list-style:none;margin:10px 0 0;padding:0;display:grid}
+.rows li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.rows li:first-child{border-top:0}
+.rows .t{font-weight:500;min-width:0;overflow-wrap:anywhere}
+.rows .t a{text-decoration:none}
+.rows .t a:hover{text-decoration:underline}
+.rows .m{font-size:13px;color:var(--muted);grid-column:1/2;display:flex;gap:5px 12px;flex-wrap:wrap}
+.rows .e{grid-row:1/3;grid-column:2;text-align:right;font-family:'Atkinson Hyperlegible Mono';font-size:13px;color:var(--muted)}
+.prog{display:flex;gap:3px;margin-top:5px;justify-content:flex-end}
+.prog i{width:10px;height:4px;border-radius:2px;background:var(--line-2)}
+.prog i.f{background:var(--teal)}
+.prog i.w{background:var(--amber)}
+.state{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700}
+.state svg{width:13px;height:13px}
+.s-run{color:var(--teal-ink)} .s-need{color:var(--amber-ink)} .s-fail{color:var(--red-ink)} .s-ok{color:var(--green)}
+
+.log{margin-top:10px;background:var(--sunk);border-radius:10px;padding:9px 12px;font:400 12.5px/1.55 'Atkinson Hyperlegible Mono';overflow-wrap:anywhere;color:var(--muted)}
+.log .bad{color:var(--red-ink)}
+.chain{list-style:none;margin:12px 0 0;padding:0;display:flex;gap:0;flex-wrap:wrap}
+.chain li{display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 10px 4px 0}
+.chain li svg{width:15px;height:15px}
+.chain li.ok svg{color:var(--green)}
+.chain li.wait{font-weight:700;color:var(--amber-ink)}
+.chain li+li::before{content:"";width:14px;height:1px;background:var(--line-2);margin-right:4px}
+.meter{margin-top:12px}
+.meter .top{display:flex;justify-content:space-between;font-size:14px;gap:10px;flex-wrap:wrap}
+.meter .top b{font-family:'Atkinson Hyperlegible Mono';font-weight:500}
+.meter .track{height:10px;margin-top:6px}
+.meter .track i{background:var(--violet);width:72%}
+.meter .track .cut{position:absolute;top:-3px;bottom:-3px;left:85%;width:2px;background:var(--ink);opacity:.45}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.toggle input{appearance:none;width:34px;height:20px;border-radius:999px;background:var(--line-2);position:relative;cursor:pointer;margin:0;transition:background-color 160ms ease}
+.toggle input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform 180ms var(--ease)}
+.toggle input:checked{background:var(--teal)}
+.toggle input:checked::after{transform:translateX(14px)}
+
+/* typing + entrance */
+.typing{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13.5px}
+.typing .dots{display:inline-flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 11px}
+.typing .dots i{width:6px;height:6px;border-radius:50%;background:var(--faint);animation:blink 1.2s infinite}
+.typing .dots i:nth-child(2){animation-delay:.15s}.typing .dots i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-2px)}}
+.enter{animation:enter 420ms var(--ease) both}
+@keyframes enter{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.flash{animation:flash 1.6s ease-out}
+@keyframes flash{0%{background:var(--teal-soft)}100%{background:transparent}}
+
+/* composer */
+.composer{position:sticky;bottom:0;z-index:4;padding:28px 24px 18px;background:linear-gradient(to top,var(--thread) calc(100% - 28px),transparent)}
+.cwrap{max-width:780px;margin:0 auto;position:relative}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chip{appearance:none;border:1px solid var(--line-2);background:var(--card);border-radius:999px;padding:4px 11px;font-size:13px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;transition:transform 140ms var(--ease)}
+.chip:active{transform:scale(.97)}
+.chip code{font-size:12.5px;color:var(--teal-ink)}
+.box{display:flex;align-items:flex-end;gap:8px;background:var(--card);border:1px solid var(--line-2);border-radius:14px;padding:8px 8px 8px 14px;box-shadow:var(--shadow)}
+.box:focus-within{border-color:var(--teal)}
+.box textarea{flex:1;border:0;background:none;resize:none;min-height:24px;max-height:120px;padding:4px 0;outline:none;font-size:15px;min-width:0}
+.box textarea::placeholder{color:var(--faint)}
+.send{appearance:none;width:36px;height:36px;border-radius:10px;border:0;background:var(--teal);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none;transition:transform 140ms var(--ease)}
+.send:active{transform:scale(.95)}
+:root[data-theme="dark"] .send{color:#0F1A1B}
+.foot{display:flex;gap:14px;font-size:12px;color:var(--faint);margin-top:6px;flex-wrap:wrap}
+.foot kbd{font-size:11.5px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--card);color:var(--muted)}
+.slash{position:absolute;left:0;right:0;bottom:calc(100% - 30px);background:var(--card);border:1px solid var(--line-2);border-radius:12px;box-shadow:0 14px 34px -12px rgba(24,32,49,.35);padding:6px;display:none;transform-origin:bottom left}
+.slash.open{display:block;animation:pop 160ms var(--ease)}
+@keyframes pop{from{opacity:0;transform:scale(.97) translateY(4px)}}
+.slash button{appearance:none;width:100%;border:0;background:none;text-align:left;display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+.slash button[aria-selected="true"]{background:var(--sunk)}
+.slash code{color:var(--teal-ink)}
+.slash span{color:var(--muted)}
+
+/* ---------- Context rail ---------- */
+.rail{min-width:0;background:var(--bg);padding:16px 18px 28px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto}
+.rail h2{font-size:13.5px;font-weight:700;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.rail h2 span{font:500 12.5px 'Atkinson Hyperlegible Mono';color:var(--muted)}
+.need{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.need a{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 8px;border-radius:9px;text-decoration:none;font-size:13.5px}
+@media (hover:hover) and (pointer:fine){.need a:hover{background:var(--card)}}
+.need a span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.need time{font:400 12px 'Atkinson Hyperlegible Mono';color:var(--muted)}
+.need .i-a{color:var(--amber)} .need .i-r{color:var(--red)} .need .i-t{color:var(--teal)} .need .i-v{color:var(--violet)}
+.slots{display:grid;gap:5px}
+.slots div{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:12.5px}
+.slots .nm{font-family:'Atkinson Hyperlegible Mono';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slots .cells{display:flex;gap:3px}
+.slots .cells i{width:14px;height:10px;border-radius:3px;background:var(--card);border:1px solid var(--line-2)}
+.slots .cells i.u{background:var(--teal);border-color:var(--teal)}
+.slots .cells i.w{background:var(--amber);border-color:var(--amber)}
+.slots .cells i.x{background:repeating-linear-gradient(135deg,var(--line-2) 0 2px,transparent 2px 5px);border-style:dashed}
+.slots .n{text-align:right;color:var(--muted);font-family:'Atkinson Hyperlegible Mono'}
+.slots .off .nm{color:var(--red-ink)}
+.lims{display:grid;gap:9px}
+.lim{font-size:12.5px}
+.lim .l1{display:flex;justify-content:space-between;gap:8px}
+.lim .l1 b{font-weight:500}
+.lim .l1 span{font-family:'Atkinson Hyperlegible Mono';color:var(--muted);white-space:nowrap}
+.lim .bar2{height:5px;border-radius:999px;background:var(--line);margin-top:4px;overflow:hidden}
+.lim .bar2 i{display:block;height:100%;border-radius:inherit;background:var(--c,var(--teal))}
+.health{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:12.5px}
+.health li{display:flex;gap:8px;align-items:center}
+.health li .dot{width:7px;height:7px}
+.health li.bad .dot{background:var(--red);border-radius:2px}
+.health li.bad{color:var(--red-ink)}
+.today{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.today div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 9px}
+.today b{display:block;font-size:18px;font-weight:800;letter-spacing:-.01em}
+.today span{font-size:12px;color:var(--muted)}
+.strip{display:none}
+
+/* ---------- Job thread ---------- */
+.pin{position:sticky;top:53px;z-index:3;margin:0 -24px;padding:12px 24px;background:color-mix(in srgb,var(--thread) 90%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.pin .col{gap:6px}
+.pin .l1{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pin h2{font-size:19px;font-weight:800;letter-spacing:-.015em;line-height:1.25;flex:1 1 300px;min-width:0}
+.pin .facts{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.pin .facts span{display:inline-flex;gap:5px;align-items:center}
+.pin .facts code{font-size:12.5px;color:var(--ink)}
+.mem{display:inline-flex;align-items:center;gap:6px}
+.mem i{display:inline-block;width:52px;height:5px;border-radius:999px;background:var(--line);position:relative;overflow:hidden}
+.mem i::after{content:"";position:absolute;inset:0 auto 0 0;width:28%;background:var(--teal)}
+.tool{border-radius:10px}
+.tool summary{list-style:none;display:grid;grid-template-columns:54px minmax(0,1fr) auto 16px;gap:10px;align-items:center;padding:6px 10px;border-radius:10px;cursor:pointer;font-size:14px}
+.tool summary::-webkit-details-marker{display:none}
+@media (hover:hover) and (pointer:fine){.tool summary:hover{background:var(--sunk)}}
+.tool summary .op{font:500 12px 'Atkinson Hyperlegible Mono';color:var(--muted);border:1px solid var(--line-2);border-radius:6px;padding:1px 0;text-align:center}
+.tool summary code{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tool summary .r{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.tool summary .chev{transition:transform 160ms var(--ease);color:var(--faint)}
+.tool[open] summary .chev{transform:rotate(180deg)}
+.tool .body{margin:2px 10px 8px 74px;background:var(--sunk);border-radius:10px;padding:9px 12px;font:400 12.5px/1.55 'Atkinson Hyperlegible Mono';overflow-x:auto;white-space:pre}
+.add{color:var(--green)} .del{color:var(--red-ink)}
+.tools{display:grid;grid-template-columns:minmax(0,1fr);gap:1px;margin-top:6px}
+.tool,.stack>*{min-width:0}
+.subs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:6px 0 2px 74px}
+.subs div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;min-width:0}
+.subs b{display:block;font-family:'Atkinson Hyperlegible Mono';font-weight:500;font-size:13px}
+.steps{list-style:none;margin:12px 0 0;padding:0;display:grid}
+.steps li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:start;padding:7px 0;position:relative;font-size:14.5px}
+.steps li::before{content:"";position:absolute;left:10px;top:26px;bottom:-6px;width:1.5px;background:var(--line-2)}
+.steps li:last-child::before{display:none}
+.steps li svg{width:18px;height:18px;margin-top:2px}
+.steps li.ok svg{color:var(--green)}
+.steps li.wait svg{color:var(--amber)}
+.steps li small{display:block;color:var(--muted);font-size:13px}
+.steps li .r{font-family:'Atkinson Hyperlegible Mono';font-size:12.5px;color:var(--muted)}
+
+/* ---------- Draft card (new job) ---------- */
+.form{display:grid;gap:14px;margin-top:10px}
+.f label,.f .lb{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+.f input[type=text],.f select,.f textarea{width:100%;border:1px solid var(--line-2);border-radius:9px;padding:8px 11px;background:var(--card);font-size:15px;min-width:0}
+.f textarea{min-height:92px;resize:vertical;line-height:1.5}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.seg{display:inline-flex;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{appearance:none;border:0;background:none;padding:5px 12px;border-radius:7px;font-size:14px;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(24,32,49,.12)}
+.opts{display:grid;gap:8px}
+.f .opt{display:grid;font-weight:400;font-size:14.5px;margin:0}
+.opt{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;border:1px solid var(--line-2);border-radius:11px;padding:10px 12px;cursor:pointer;background:var(--card)}
+.opt input{margin:3px 0 0;accent-color:var(--teal)}
+.opt b{font-weight:700}
+.opt small{display:block;color:var(--muted);font-size:13px;margin-top:1px}
+.opt .tagline{font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;white-space:nowrap}
+.opt:has(input:checked){border-color:var(--teal);background:color-mix(in srgb,var(--teal-soft) 55%,var(--card))}
+.impact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.impact div{background:var(--sunk);border-radius:10px;padding:8px 10px;font-size:13px;color:var(--muted)}
+.impact b{display:block;color:var(--ink);font-size:15px}
+.qline{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.qline li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 10px;border-radius:9px;font-size:13.5px;background:var(--sunk)}
+.qline li .p{font-family:'Atkinson Hyperlegible Mono';color:var(--muted)}
+.qline li .w{font-size:12.5px;color:var(--muted);text-align:right}
+.qline li.new{background:var(--teal-soft);color:var(--teal-ink);font-weight:700;outline:1.5px dashed var(--teal);outline-offset:-1.5px}
+.qline li.new .w,.qline li.new .p{color:var(--teal-ink)}
+.warnbox{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;background:var(--amber-soft);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--amber-ink)}
+.warnbox svg{margin-top:2px}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1180px){
+  .dh{grid-template-columns:1fr 1fr}
+  .dh>div:first-child{grid-column:1/-1}
+  .app{grid-template-columns:minmax(0,1fr) 280px}
+}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{display:none}
+  .strip{display:flex;gap:6px;overflow-x:auto;padding:8px 16px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);scrollbar-width:none}
+  .strip::-webkit-scrollbar{display:none}
+  .strip a{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 10px;white-space:nowrap}
+  .strip a b{font-family:'Atkinson Hyperlegible Mono';font-weight:500}
+  .strip a.hot{background:var(--amber-soft);border-color:transparent;color:var(--amber-ink);font-weight:700}
+  .pin{top:97px}
+}
+@media (max-width:640px){
+  .dh{grid-template-columns:1fr;padding:18px 16px;gap:18px}
+  .dh h1{font-size:30px}
+  .dh-links{margin-left:0;width:100%}
+  .swatches{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bar{padding:8px 12px;gap:8px;flex-wrap:wrap}
+  .bar .live{display:none}
+  .brand b{display:none}
+  .tabs{flex:1;overflow-x:auto}
+  .tab{padding:5px 9px;flex:1;justify-content:center}
+  .scroll{padding:6px 12px 18px}
+  .turn{grid-template-columns:minmax(0,1fr)}
+  .turn>.av{display:none}
+  .who::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--teal);align-self:center}
+  .turn.agent .who::before{background:var(--cc)}
+  .composer{padding:8px 12px 12px}
+  .cb{padding:2px 12px 12px}
+  .ch{padding:9px 12px}
+  .acts{padding:10px 12px}
+  .acts .hint{margin-left:0;width:100%}
+  .touch li{grid-template-columns:20px minmax(0,1fr);row-gap:0}
+  .touch li .v{grid-column:2}
+  .touch li code{grid-column:2}
+  .touch li .sz{grid-column:2}
+  .touch li>svg{grid-row:1/4}
+  .two,.impact{grid-template-columns:minmax(0,1fr)}
+  .subs{grid-template-columns:minmax(0,1fr);margin-left:0}
+  .tool summary{grid-template-columns:48px minmax(0,1fr) 16px}
+  .tool summary .r{display:none}
+  .tool .body{margin-left:0}
+  .pin{margin:0 -12px;padding:10px 12px;top:93px}
+  .pin h2{font-size:17px;flex-basis:100%}
+  .slash button{grid-template-columns:90px minmax(0,1fr)}
+  .foot{display:none}
+  .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -12px 8px;padding:0 12px}
+  .chip{flex:none}
+  #slashNew.open{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 8v4M12 15.5h.01"/></symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2"/><path d="M9 15l-3-3c1.5-5 6-9 14-9 0 8-4 12.5-9 14z"/><circle cx="15" cy="9" r="1.6"/></symbol>
+    <symbol id="i-merge" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 7v10M6 7c0 4 4 5 10 5"/></symbol>
+    <symbol id="i-xc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+    <symbol id="i-checkc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></symbol>
+    <symbol id="i-waitc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+    <symbol id="i-term" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+    <symbol id="i-retry" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3"/></symbol>
+    <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 8v8M18 10c0 4-6 3-11 7"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 3 3h1V4z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-3 3h-1V4z"/></symbol>
+    <symbol id="i-bubble" viewBox="0 0 24 24"><path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6a2.5 2.5 0 0 1-2.5 2.5H11l-4 4v-4h0A2 2 0 0 1 5 13z"/><path d="M9 9.5h6M9 12h3.5"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/></symbol>
+  </defs>
+</svg>
+
+<header class="dh">
+  <div>
+    <div class="dh-top">
+      <span class="dh-num">10</span>
+      <h1>Diyalog</h1>
+      <span class="dh-sub">Sohbet uygulamanın kendisi</span>
+      <span class="dh-links">
+        <a class="chipbtn" href="index.html"><svg class="ico"><use href="#i-back"/></svg>Tüm yönler</a>
+        <button class="chipbtn" id="themeBtn" type="button" aria-label="Açık ve koyu tema arasında geç"><svg class="ico"><use href="#i-moon"/></svg><span>Tema</span></button>
+      </span>
+    </div>
+    <p>Sahip zaten Remyral ile konuşarak iş açıyor; Diyalog bunu uygulamanın tamamına genişletir. Menü yok, sayfa yok: tek bir dizi var. Asistan durumu cümleyle anlatır, her karar dizinin içinde canlı bir karta dönüşür (onay, deploy, birleştirme, hata, limit) ve kart orada çözülür. Her işin kendi dizisi olur; ajan orada anlatır, araç çağrıları açılır kapanır satırlar halinde durur. Sağdaki ince bağlam rayı sadece "kaç karar, kaç slot, limit nerede" sorusunu yanıtlar ve dizideki karta atlar. Komut yazmak isteyen için <code class="mono">/onayla</code>, <code class="mono">/kuyruk</code>, <code class="mono">@kestrel-mac</code> hazır.</p>
+  </div>
+  <div class="type-s">
+    <div class="row"><span class="t-d">Senden 5 karar bekliyor</span><small>Atkinson Hyperlegible Next 800</small></div>
+    <div class="row"><span class="t-t">Kilit dosyası eski vite 5 sürümünü sabitliyor.</span><small>Next 400/500/700</small></div>
+    <div class="row"><span class="t-m">int/7c1e09ab  41:36  1.4 GB</span><small>Atkinson Hyperlegible Mono</small></div>
+    <div class="sys"><b>Neden bu aile</b> Braille Enstitüsü'nün okunurluk yazısı: 0/O, 1/l/I ayrık; komut, dal adı ve onay kodu tek bakışta okunur. <b>Ölçü</b> 4 px taban, dizi en çok 780 px; kart 14 px köşe, iç öğe 10, düğme 9. <b>Derinlik</b> dizi zemini, kart tek gölge; ray zeminle aynı düzlemde, gölgesiz. <b>Hareket</b> tek an: yeni tur "yazıyor" göstergesinden sonra 420 ms ease-out ile yükselir; geri sayımlar saniyede bir işler; kısayollar animasyonsuz.</div>
+  </div>
+  <div class="swatches" aria-label="Palet">
+    <span><i style="background:#F8F9FC"></i>#F8F9FC dizi</span>
+    <span><i style="background:#182031"></i>#182031 mürekkep</span>
+    <span><i style="background:#0D6C74"></i>#0D6C74 asistan</span>
+    <span><i style="background:#24304A"></i>#24304A sen</span>
+    <span><i style="background:#B26A00"></i>#B26A00 karar</span>
+    <span><i style="background:#C23B33"></i>#C23B33 hata</span>
+    <span><i style="background:#6A4BD1"></i>#6A4BD1 limit</span>
+    <span><i style="background:#1D7A4C"></i>#1D7A4C bitti</span>
+    <span><i style="background:#151A24"></i>#151A24 koyu</span>
+  </div>
+</header>
+
+<div class="app">
+  <main class="main">
+    <div class="topz"><div class="bar">
+      <div class="brand"><span class="mark"><svg class="ico" viewBox="0 0 24 24"><use href="#i-bubble"/></svg></span><b>Remyral</b></div>
+      <div class="tabs" role="tablist" aria-label="Ekranlar">
+        <button class="tab" role="tab" data-s="home" aria-selected="true">Sohbet <span class="n">5</span></button>
+        <button class="tab" role="tab" data-s="job" aria-selected="false">İş dizisi</button>
+        <button class="tab" role="tab" data-s="new" aria-selected="false">Yeni iş</button>
+      </div>
+      <span class="live"><span class="dot breathe"></span>Canlı, <span class="mono" data-clock>13:24:00</span></span>
+    </div>
+
+    <nav class="strip" aria-label="Bağlam özeti">
+      <a class="hot" href="#c-approve"><svg class="ico"><use href="#i-shield"/></svg><b>5</b> karar</a>
+      <a href="#c-approve"><svg class="ico"><use href="#i-waitc"/></svg>Onay <b data-cd-short>41:36</b></a>
+      <a href="#c-limit"><svg class="ico"><use href="#i-gauge"/></svg>Claude <b>%72</b></a>
+      <a href="#c-run"><svg class="ico"><use href="#i-cpu"/></svg>Slot <b>9/23</b></a>
+      <a href="#c-ev502"><svg class="ico"><use href="#i-globe"/></svg>Uptime <b>11/12</b></a>
+    </nav></div>
+
+    <!-- =================== SCREEN 1: SOHBET =================== -->
+    <section class="screen on" id="s-home" aria-label="Sohbet">
+      <div class="scroll"><div class="col">
+        <div class="ev"><span>Bugün, Pazartesi 19 Ekim</span></div>
+
+        <div class="me"><p>Günaydın. Öğlene kadar ne birikti, kısaca söyle.</p><small><time>12:58</time> Alex K.</small></div>
+
+        <div class="turn">
+          <span class="av r" aria-hidden="true"><svg class="ico"><use href="#i-bubble"/></svg></span>
+          <div class="stack">
+            <div><div class="who"><b>Remyral</b><span class="role">operasyon asistanı</span><time>13:24</time></div>
+            <p class="say">Sabahtan beri <strong>37 iş</strong> bitti, 31'i başarılı. Şu an 5 iş çalışıyor, 4'ü kuyrukta, 23 slotun 9'u dolu. ridge-lnx-03 2 saattir kapalı.</p>
+            <p class="say">Senden <strong>5 karar</strong> bekliyor. Önem sırasına koydum; ilki 42 dakika içinde kendiliğinden duraklayacak.</p></div>
+
+            <!-- 1 approval -->
+            <article class="card" id="c-approve">
+              <div class="ch"><span class="kind k-amber"><svg class="ico"><use href="#i-shield"/></svg>Onay, yüksek risk</span><span class="meta">Bayat, 18 dk bekliyor</span><span class="right">1 / 5</span></div>
+              <div class="cb">
+                <h3><a href="#job" data-go="job">Vitest 5'e geç ve deprecation uyarılarını temizle</a></h3>
+                <div class="sub"><span>mobil-app</span><span class="rt cc">Claude Code</span><span>kestrel-mac, slot 3/4</span></div>
+                <div class="quote"><small>Ajan diyor ki</small>Kilit dosyası eski vite 5 sürümünü sabitliyor; node_modules ve pnpm store önbelleğini silip yeniden kurmam gerekiyor.</div>
+                <div class="cmd"><span class="pr">$</span><code>rm -rf node_modules ~/Library/pnpm/store/v3 &amp;&amp; pnpm install --no-frozen-lockfile</code><button type="button" data-copy aria-label="Komutu kopyala"><svg class="ico"><use href="#i-copy"/></svg>Kopyala</button></div>
+                <ul class="touch" aria-label="Neye dokunuyor">
+                  <li><svg class="ico"><use href="#i-trash"/></svg><span class="v">Siler</span><code>mobil-app/node_modules</code><span class="sz">612 MB</span></li>
+                  <li class="out"><svg class="ico"><use href="#i-trash"/></svg><span class="v">Siler</span><code>~/Library/pnpm/store/v3 <span class="tag amber">workspace dışı</span></code><span class="sz">1.4 GB</span></li>
+                  <li><svg class="ico"><use href="#i-pen"/></svg><span class="v">Yazar</span><code>pnpm-lock.yaml</code><span class="sz">yeniden üretilir</span></li>
+                  <li><svg class="ico"><use href="#i-globe"/></svg><span class="v">Ağ</span><code>registry.npmjs.org</code><span class="sz">HTTPS 443</span></li>
+                </ul>
+                <div class="rule">Eşleşen kural <code class="mono">destructive outside workspace</code>, mobil-app proje politikası.</div>
+                <div class="clock">
+                  <div class="ln"><span>Karar gelmezse duraklatılır, slot boşalır</span><span><b data-cd>41:36</b> kaldı, 14:21</span></div>
+                  <div class="track"><i data-cdbar style="transform:scaleX(.7)"></i></div>
+                </div>
+              </div>
+              <div class="acts">
+                <button class="btn warn" type="button" data-otp="otp1"><svg class="ico"><use href="#i-check"/></svg>Onayla</button>
+                <button class="btn" type="button" data-reason="rs1">Gerekçeyle reddet</button>
+                <button class="btn ghost" type="button" data-mention="@J-7c1e09ab "><svg class="ico"><use href="#i-msg"/></svg>Ajana yaz</button>
+                <span class="hint">Yalnızca bu komut, bir kez. Denetim kaydına girer.</span>
+                <div class="otp" id="otp1"><label for="otp1i"><svg class="ico" style="vertical-align:-3px"><use href="#i-key"/></svg> Authenticator kodu</label><input id="otp1i" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code"><button class="btn pri" type="button">Kodu gönder ve onayla</button></div>
+                <div class="reason" id="rs1"><textarea aria-label="Ret gerekçesi" placeholder="Örn. store'u silme; sadece node_modules'u temizleyip pnpm update vite ile dene."></textarea></div>
+              </div>
+            </article>
+
+            <!-- 2 deploy -->
+            <article class="card" id="c-deploy">
+              <div class="ch"><span class="kind k-red"><svg class="ico"><use href="#i-rocket"/></svg>Onay, kritik</span><span class="meta">10 dk bekliyor</span><span class="right">2 / 5</span></div>
+              <div class="cb">
+                <h3>vitrin-web 2026.10.19-2 production'a çıksın mı?</h3>
+                <div class="sub"><span>vitrin-web</span><span class="rt oc">OpenCode</span><span>14 commit, LCP işi dahil değil</span></div>
+                <ul class="chain" aria-label="Deploy kontrolleri">
+                  <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg>Build</li>
+                  <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg>Test 286/286</li>
+                  <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg>Önizleme</li>
+                  <li class="wait"><svg class="ico"><use href="#i-waitc"/></svg>Senin kodun</li>
+                </ul>
+                <p class="say" style="margin-top:10px;font-size:14.5px;color:var(--muted)">Önceki sürüm 2026.10.19-1 11:52'de sorunsuz çıktı. Geri alma tek adım, son sürüm 30 gün tutulur.</p>
+              </div>
+              <div class="acts">
+                <button class="btn pri" type="button" data-otp="otp2"><svg class="ico"><use href="#i-rocket"/></svg>Kodla yayınla</button>
+                <button class="btn" type="button">Planla</button>
+                <button class="btn ghost" type="button">Değişiklikleri gör</button>
+                <div class="otp" id="otp2"><label for="otp2i">Authenticator kodu</label><input id="otp2i" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn pri" type="button">Yayınla</button></div>
+              </div>
+            </article>
+
+            <!-- 3 merge -->
+            <article class="card" id="c-merge">
+              <div class="ch"><span class="kind k-teal"><svg class="ico"><use href="#i-merge"/></svg>Birleştirme</span><span class="meta">3 dk önce açıldı</span><span class="right">3 / 5</span></div>
+              <div class="cb">
+                <h3><span class="mono" style="font-weight:500">int/7c1e09ab</span> main'e girsin mi? PR #218</h3>
+                <div class="sub"><span>mobil-app</span><span>9 dosya, <span class="add">+214</span> <span class="del">−131</span></span><span>main@3f9a2c1 üzerinden</span></div>
+                <ul class="chain">
+                  <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg>3/3 dal</li>
+                  <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg>Çakışma çözüldü</li>
+                  <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg>412/412 test</li>
+                  <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg>build, lint, test</li>
+                  <li class="wait"><svg class="ico"><use href="#i-waitc"/></svg>Admin onayı</li>
+                </ul>
+              </div>
+              <div class="acts">
+                <button class="btn pri" type="button" data-otp="otp3"><svg class="ico"><use href="#i-merge"/></svg>Kodla birleştir</button>
+                <button class="btn ghost" type="button">GitHub'da aç</button>
+                <span class="hint">Önce 1 numaralı onay gerekebilir: kilit dosyası değişecek.</span>
+                <div class="otp" id="otp3"><label for="otp3i">Authenticator kodu</label><input id="otp3i" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn pri" type="button">Birleştir</button></div>
+              </div>
+            </article>
+
+            <!-- 4 failure -->
+            <article class="card" id="c-fail">
+              <div class="ch"><span class="kind k-red"><svg class="ico"><use href="#i-xc"/></svg>Başarısız</span><span class="meta">26 dk önce, exit 1</span><span class="right">4 / 5</span></div>
+              <div class="cb">
+                <h3>Flaky login testini düzelt</h3>
+                <div class="sub"><span>odeme-api</span><span class="rt cx">Codex</span><span>atlas-win-02</span></div>
+                <div class="log">37 test geçti<br><span class="bad">düştü: auth/login.spec.ts › token yenileme, 40 çalıştırmada 3 kez düştü</span><br>Codex: "Zamanlayıcıyı sahteleyip yeniden denedim; yarış durumu hala var."</div>
+                <p class="say" style="margin-top:10px;font-size:14.5px">Önerim: aynı işi Claude Code ile, son checkpoint'ten başlatmak. Codex planında %35 kullandın; Claude'un 5 saatlik penceresi 14:20'de sıfırlanıyor.</p>
+              </div>
+              <div class="acts">
+                <button class="btn pri" type="button"><svg class="ico"><use href="#i-retry"/></svg>Yeniden dene</button>
+                <button class="btn" type="button">Codex yerine Claude Code ile dene</button>
+                <button class="btn ghost" type="button"><svg class="ico"><use href="#i-term"/></svg>Log'u aç</button>
+              </div>
+            </article>
+
+            <!-- 5 limit -->
+            <article class="card" id="c-limit">
+              <div class="ch"><span class="kind k-violet"><svg class="ico"><use href="#i-pause"/></svg>Limit yüzünden duraklatıldı</span><span class="meta">41 dk</span><span class="right">5 / 5</span></div>
+              <div class="cb">
+                <h3>Claude Code 5 saatlik %72, 14:20'de açılır; 2 iş bekliyor</h3>
+                <div class="meter">
+                  <div class="top"><span>5 saatlik pencere</span><b>%72, eşik %85</b></div>
+                  <div class="track" aria-hidden="true"><i></i><span class="cut"></span></div>
+                </div>
+                <ul class="rows">
+                  <li><span class="t">Sipariş özet e-postasını yeniden tasarla</span><span class="m"><span>vitrin-web</span><span class="state s-need"><svg class="ico"><use href="#i-pause"/></svg>duraklatıldı, checkpoint #2</span></span><span class="e">14:20</span></li>
+                  <li><span class="t">Ürün kartı bileşenini Storybook'a taşı</span><span class="m"><span>vitrin-web</span><span>kuyrukta #1</span></span><span class="e">14:20</span></li>
+                </ul>
+              </div>
+              <div class="acts">
+                <label class="toggle"><input type="checkbox" checked>14:20'de kendiliğinden devam et</label>
+                <button class="btn ghost" type="button" style="margin-left:auto">Codex'e taşı</button>
+              </div>
+            </article>
+
+            <!-- running digest -->
+            <article class="card" id="c-run">
+              <div class="ch"><span class="kind k-green"><span class="dot breathe" style="width:7px;height:7px"></span>Çalışıyor</span><span class="meta">5 iş, 9/23 slot</span><span class="right" data-clock>13:24:00</span></div>
+              <div class="cb">
+                <ul class="rows">
+                  <li><span class="t">Ödeme webhook'larına idempotency anahtarı ekle</span><span class="m"><span class="rt cc">Claude Code</span><span>atlas-win-01, Acil rezerve slot</span></span><span class="e"><span data-el="8">8:00</span><span class="prog"><i class="f"></i><i class="f"></i><i></i><i></i><i></i></span></span></li>
+                  <li><span class="t"><a href="#job" data-go="job">Vitest 5'e geç ve deprecation uyarılarını temizle</a></span><span class="m"><span class="rt cc">Claude Code</span><span>kestrel-mac</span><span class="state s-need"><svg class="ico"><use href="#i-shield"/></svg>onay bekliyor</span></span><span class="e"><span data-el="21">21:00</span><span class="prog"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="w"></i></span></span></li>
+                  <li><span class="t">Landing sayfasında LCP'yi 2.5 sn altına indir</span><span class="m"><span class="rt oc">OpenCode</span><span>ridge-lnx-01</span></span><span class="e"><span data-el="34">34:00</span><span class="prog"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span></span></li>
+                  <li><span class="t">API referansını OpenAPI 3.1'e taşı</span><span class="m"><span class="rt cx">Codex</span><span>atlas-win-01, slot 2</span></span><span class="e"><span data-el="52">52:00</span><span class="prog"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i></span></span></li>
+                  <li><span class="t">Haftalık bağımlılık güncellemesi</span><span class="m"><span class="rt pi">Pi</span><span>pebble-pi, Arka plan</span></span><span class="e"><span data-el="72">1:12:00</span><span class="prog"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span></span></li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="me"><p>Deploy'u 14:00'ten sonra yap, öğle trafiği düşsün.</p><small><time>13:24</time> Alex K.</small></div>
+
+        <div class="turn enter" id="lateTurn">
+          <span class="av r" aria-hidden="true"><svg class="ico"><use href="#i-bubble"/></svg></span>
+          <div class="stack">
+            <div><div class="who"><b>Remyral</b><time>13:24</time></div>
+            <p class="say">Tamam. vitrin-web 2026.10.19-2 için <strong>14:05</strong>'e plan kurdum. O an sana bildirim gelir; kodu girene kadar hiçbir şey çıkmaz. LCP işi o saate kadar biterse aynı sürüme ekleyeyim mi?</p></div>
+            <article class="card">
+              <div class="ch"><span class="kind k-teal"><svg class="ico"><use href="#i-clock"/></svg>Planlandı</span><span class="meta">vitrin-web 2026.10.19-2</span><span class="right">14:05</span></div>
+              <div class="acts" style="border-top:0">
+                <button class="btn" type="button">LCP işini de ekle</button>
+                <button class="btn ghost" type="button">Saati değiştir</button>
+                <button class="btn ghost danger" type="button">Planı geri al</button>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="ev warn" id="c-ev502"><span><svg class="ico"><use href="#i-globe"/></svg><time>13:24</time> docs.vitrin.example 502 veriyor, 4 dk. Uptime 11/12.</span></div>
+
+        <div class="typing" id="typing" aria-live="polite"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>Remyral docs.vitrin.example için son deploy'a bakıyor</div>
+      </div></div>
+
+      <div class="composer"><div class="cwrap">
+        <div class="slash" role="listbox" aria-label="Komutlar">
+          <button role="option" aria-selected="true"><code>/onayla</code><span>bekleyen bir onayı kodla onayla</span></button>
+          <button role="option"><code>/kuyruk</code><span>kuyruğu ve bekleme nedenlerini göster</span></button>
+          <button role="option"><code>/makine</code><span>bir makinenin slotlarını ve işlerini aç</span></button>
+          <button role="option"><code>/yeni</code><span>sohbetten taslak iş kartı çıkar</span></button>
+        </div>
+        <div class="chips">
+          <button class="chip" type="button" data-fill="/onayla J-7c1e09ab"><code>/onayla</code>J-7c1e09ab</button>
+          <button class="chip" type="button" data-fill="/kuyruk"><code>/kuyruk</code>4 bekliyor</button>
+          <button class="chip" type="button" data-fill="@kestrel-mac ne yapıyor?"><code>@kestrel-mac</code>ne yapıyor?</button>
+          <button class="chip" type="button" data-fill="/yeni "><code>/yeni</code>iş aç</button>
+        </div>
+        <div class="box"><textarea rows="1" aria-label="Mesaj" placeholder="Remyral'a yaz, / ile komut, @ ile makine ya da iş"></textarea><button class="send" type="button" aria-label="Gönder"><svg class="ico"><use href="#i-send"/></svg></button></div>
+        <div class="foot"><span><kbd>/</kbd> komut</span><span><kbd>@</kbd> makine, iş</span><span><kbd>⌘</kbd><kbd>↵</kbd> gönder</span><span>Onay ve birleştirme her zaman kod ister.</span></div>
+      </div></div>
+    </section>
+
+    <!-- =================== SCREEN 2: İŞ DİZİSİ =================== -->
+    <section class="screen" id="s-job" aria-label="İş dizisi">
+      <div class="scroll">
+        <div class="pin"><div class="col">
+          <div class="l1">
+            <h2>Vitest 5'e geç ve deprecation uyarılarını temizle</h2>
+            <span class="kind k-amber"><svg class="ico"><use href="#i-shield"/></svg>Onay bekliyor, bayat</span>
+          </div>
+          <div class="facts">
+            <span class="mono">J-7c1e09ab</span>
+            <span>mobil-app, Normal</span>
+            <span class="rt cc">Claude Code, sonnet-4-5</span>
+            <span><svg class="ico"><use href="#i-cpu"/></svg>kestrel-mac slot 3/4</span>
+            <span><svg class="ico"><use href="#i-branch"/></svg><code>int/7c1e09ab</code></span>
+            <span><svg class="ico"><use href="#i-flag"/></svg>checkpoint #4, 2 dk önce</span>
+            <span class="mem"><svg class="ico"><use href="#i-brain"/></svg>hafıza 18.2 / 64 KiB <i></i></span>
+            <span>21 dk, 9 dosya</span>
+          </div>
+        </div></div>
+
+        <div class="col" style="padding-top:14px">
+          <div class="ev"><span><time>13:02</time> Alex K. sohbetten başlattı</span></div>
+          <div class="me"><p>mobil-app'i Vitest 5'e geçir, deprecation uyarılarını da temizle. Normal sınıf yeter.</p><small><time>13:02</time> Alex K.</small></div>
+          <div class="ev"><span><time>13:02</time> Kuyrukta 6 sn, kestrel-mac slot 3'e atandı. Worktree hazır, sıcak önbellek isabeti.</span></div>
+
+          <div class="turn agent">
+            <span class="av cc" aria-hidden="true">CC</span>
+            <div class="stack">
+              <div><div class="who"><b>Claude Code</b><span class="role">kestrel-mac</span><time>13:03</time></div>
+              <p class="say">Önce yapılandırmaya bakıyorum. <code class="mono">vitest.config.ts</code> eski <code class="mono">deps.inline</code> anahtarını kullanıyor; Vitest 5'te bu <code class="mono">server.deps.inline</code> oldu.</p></div>
+              <div class="tools">
+                <details class="tool"><summary><span class="op">Read</span><code>vitest.config.ts</code><span class="r">84 satır</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><div class="body">import { defineConfig } from 'vitest/config'
+export default defineConfig({
+  test: { environment: 'jsdom', deps: { inline: [/@mobil\/ui/] } }
+})</div></details>
+                <details class="tool" open><summary><span class="op">Edit</span><code>vitest.config.ts</code><span class="r"><span class="add">+12</span> <span class="del">−9</span></span><svg class="ico chev"><use href="#i-chev"/></svg></summary><div class="body"><span class="del">-  deps: { inline: [/@mobil\/ui/] },</span>
+<span class="add">+  server: { deps: { inline: [/@mobil\/ui/] } },</span>
+<span class="add">+  pool: 'threads',</span></div></details>
+              </div>
+            </div>
+          </div>
+
+          <div class="turn agent">
+            <span class="av cc" aria-hidden="true">CC</span>
+            <div class="stack">
+              <div><div class="who"><b>Claude Code</b><time>13:06</time></div>
+              <p class="say">İşi üçe bölüyorum; yollar çakışmıyor, ayrı slotlarda paralel gidebilir.</p></div>
+              <div class="tools">
+                <details class="tool"><summary><span class="op">Spawn</span><code>3 alt iş</code><span class="r">yol çakışması yok</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><div class="body">src/api   → Codex        atlas-win-01
+src/web   → Claude Code  kestrel-mac
+docs      → Pi           pebble-pi</div></details>
+              </div>
+              <div class="subs">
+                <div><b>src/api</b><span class="rt cx">Codex</span><br><span class="state s-ok"><svg class="ico"><use href="#i-check"/></svg>13:14 bitti</span></div>
+                <div><b>src/web</b><span class="rt cc">Claude Code</span><br><span class="state s-ok"><svg class="ico"><use href="#i-check"/></svg>13:13 bitti</span></div>
+                <div><b>docs</b><span class="rt pi">Pi</span><br><span class="state s-ok"><svg class="ico"><use href="#i-check"/></svg>13:11 bitti</span></div>
+              </div>
+              <div class="tools">
+                <details class="tool"><summary><span class="op">Bash</span><code>pnpm vitest run --reporter=dot</code><span class="r">412 geçti, 3 uyarı</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><div class="body">Test Files  58 passed (58)
+     Tests  412 passed (412)
+  Warnings  3 (deprecated: test.poolOptions)</div></details>
+                <details class="tool"><summary><span class="op">Edit</span><code>src/web/setupTests.ts</code><span class="r"><span class="add">+4</span> <span class="del">−2</span></span><svg class="ico chev"><use href="#i-chev"/></svg></summary><div class="body"><span class="del">-import '@testing-library/jest-dom/extend-expect'</span>
+<span class="add">+import '@testing-library/jest-dom/vitest'</span></div></details>
+                <details class="tool"><summary><span class="op">Merge</span><code>3 dal → int/7c1e09ab</code><span class="r">1 çakışma</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><div class="body">CONFLICT (content): vitest.config.ts
+çözüm işi açıldı, 13:18'de çözüldü</div></details>
+                <details class="tool"><summary><span class="op">Bash</span><code>pnpm why vite</code><span class="r">vite 5.4.11 kilitte</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><div class="body">vitest 5.0.2
+└─ vite 6.0.1
+@mobil/ui 2.3.0
+└─ vite 5.4.11  (pnpm-lock.yaml'da sabit)</div></details>
+              </div>
+            </div>
+          </div>
+
+          <div class="turn agent">
+            <span class="av cc" aria-hidden="true">CC</span>
+            <div class="stack">
+              <div><div class="who"><b>Claude Code</b><time>13:21</time></div>
+              <p class="say">Kilit dosyası eski vite 5 sürümünü sabitliyor; node_modules ve pnpm store önbelleğini silip yeniden kurmam gerekiyor. Store workspace dışında olduğu için izin istiyorum.</p></div>
+
+              <article class="card" id="j-approve">
+                <div class="ch"><span class="kind k-amber"><svg class="ico"><use href="#i-shield"/></svg>Onay, yüksek risk</span><span class="meta">13:21 istendi, 13:36 bayatladı</span><span class="right" data-cd>41:36</span></div>
+                <div class="cb">
+                  <div class="cmd" style="margin-top:4px"><span class="pr">$</span><code>rm -rf node_modules ~/Library/pnpm/store/v3 &amp;&amp; pnpm install --no-frozen-lockfile</code><button type="button" data-copy aria-label="Komutu kopyala"><svg class="ico"><use href="#i-copy"/></svg>Kopyala</button></div>
+                  <ul class="touch" aria-label="Neye dokunuyor">
+                    <li><svg class="ico"><use href="#i-trash"/></svg><span class="v">Siler</span><code>mobil-app/node_modules</code><span class="sz">612 MB, içeride</span></li>
+                    <li class="out"><svg class="ico"><use href="#i-trash"/></svg><span class="v">Siler</span><code>~/Library/pnpm/store/v3 <span class="tag amber">workspace dışı</span></code><span class="sz">1.4 GB</span></li>
+                    <li><svg class="ico"><use href="#i-pen"/></svg><span class="v">Yazar</span><code>pnpm-lock.yaml</code><span class="sz">yeniden üretilir</span></li>
+                    <li><svg class="ico"><use href="#i-globe"/></svg><span class="v">Ağ</span><code>registry.npmjs.org</code><span class="sz">HTTPS 443</span></li>
+                  </ul>
+                  <div class="rule">Kural <code class="mono">destructive outside workspace</code>. Ajan farklı bir komut isterse yeniden sorulur.</div>
+                  <div class="clock">
+                    <div class="ln"><span>14:21'de duraklatılır: slot boşalır, çalışma alanı 7 gün saklanır</span><span><b data-cd>41:36</b></span></div>
+                    <div class="track"><i data-cdbar style="transform:scaleX(.7)"></i></div>
+                    <div class="ticks"><span>13:21 istendi</span><span>13:36 bayat</span><span>14:21 duraklat</span></div>
+                  </div>
+                </div>
+                <div class="acts">
+                  <button class="btn warn" type="button" data-otp="otp4"><svg class="ico"><use href="#i-check"/></svg>Onayla</button>
+                  <button class="btn" type="button" data-reason="rs4">Gerekçeyle reddet</button>
+                  <button class="btn ghost" type="button" data-mention="Store'u silmeden dene: "><svg class="ico"><use href="#i-msg"/></svg>Ajana yaz</button>
+                  <div class="otp" id="otp4"><label for="otp4i">Authenticator kodu</label><input id="otp4i" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn pri" type="button">Kodu gönder ve onayla</button></div>
+                  <div class="reason" id="rs4"><textarea aria-label="Ret gerekçesi" placeholder="Ajana gidecek gerekçe"></textarea></div>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div class="ev"><span><svg class="ico"><use href="#i-flag"/></svg><time>13:22</time> Checkpoint #4, 14 dosya, <span class="mono">refs/remana/checkpoints/a3/4</span></span></div>
+
+          <div class="turn">
+            <span class="av r" aria-hidden="true"><svg class="ico"><use href="#i-bubble"/></svg></span>
+            <div class="stack">
+              <div><div class="who"><b>Remyral</b><time>13:24</time></div>
+              <p class="say">Entegrasyon tarafı hazır, tek eksik bu onay ve ardından birleştirme. Onaylarsan kilit dosyası değişir ve testler yeniden koşar; PR #218 otomatik güncellenir.</p></div>
+              <article class="card" id="j-merge">
+                <div class="ch"><span class="kind k-teal"><svg class="ico"><use href="#i-merge"/></svg>Entegrasyon</span><span class="meta"><span class="mono">int/7c1e09ab</span>, main@3f9a2c1 üzerinden</span></div>
+                <div class="cb">
+                  <ol class="steps">
+                    <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg><span>Dallar birleştirildi<small>src/api, src/web, docs</small></span><span class="r">3/3</span></li>
+                    <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg><span>Çakışma çözüldü<small>vitest.config.ts, 1 çözüm işi</small></span><span class="r">13:18</span></li>
+                    <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg><span>Testler<small>58 dosya</small></span><span class="r">412/412</span></li>
+                    <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg><span>Doğrulama: build, lint, test<small>Report modu</small></span><span class="r">geçti</span></li>
+                    <li class="ok"><svg class="ico"><use href="#i-checkc"/></svg><span>PR #218 açıldı<small>GitHub, mobil-app</small></span><span class="r">13:21</span></li>
+                    <li class="wait"><svg class="ico"><use href="#i-waitc"/></svg><span>Birleştirme onayı<small>admin ve authenticator kodu</small></span><span class="r">bekliyor</span></li>
+                  </ol>
+                </div>
+                <div class="acts">
+                  <button class="btn pri" type="button"><svg class="ico"><use href="#i-merge"/></svg>Kodla birleştir</button>
+                  <button class="btn ghost" type="button">Farkı gör, 9 dosya</button>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div class="typing"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>Claude Code kararını bekliyor</div>
+        </div>
+      </div>
+      <div class="composer"><div class="cwrap">
+        <div class="chips">
+          <button class="chip" type="button" data-fill="Store'u silmeden, sadece pnpm update vite ile dene."><code>Ajana</code>store'u silmeden dene</button>
+          <button class="chip" type="button" data-fill="/makine kestrel-mac"><code>/makine</code>kestrel-mac</button>
+          <button class="chip" type="button" data-fill="/checkpoint 4'e dön"><code>/checkpoint</code>#4'e dön</button>
+        </div>
+        <div class="box"><textarea rows="1" aria-label="Ajana mesaj" placeholder="J-7c1e09ab dizisine yaz, mesaj ajana iletilir"></textarea><button class="send" type="button" aria-label="Gönder"><svg class="ico"><use href="#i-send"/></svg></button></div>
+      </div></div>
+    </section>
+
+    <!-- =================== SCREEN 3: YENİ İŞ =================== -->
+    <section class="screen" id="s-new" aria-label="Yeni iş">
+      <div class="scroll"><div class="col">
+        <div class="ev"><span><time>12:58</time> Daha önce</span></div>
+        <div class="me"><p>ops-scripts'te log arşivini gece sıkıştır, acelesi yok.</p><small><time>12:58</time> Alex K.</small></div>
+        <div class="turn">
+          <span class="av r" aria-hidden="true"><svg class="ico"><use href="#i-bubble"/></svg></span>
+          <div class="stack">
+            <article class="card">
+              <div class="ch"><span class="kind k-green"><svg class="ico"><use href="#i-check"/></svg>Kuyruğa alındı</span><span class="meta">Gece log arşivini sıkıştır</span><span class="right">J-5b90e2d4</span></div>
+              <div class="cb"><div class="sub"><span>ops-scripts</span><span>Arka plan</span><span class="rt pi">Pi</span><span>pebble-pi</span><span>22:00 off-peak penceresinde başlar, kuyrukta #4</span></div></div>
+              <div class="acts" style="padding:8px 16px"><button class="btn ghost" type="button">Geri al</button><button class="btn ghost" type="button">Şimdi başlat</button></div>
+            </article>
+          </div>
+        </div>
+
+        <div class="ev"><span><time>13:26</time></span></div>
+        <div class="me"><p>odeme-api'de fatura PDF'leri çok yavaş üretiliyor. PDF üretimini 2 saniyenin altına indiren bir iş aç. Claude limiti dolmak üzere, ona göre ayarla.</p><small><time>13:26</time> Alex K.</small></div>
+
+        <div class="turn">
+          <span class="av r" aria-hidden="true"><svg class="ico"><use href="#i-bubble"/></svg></span>
+          <div class="stack" id="draftStack">
+            <div><div class="who"><b>Remyral</b><time>13:26</time></div>
+            <p class="say">Taslağı çıkardım, istediğin alanı burada değiştir. Claude Code 5 saatlik pencere %72'de ve bu iş tahminen %9 daha yer, o yüzden <strong>Codex</strong> öneriyorum. Bir de çakışma riski var, aşağıda.</p></div>
+
+            <article class="card" id="draft">
+              <div class="ch"><span class="kind k-teal"><svg class="ico"><use href="#i-pen"/></svg>Taslak iş kartı</span><span class="meta">henüz kuyrukta değil</span><span class="right">odeme-api</span></div>
+              <div class="cb">
+                <div class="form">
+                  <div class="f"><label for="ft">Başlık</label><input type="text" id="ft" value="Fatura PDF üretimini 2 sn altına indir"></div>
+                  <div class="two">
+                    <div class="f"><label for="fp">Proje</label><select id="fp"><option>odeme-api</option><option>vitrin-web</option><option>mobil-app</option><option>docs-site</option><option>ops-scripts</option></select></div>
+                    <div class="f"><span class="lb">Sınıf</span><div class="seg" role="group" aria-label="Kuyruk sınıfı"><button type="button" aria-pressed="false">Acil</button><button type="button" aria-pressed="true">Normal</button><button type="button" aria-pressed="false">Arka plan</button></div></div>
+                  </div>
+                  <div class="f"><span class="lb">Runtime ve makine</span>
+                    <div class="opts" role="radiogroup">
+                      <label class="opt"><input type="radio" name="rt" checked><span><b><span class="rt cx">Codex</span> atlas-win-02</b><small>Plan %35, 16:05'te sıfırlanır. atlas-win-02'de 2 slot boş; odeme-api burada daha önce koştu, sıcak önbellek var.</small></span><span class="tagline k-teal">önerilen</span></label>
+                      <label class="opt"><input type="radio" name="rt"><span><b><span class="rt cc">Claude Code</span> atlas-win-01</b><small>5 saatlik pencere %72; eşiğe takılırsa 14:20'ye kadar bekler.</small></span><span class="tagline k-violet">limit</span></label>
+                      <label class="opt"><input type="radio" name="rt"><span><b><span class="rt oc">OpenCode</span> ridge-lnx-02</b><small>API bütçesi $3.12 / $20, tahmini $1.40. Linux'ta PDF fontları farklı render edebilir.</small></span><span class="tagline k-amber">maliyet</span></label>
+                    </div>
+                  </div>
+                  <div class="f"><label for="fa">Kabul kriterleri</label><textarea id="fa">- 10 sayfalık örnek faturada p95 üretim süresi 2 sn altında
+- Mevcut PDF snapshot testleri değişmeden geçer
+- Font gömme ve Türkçe karakterler (ğ, ş, İ) bozulmaz</textarea></div>
+                  <div class="warnbox"><svg class="ico"><use href="#i-shield"/></svg><span>Kuyrukta <strong>Fatura PDF şablonunu sadeleştir</strong> var; ikisi de <code class="mono">src/invoice/pdf.ts</code>'e dokunabilir. <label class="toggle" style="margin-top:6px;display:flex"><input type="checkbox" checked>Şablon işi bittikten sonra başlat</label></span></div>
+                  <div class="f"><span class="lb">Etki</span>
+                    <div class="impact"><div><b>25 ila 40 dk</b>tahmini süre</div><div><b>~$0.90</b>Codex planından %4</div><div><b>1 slot</b>atlas-win-02, 2/3 olur</div></div>
+                  </div>
+                  <div class="f"><span class="lb">Kuyrukta nereye girer</span>
+                    <ol class="qline">
+                      <li><span class="p">#1</span><span>Ürün kartı bileşenini Storybook'a taşı</span><span class="w">14:20 limit</span></li>
+                      <li><span class="p">#2</span><span>iOS push sertifika yenileme betiği</span><span class="w">macOS bekliyor</span></li>
+                      <li><span class="p">#3</span><span>Fatura PDF şablonunu sadeleştir</span><span class="w">eşzamanlı 2/2</span></li>
+                      <li class="new"><span class="p">#4</span><span>Fatura PDF üretimini 2 sn altına indir</span><span class="w">#3'ten sonra</span></li>
+                      <li><span class="p">#5</span><span>Gece log arşivini sıkıştır</span><span class="w">22:00</span></li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+              <div class="acts">
+                <button class="btn pri" type="button" id="queueBtn"><svg class="ico"><use href="#i-plus"/></svg>Kuyruğa al</button>
+                <button class="btn" type="button">Düzenle</button>
+                <button class="btn ghost" type="button">Vazgeç</button>
+                <span class="hint">Kuyruğa alınca sana sorulmadan başlar; onay gerektiren adımlar yine sana gelir.</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div></div>
+      <div class="composer"><div class="cwrap">
+        <div class="slash" role="listbox" aria-label="Komutlar" id="slashNew">
+          <button role="option" aria-selected="true"><code>/yeni</code><span>sohbetten taslak iş kartı çıkar</span></button>
+          <button role="option"><code>/kuyruk</code><span>kuyruğu ve bekleme nedenlerini göster</span></button>
+          <button role="option"><code>/makine</code><span>bir makinenin slotlarını ve işlerini aç</span></button>
+          <button role="option"><code>/onayla</code><span>bekleyen bir onayı kodla onayla</span></button>
+        </div>
+        <div class="box"><textarea rows="1" aria-label="Mesaj" placeholder="Bir iş tarif et, Remyral taslak karta çevirir. /yeni ile de başlayabilirsin"></textarea><button class="send" type="button" aria-label="Gönder"><svg class="ico"><use href="#i-send"/></svg></button></div>
+      </div></div>
+    </section>
+  </main>
+
+  <!-- =================== CONTEXT RAIL =================== -->
+  <aside class="rail" aria-label="Bağlam">
+    <section>
+      <h2>Senden bekleyen <span>5</span></h2>
+      <ul class="need">
+        <li><a href="#c-approve" data-jump><svg class="ico i-a"><use href="#i-shield"/></svg><span>Workspace dışı silme</span><time data-cd>41:36</time></a></li>
+        <li><a href="#c-deploy" data-jump><svg class="ico i-r"><use href="#i-rocket"/></svg><span>vitrin-web production</span><time>14:05</time></a></li>
+        <li><a href="#c-merge" data-jump><svg class="ico i-t"><use href="#i-merge"/></svg><span>PR #218 birleştir</span><time>3 dk</time></a></li>
+        <li><a href="#c-fail" data-jump><svg class="ico i-r"><use href="#i-xc"/></svg><span>Flaky login testi</span><time>26 dk</time></a></li>
+        <li><a href="#c-limit" data-jump><svg class="ico i-v"><use href="#i-pause"/></svg><span>Sipariş e-postası, limit</span><time>14:20</time></a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Slotlar <span>9/23</span></h2>
+      <div class="slots">
+        <div><span class="nm">atlas-win-01</span><span class="cells"><i class="u"></i><i class="u"></i><i></i></span><span class="n">2/3</span></div>
+        <div><span class="nm">atlas-win-02</span><span class="cells"><i class="u"></i><i></i><i></i></span><span class="n">1/3</span></div>
+        <div><span class="nm">kestrel-mac</span><span class="cells"><i class="u"></i><i class="u"></i><i class="w"></i><i></i></span><span class="n">3/4</span></div>
+        <div><span class="nm">ridge-lnx-01</span><span class="cells"><i class="u"></i><i></i><i></i><i></i></span><span class="n">1/4</span></div>
+        <div><span class="nm">ridge-lnx-02</span><span class="cells"><i class="u"></i><i></i><i></i><i></i></span><span class="n">1/4</span></div>
+        <div class="off"><span class="nm">ridge-lnx-03</span><span class="cells"><i class="x"></i><i class="x"></i><i class="x"></i><i class="x"></i></span><span class="n">kapalı</span></div>
+        <div><span class="nm">pebble-pi</span><span class="cells"><i class="u"></i></span><span class="n">1/1</span></div>
+      </div>
+    </section>
+    <section>
+      <h2>Limit pencereleri</h2>
+      <div class="lims">
+        <div class="lim" style="--c:var(--violet)"><div class="l1"><b>Claude Code 5 saat</b><span>%72, 14:20</span></div><div class="bar2"><i style="width:72%"></i></div></div>
+        <div class="lim" style="--c:var(--cc)"><div class="l1"><b>Claude Code haftalık</b><span>%41, Pzt 09:00</span></div><div class="bar2"><i style="width:41%"></i></div></div>
+        <div class="lim" style="--c:var(--amber)"><div class="l1"><b>Opus haftalık</b><span>%88</span></div><div class="bar2"><i style="width:88%"></i></div></div>
+        <div class="lim" style="--c:var(--cx)"><div class="l1"><b>Codex plan</b><span>%35, 16:05</span></div><div class="bar2"><i style="width:35%"></i></div></div>
+        <div class="lim" style="--c:var(--oc)"><div class="l1"><b>OpenCode bütçe</b><span>$3.12 / $20</span></div><div class="bar2"><i style="width:16%"></i></div></div>
+        <div class="lim"><div class="l1"><b>Pi, yerel model</b><span>limit yok</span></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Sağlık</h2>
+      <ul class="health">
+        <li><span class="dot"></span>Master eu-central-1, Redis kuyruğu</li>
+        <li><span class="dot"></span>Yedek şifreli, 6 dk önce, R2</li>
+        <li><span class="dot"></span>Standby gecikme 2 sn</li>
+        <li class="bad"><span class="dot"></span>docs.vitrin.example 502, 4 dk</li>
+        <li class="bad"><span class="dot"></span>ridge-lnx-03 kapalı, 2 sa 14 dk</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Bugün</h2>
+      <div class="today"><div><b>37</b><span>iş</span></div><div><b>31</b><span>başarılı</span></div><div><b>$14.80</b><span>maliyet</span></div></div>
+    </section>
+  </aside>
+</div>
+
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* tabs */
+  var ids=['home','job','new'];
+  function show(id){
+    if(ids.indexOf(id)<0) id='home';
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.toggle('on', s.id==='s-'+id); });
+    document.querySelectorAll('.tab').forEach(function(t){ t.setAttribute('aria-selected', t.dataset.s===id?'true':'false'); });
+  }
+  document.querySelectorAll('.tab').forEach(function(t){ t.addEventListener('click',function(){ history.replaceState(null,'','#'+t.dataset.s); show(t.dataset.s); window.scrollTo(0,0); }); });
+  document.querySelectorAll('[data-go]').forEach(function(a){ a.addEventListener('click',function(e){ e.preventDefault(); history.replaceState(null,'','#'+a.dataset.go); show(a.dataset.go); window.scrollTo(0,0); }); });
+  /* rail & strip jump links: go to home thread card */
+  document.querySelectorAll('.need a, .strip a').forEach(function(a){
+    a.addEventListener('click',function(e){
+      e.preventDefault(); var id=a.getAttribute('href').slice(1);
+      history.replaceState(null,'','#home'); show('home');
+      var el=document.getElementById(id); if(!el) return;
+      el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
+      el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    });
+  });
+  window.addEventListener('hashchange',function(){ var h=location.hash.slice(1); if(ids.indexOf(h)>=0) show(h); });
+  show(location.hash.slice(1)||'home');
+
+  /* theme */
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var r=document.documentElement, cur=r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    r.dataset.theme = cur==='dark'?'light':'dark';
+  });
+
+  /* approve: reveal OTP, reject: reveal reason */
+  document.querySelectorAll('[data-otp]').forEach(function(b){ b.addEventListener('click',function(){ var o=document.getElementById(b.dataset.otp); o.classList.toggle('open'); if(o.classList.contains('open')) o.querySelector('input').focus(); }); });
+  document.querySelectorAll('[data-reason]').forEach(function(b){ b.addEventListener('click',function(){ var o=document.getElementById(b.dataset.reason); o.classList.toggle('open'); if(o.classList.contains('open')) o.querySelector('textarea').focus(); }); });
+  function composerOf(el){ var s=el.closest('.screen'); return s && s.querySelector('.box textarea'); }
+  document.querySelectorAll('[data-mention],[data-fill]').forEach(function(b){ b.addEventListener('click',function(){ var t=composerOf(b); if(!t) return; t.value=b.dataset.mention||b.dataset.fill; t.focus(); t.dispatchEvent(new Event('input')); }); });
+  document.querySelectorAll('[data-copy]').forEach(function(b){ b.addEventListener('click',function(){ var c=b.parentNode.querySelector('code').textContent; if(navigator.clipboard) navigator.clipboard.writeText(c).catch(function(){}); b.lastChild.textContent='Kopyalandı'; setTimeout(function(){ b.lastChild.textContent='Kopyala'; },1400); }); });
+  document.querySelectorAll('.seg').forEach(function(g){ g.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; g.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); }); }); });
+
+  /* slash menu on home composer */
+  var homeBox=document.querySelector('#s-home .box textarea'), homeSlash=document.querySelector('#s-home .slash');
+  homeBox.addEventListener('input',function(){ homeSlash.classList.toggle('open', /^\/\w*$/.test(homeBox.value)); });
+  homeBox.addEventListener('blur',function(){ setTimeout(function(){ homeSlash.classList.remove('open'); },150); });
+  document.querySelectorAll('.slash button').forEach(function(b){ b.addEventListener('mousedown',function(e){ e.preventDefault(); var t=composerOf(b); t.value=b.querySelector('code').textContent+' '; b.closest('.slash').classList.remove('open'); t.focus(); }); });
+  var newBox=document.querySelector('#s-new .box textarea'), newSlash=document.getElementById('slashNew');
+  newBox.addEventListener('input',function(){ newSlash.classList.toggle('open', /^\/\w*$/.test(newBox.value)); });
+
+  /* queue the draft: append confirmation turn (the authored moment) */
+  document.getElementById('queueBtn').addEventListener('click',function(){
+    var btn=this; if(btn.disabled) return; btn.disabled=true; btn.lastChild.textContent='Kuyruğa alındı';
+    var col=document.querySelector('#s-new .col');
+    var t=document.createElement('div'); t.className='turn'+(reduce?'':' enter');
+    var title=document.getElementById('ft').value;
+    t.innerHTML='<span class="av r" aria-hidden="true"><svg class="ico"><use href="#i-bubble"/></svg></span><div class="stack"><article class="card"><div class="ch"><span class="kind k-green"><svg class="ico"><use href="#i-check"/></svg>Kuyruğa alındı</span><span class="meta"></span><span class="right">J-8d2f41c0</span></div><div class="cb"><div class="sub"><span>odeme-api</span><span>Normal</span><span class="rt cx">Codex</span><span>atlas-win-02</span><span>#4, şablon işi bitince başlar</span></div></div><div class="acts" style="padding:8px 16px"><button class="btn ghost" type="button">Geri al</button><button class="btn ghost" type="button">Kuyruğu aç</button></div></article></div>';
+    t.querySelector('.meta').textContent=title;
+    col.appendChild(t); t.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
+  });
+
+  /* live clock + countdowns + elapsed (13:24:00 at load) */
+  var start=Date.now(), base=13*3600+24*60, cd0=41*60+36, cdTotal=60*60;
+  function pad(n){ return (n<10?'0':'')+n; }
+  function tick(){
+    var s=Math.floor((Date.now()-start)/1000), now=base+s;
+    var hh=Math.floor(now/3600), mm=Math.floor(now/60)%60, ss=now%60;
+    document.querySelectorAll('[data-clock]').forEach(function(e){ e.textContent=hh+':'+pad(mm)+':'+pad(ss); });
+    var c=Math.max(0,cd0-s), txt=pad(Math.floor(c/60))+':'+pad(c%60);
+    document.querySelectorAll('[data-cd],[data-cd-short]').forEach(function(e){ e.textContent=txt; });
+    document.querySelectorAll('[data-cdbar]').forEach(function(e){ e.style.transform='scaleX('+(c/cdTotal).toFixed(4)+')'; });
+    document.querySelectorAll('[data-el]').forEach(function(e){ var t=(+e.dataset.el)*60+s, h=Math.floor(t/3600), m=Math.floor(t/60)%60; e.textContent=(h?h+':'+pad(m):m)+':'+pad(t%60); });
+  }
+  tick(); setInterval(tick,1000);
+
+  /* one authored moment: typing indicator, then the late turn rises in */
+  var late=document.getElementById('lateTurn'), typing=document.getElementById('typing');
+  if(!reduce){ late.style.display='none'; setTimeout(function(){ late.style.display=''; },900); }
+})();
+</script>

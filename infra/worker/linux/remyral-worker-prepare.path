@@ -1,0 +1,13 @@
+# Remyral worker - trigger for privileged sandbox preparation (p5-sandbox-ops). The worker writes the signed
+# sandbox.prepare command it received into its own data dir; systemd (not the worker) then starts
+# remyral-worker-prepare.service as root, which re-verifies the master's signature before doing anything.
+
+[Unit]
+Description=Remyral worker sandbox prepare requests
+
+[Path]
+PathChanged=/var/lib/remyral-worker/sandbox/prepare-request.json
+Unit=remyral-worker-prepare.service
+
+[Install]
+WantedBy=multi-user.target

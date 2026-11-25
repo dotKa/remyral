@@ -1,0 +1,48 @@
+{
+  "name": "remana-agent-cluster",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=24.11.0 <25"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "typecheck": "tsc -p tsconfig.json && pnpm -r --if-present typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "check:docs": "node scripts/check-adr-index.mjs",
+    "check:i18n": "node scripts/i18n/check-catalogs.mjs && node scripts/i18n/inventory.mjs --check",
+    "check:leaks": "node scripts/security/public-denylist.mjs --tree",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:docs && pnpm check:i18n && pnpm check:leaks && pnpm security:pins",
+    "dev:keygen": "node infra/dev/keygen.mjs",
+    "dev:up": "docker compose --env-file .env -f infra/dev/compose.yaml up -d --wait",
+    "dev:down": "docker compose --env-file .env -f infra/dev/compose.yaml down",
+    "e2e:fleet": "node scripts/e2e/fleet-docker.mjs",
+    "e2e:compose": "node scripts/e2e/compose-coolify.mjs",
+    "e2e:backup": "node scripts/e2e/backup-roundtrip.mjs",
+    "e2e:backup-drill": "node scripts/e2e/backup-drill.mjs",
+    "e2e:backup-standby": "node scripts/e2e/backup-standby.mjs",
+    "chaos": "node scripts/e2e/chaos.mjs",
+    "smoke:master": "pnpm build && node scripts/smoke-master.mjs",
+    "scan:secrets": "pnpm --filter @remyral/observability build && node packages/observability/bin/scan-secrets.mjs",
+    "security:pins": "node scripts/security/pin-audit.mjs && node scripts/security/runtime-pins.mjs && node scripts/security/runtime-install-manifest.mjs --check && node scripts/security/code-images.mjs --check",
+    "security:audit": "pnpm audit --prod && pnpm audit signatures",
+    "security:sbom": "node scripts/security/sbom.mjs",
+    "security:scan": "node scripts/security/vuln-scan.mjs",
+    "security:runtime-checksums": "node scripts/security/runtime-pins.mjs --online",
+    "notices:third-party": "node scripts/third-party-notices.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.12.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.4"
+  }
+}

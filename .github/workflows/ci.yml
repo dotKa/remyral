@@ -1,0 +1,96 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Worker targets: Linux x64/arm64, macOS arm64, Windows x64 (ADR-0002).
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # p7-secrets-scan scans the whole history.
+          fetch-depth: 0
+          # No later step pushes or calls the API: keep the token out of .git/config.
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+          # setup-node v5 turns on its pnpm cache when package.json has packageManager, and that cache step
+          # needs pnpm before `corepack enable` below has installed it ("Unable to locate executable file: pnpm").
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      # Master integration tests need Postgres + Redis (infra/dev). Linux runners have Docker; hosted
+      # macOS/Windows runners cannot run the Linux images, so integration tests are skipped explicitly there.
+      - name: Start dev stack
+        if: runner.os == 'Linux'
+        run: pnpm dev:keygen && pnpm dev:up
+      - run: pnpm verify
+        env:
+          REMYRAL_INTEGRATION: ${{ runner.os == 'Linux' && 'run' || 'skip' }}
+      - run: pnpm build
+      - name: Smoke-start the built master
+        if: runner.os == 'Linux'
+        run: node scripts/smoke-master.mjs
+      # p7-secrets-scan (A-SEC-3): working tree + every commit, then the built web bundle with canaries in
+      # the build environment (secret-looking values, server env names and `process.env` must not appear).
+      - name: Secret scan (repository and history)
+        if: runner.os == 'Linux' && runner.arch == 'X64'
+        run: pnpm scan:secrets --history
+      - name: Web bundle secret / env-leak scan with canaries
+        if: runner.os == 'Linux' && runner.arch == 'X64'
+        run: |
+          REMYRAL_CANARY_SECRET="canary-$(openssl rand -hex 16)"
+          VITE_REMYRAL_CANARY_TOKEN="canary-$(openssl rand -hex 16)"
+          export REMYRAL_CANARY_SECRET VITE_REMYRAL_CANARY_TOKEN
+          pnpm --filter @remyral/web build
+          pnpm scan:secrets --bundle apps/web/dist --canary-env REMYRAL_CANARY_SECRET,VITE_REMYRAL_CANARY_TOKEN
+
+  # Public-repository leak gate: owner-specific content (scripts/security/public-denylist.json) and secrets
+  # (gitleaks, .gitleaks.toml) in the tracked tree and in every commit. Node built-ins only: no install needed.
+  leaks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Public denylist (tracked tree)
+        run: node scripts/security/public-denylist.mjs --tree
+      - name: Public denylist (history, commit messages and e-mails)
+        if: always()
+        run: node scripts/security/public-denylist.mjs --history
+      - name: Install gitleaks (pinned release, sha256-verified)
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          # sha256 of gitleaks_8.30.1_linux_x64.tar.gz (the release's gitleaks_8.30.1_checksums.txt)
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+      - name: gitleaks (tracked tree)
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/tree"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/tree"
+          "$RUNNER_TEMP/gitleaks" dir --redact --no-banner --config .gitleaks.toml "$RUNNER_TEMP/tree"
+      - name: gitleaks (history)
+        if: always()
+        run: '"$RUNNER_TEMP/gitleaks" git --redact --no-banner --config .gitleaks.toml .'

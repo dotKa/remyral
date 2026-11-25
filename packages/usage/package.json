@@ -1,0 +1,23 @@
+{
+  "name": "@remyral/usage",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Pure, DB-free usage and cost math: cost classes with provenance, price selection, aggregation with coverage flags and budget evaluation. See docs/design/p6-cost.md.",
+  "exports": {
+    ".": {
+      "@remyral/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "vitest": "5.0.4"
+  }
+}

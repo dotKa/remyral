@@ -1,0 +1,505 @@
+{
+  "uid": "remyral-jobs-chat-costs",
+  "title": "Remyral \u2014 jobs, chat and costs",
+  "description": "Job lifecycle, queue wait, chat turns and budgets (p16-observability).",
+  "tags": ["remyral"],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": false,
+  "graphTooltip": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "id": 101,
+      "type": "row",
+      "title": "Jobs",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 102,
+      "type": "timeseries",
+      "title": "Jobs by state",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "remyral-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "sum by (state) (remyral_jobs{state=~\"QUEUED|RESERVED|RUNNING|VERIFYING|AWAITING_APPROVAL|BLOCKED\"})",
+          "legendFormat": "{{state}}"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "type": "timeseries",
+      "title": "Queue wait p50 / p95 (time in QUEUED)",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "remyral-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(remyral_job_state_seconds_bucket{state=\"QUEUED\"}[30m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(remyral_job_state_seconds_bucket{state=\"QUEUED\"}[30m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "type": "timeseries",
+      "title": "Job transitions per hour by target state",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "remyral-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "sum by (to) (rate(remyral_job_transitions_total[15m])) * 3600",
+          "legendFormat": "{{to}}"
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "type": "timeseries",
+      "title": "Job failures per hour by runtime",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "remyral-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "sum by (runtime, to) (rate(remyral_job_failures_total[30m])) * 3600",
+          "legendFormat": "{{runtime}} {{to}}"
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "type": "timeseries",
+      "title": "Job duration p95 by runtime (creation to end)",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "remyral-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, runtime) (rate(remyral_job_duration_seconds_bucket[1h])))",
+          "legendFormat": "{{runtime}}"
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "type": "timeseries",
+      "title": "Workflow runs by state",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "remyral-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "sum by (state) (remyral_workflow_runs)",
+          "legendFormat": "{{state}}"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "max(remyral_workflow_timer_lag_seconds)",
+          "legendFormat": "timer lag (s)"
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "type": "row",
+      "title": "Chat",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 109,
+      "type": "timeseries",
+      "title": "Chat turns per hour by outcome",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "remyral-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "sum by (outcome) (rate(remyral_chat_turns_total[15m])) * 3600",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "type": "timeseries",
+      "title": "Chat turn duration p50 / p95",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "remyral-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(remyral_chat_turn_duration_seconds_bucket[30m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(remyral_chat_turn_duration_seconds_bucket[30m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "type": "row",
+      "title": "Costs",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 112,
+      "type": "timeseries",
+      "title": "Budget consumption (used / limit) in the current window",
+      "description": "Enabled budgets; 1.0 = the limit. A lower bound when cost coverage is incomplete (ADR-0008).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "remyral-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "remyral-prometheus"
+          },
+          "expr": "max by (budget_id, metric, scope) (remyral_budget_consumption_ratio)",
+          "legendFormat": "{{scope}} {{metric}} {{budget_id}}"
+        }
+      ]
+    }
+  ]
+}

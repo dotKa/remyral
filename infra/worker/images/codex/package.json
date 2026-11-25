@@ -1,0 +1,10 @@
+{
+  "name": "remyral-runtime-codex",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "Locked install of the codex runtime pin for the container image (p7-supply-chain). Regenerate: docs/security/dependency-policy.md §4.",
+  "dependencies": {
+    "@openai/codex": "0.164.0"
+  }
+}

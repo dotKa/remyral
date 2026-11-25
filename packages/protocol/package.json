@@ -1,0 +1,118 @@
+{
+  "name": "@remyral/protocol",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Versioned worker <-> master wire protocol (Zod schemas). See ADR-0011.",
+  "exports": {
+    ".": {
+      "@remyral/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./release": {
+      "@remyral/source": "./src/release.ts",
+      "types": "./dist/release.d.ts",
+      "default": "./dist/release.js"
+    },
+    "./auth": {
+      "@remyral/source": "./src/auth.ts",
+      "types": "./dist/auth.d.ts",
+      "default": "./dist/auth.js"
+    },
+    "./credential-seal": {
+      "@remyral/source": "./src/credential-seal.ts",
+      "types": "./dist/credential-seal.d.ts",
+      "default": "./dist/credential-seal.js"
+    },
+    "./stream-mux": {
+      "@remyral/source": "./src/stream-mux.ts",
+      "types": "./dist/stream-mux.d.ts",
+      "default": "./dist/stream-mux.js"
+    },
+    "./git-identity": {
+      "@remyral/source": "./src/git-identity.ts",
+      "types": "./dist/git-identity.d.ts",
+      "default": "./dist/git-identity.js"
+    },
+    "./git-central-rules": {
+      "@remyral/source": "./src/git-central-rules.ts",
+      "types": "./dist/git-central-rules.d.ts",
+      "default": "./dist/git-central-rules.js"
+    },
+    "./git-host-rules": {
+      "@remyral/source": "./src/git-host-rules.ts",
+      "types": "./dist/git-host-rules.d.ts",
+      "default": "./dist/git-host-rules.js"
+    },
+    "./runtime-models": {
+      "@remyral/source": "./src/runtime-models.ts",
+      "types": "./dist/runtime-models.d.ts",
+      "default": "./dist/runtime-models.js"
+    },
+    "./input-bundle-files": {
+      "@remyral/source": "./src/input-bundle-files.ts",
+      "types": "./dist/input-bundle-files.d.ts",
+      "default": "./dist/input-bundle-files.js"
+    },
+    "./site-files": {
+      "@remyral/source": "./src/site-files.ts",
+      "types": "./dist/site-files.d.ts",
+      "default": "./dist/site-files.js"
+    },
+    "./approval-details": {
+      "@remyral/source": "./src/approval-details.ts",
+      "types": "./dist/approval-details.d.ts",
+      "default": "./dist/approval-details.js"
+    },
+    "./job-messages": {
+      "@remyral/source": "./src/job-messages.ts",
+      "types": "./dist/job-messages.d.ts",
+      "default": "./dist/job-messages.js"
+    },
+    "./questions": {
+      "@remyral/source": "./src/questions.ts",
+      "types": "./dist/questions.d.ts",
+      "default": "./dist/questions.js"
+    },
+    "./plans": {
+      "@remyral/source": "./src/plans.ts",
+      "types": "./dist/plans.d.ts",
+      "default": "./dist/plans.js"
+    },
+    "./runtime-usage": {
+      "@remyral/source": "./src/runtime-usage.ts",
+      "types": "./dist/runtime-usage.d.ts",
+      "default": "./dist/runtime-usage.js"
+    },
+    "./reasons": {
+      "@remyral/source": "./src/reasons.ts",
+      "types": "./dist/reasons.d.ts",
+      "default": "./dist/reasons.js"
+    },
+    "./safe-commands": {
+      "@remyral/source": "./src/safe-commands/index.ts",
+      "types": "./dist/safe-commands/index.d.ts",
+      "default": "./dist/safe-commands/index.js"
+    },
+    "./chat-secrets": {
+      "@remyral/source": "./src/chat-secrets.ts",
+      "types": "./dist/chat-secrets.d.ts",
+      "default": "./dist/chat-secrets.js"
+    },
+    "./job-title": {
+      "@remyral/source": "./src/job-title.ts",
+      "types": "./dist/job-title.d.ts",
+      "default": "./dist/job-title.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "jsonschema": "pnpm build && node scripts/emit-json-schema.mjs"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}

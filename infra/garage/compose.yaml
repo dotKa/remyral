@@ -1,0 +1,33 @@
+# Garage (S3-compatible object store) for Remyral backups on the control-plane host (replaces AWS S3;
+# MinIO was rejected because upstream is archived and unpatched).
+# Single node, no replication. Same host as the database: protects against accidental deletion and
+# logical corruption, NOT against losing the instance — see docs/ops/backups.md "Garage target".
+#
+#   sudo docker compose -p remyral-garage -f infra/garage/compose.yaml up -d
+#
+# The S3 API is published on 127.0.0.1 only (the backup timer runs on the host). Admin/RPC/web ports are
+# not published. Config with secrets lives in /data/remyral/garage/garage.toml (root, 0600), created by
+# infra/garage/setup.sh.
+name: remyral-garage
+services:
+  garage:
+    # dxflrs/garage v2.3.0 — pin by digest (setup.sh prints the resolved digest; keep it here).
+    image: ${GARAGE_IMAGE:-dxflrs/garage:v2.3.0@sha256:866bd13ed2038ba7e7190e840482bc27234c4afaf77be8cfa439ae088c1e4690}
+    restart: unless-stopped
+    command: ['/garage', 'server']
+    volumes:
+      - /data/remyral/garage/garage.toml:/etc/garage.toml:ro
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+    ports:
+      - '127.0.0.1:3900:3900'
+    read_only: true
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '3' }
+volumes:
+  garage-meta: {}
+  garage-data: {}

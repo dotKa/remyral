@@ -1,0 +1,50 @@
+# Local development stack (p1-local-stack). Not used in production (see infra/coolify, p1-data-services).
+# Ports are published on 127.0.0.1 only; credentials come from the git-ignored root .env
+# (create it with `pnpm dev:keygen`). Start/stop with `pnpm dev:up` / `pnpm dev:down`.
+name: remyral-dev
+
+services:
+  postgres:
+    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${REMYRAL_PG_USER:?set REMYRAL_PG_USER in .env (run pnpm dev:keygen)}
+      POSTGRES_PASSWORD: ${REMYRAL_PG_PASSWORD:?set REMYRAL_PG_PASSWORD in .env (run pnpm dev:keygen)}
+      POSTGRES_DB: ${REMYRAL_PG_DB:-remyral}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    ports:
+      - '127.0.0.1:${REMYRAL_PG_PORT:-55432}:5432'
+    volumes:
+      # Postgres 18+ images keep PGDATA under /var/lib/postgresql/<major>/docker; mount the parent.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  redis:
+    image: redis:8.10.2-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REMYRAL_REDIS_PASSWORD:?set REMYRAL_REDIS_PASSWORD in .env (run pnpm dev:keygen)}
+    # The password is passed on the command line inside the container only (dev stack, loopback-bound).
+    command:
+      - sh
+      - -c
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --save 60 1000
+    ports:
+      - '127.0.0.1:${REMYRAL_REDIS_PORT:-56379}:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+volumes:
+  pgdata:
+  redisdata:

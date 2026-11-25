@@ -1,0 +1,11 @@
+#!/bin/sh
+# Fake launchctl for installer dry-run tests: `print` reports per FAKE_LOADED (1 = loaded);
+# every state-changing subcommand fails loudly (a dry-run must never get here).
+case "$1" in
+  print)
+    if [ "$FAKE_LOADED" = 1 ]; then printf 'system/com.remyral.worker = {\n\tstate = running\n}\n'; exit 0; fi
+    echo "Could not find service" >&2
+    exit 113 ;;
+esac
+echo "fake launchctl: write attempted: $*" >&2
+exit 99

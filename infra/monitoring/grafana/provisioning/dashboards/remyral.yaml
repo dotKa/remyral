@@ -1,0 +1,14 @@
+# p16-observability: the Remyral dashboards from infra/monitoring/grafana/dashboards (mounted read-only).
+apiVersion: 1
+
+providers:
+  - name: remyral
+    orgId: 1
+    folder: Remyral
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 60
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false

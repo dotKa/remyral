@@ -1,0 +1,65 @@
+# gitleaks configuration: the default rules plus allowlists for values that are not secrets. Every entry names why.
+# Check the tracked tree: `git archive HEAD | tar -x -C <dir> && gitleaks dir --redact --config .gitleaks.toml <dir>`;
+# the history: `gitleaks git --redact --config .gitleaks.toml .` (both run in CI, .github/workflows/ci.yml job `leaks`).
+# Keep the lists narrow: a new finding is fixed (an obviously fake value) before it is allowlisted here.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated / example content that only looks like a secret"
+paths = [
+  # sha256 hashes of the vendored Codex app-server schema files, keyed by schema path.
+  '''(^|/)packages/agent-adapters/src/runtimes/codex/protocol/generated/manifest\.json$''',
+  # Visual harness fixture data (dev server only, never a build input): 16-hex keyFingerprint mocks.
+  '''(^|/)apps/web/src/diyalog/harness/screens/(settings|w3-settings-integrations)\.ts$''',
+  # The hint text names the PEM header an SSH private key starts with; no key material.
+  '''(^|/)packages/i18n/src/(en|tr)/gitCentral\.ts$''',
+  # scripts/security allowlist: truncated sha256 fingerprints of fake findings, not the values.
+  '''(^|/)scripts/security/secret-scan\.allow\.json$''',
+  # Backup drill: a placeholder age identity (AGE-SECRET-KEY-1 followed by Q's) that must stop a backup run.
+  '''(^|/)scripts/e2e/backup-drill\.mjs$''',
+]
+
+[[allowlists]]
+description = "Throw-away self-signed localhost TLS key used only by tests (also in scripts/security/secret-scan.allow.json)"
+paths = ['''(^|/)apps/master/test/fixtures/tls/test-only-localhost\.key\.pem$''']
+
+[[allowlists]]
+description = """Secret detection / redaction tests: the fake values must have the shape of a real provider token \
+(sk-ant-, sk_live_, ghp_, glpat-, PEM headers, ...) so the redaction rules match them. None is a real credential."""
+paths = [
+  '''(^|/)apps/master/test/integration/(context|coolify-dedupe|memory-import|memory-layers|remote-ops)\.test\.ts$''',
+  '''(^|/)apps/master/test/unit/(p18-leftovers-misc|preview-tunnels)\.test\.ts$''',
+  '''(^|/)apps/worker/test/(blob-upload|functions-http|functions-runner|git-central-runner|remote-ops-agent)\.test\.ts$''',
+  '''(^|/)packages/agent-adapters/test/(approval-details|opencode-assistant|opencode-units|pi-assistant|pi-units)\.test\.ts$''',
+  '''(^|/)packages/agent-adapters/test/runtimes/codex/(assistant|assistant-real)\.test\.ts$''',
+  '''(^|/)packages/memory/test/fixtures\.ts$''',
+  '''(^|/)packages/protocol/test/git-central\.test\.ts$''',
+]
+
+[[allowlists]]
+description = """Test-only credentials that just need to be some value: passwords, fake access keys, fixture tokens and \
+fingerprints of fake keys (the generic-api-key rule flags them by keyword and entropy)."""
+paths = [
+  '''(^|/)apps/master/test/integration/(backup-manage|backups-status|multi-coolify-migration|object-storage|panel-settings|server-time)\.test\.ts$''',
+  '''(^|/)apps/master/test/unit/(blobs-rest|blobs-s3|p22-github-rate|p22-github-webhook|webpush)\.test\.ts$''',
+  '''(^|/)apps/web/test/(api-tokens|diyalog-auth|diyalog-git-providers|object-storage|pwa|selfhost-onboarding|server-settings)\.test\.tsx$''',
+  '''(^|/)apps/worker/test/(mcp|mcp-runner|previews-supervisor)\.test\.ts$''',
+  '''(^|/)packages/agent-adapters/test/helpers/mcp\.ts$''',
+  '''(^|/)packages/agent-adapters/test/mcp-units\.test\.ts$''',
+  '''(^|/)packages/protocol/test/git-hosts\.test\.ts$''',
+]
+
+[[allowlists]]
+description = """History only (`gitleaks git`): 16-hex keyFingerprint mocks in web tests that were later changed. They are \
+fingerprints of fake public keys, the same mocks the visual-harness entry above covers."""
+regexTarget = "line"
+regexes = ['''^\s*keyFingerprint:\s*'[0-9a-f]{16}',?\s*$''']
+
+[[allowlists]]
+description = """History only: deleted web tests with a canary string (bedrock-integration) and a fixture temporary \
+password (directory). Scoped to the commit AND the file, so nothing else in those commits is skipped."""
+condition = "AND"
+commits = ["998e0627d2210462c7fadf42c38472cb9479e013", "2dec7bd155a112987de60902fd0b8ede6d637a32"]
+paths = ['''(^|/)apps/web/test/(bedrock-integration|directory)\.test\.tsx$''']

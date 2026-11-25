@@ -1,0 +1,27 @@
+/* The Diyalog tokens the editor theme reads (a subset, light values). */
+[data-ui='diyalog'] {
+  --dy-ink: rgb(20, 20, 20);
+  --dy-card: rgb(255, 255, 255);
+  --dy-sunk: rgb(245, 245, 245);
+  --dy-line: rgb(220, 220, 220);
+  --dy-line-2: rgb(200, 200, 200);
+  --dy-faint: rgb(150, 150, 150);
+  --dy-muted: rgb(110, 110, 110);
+  --dy-violet: rgb(120, 60, 200);
+  --dy-green: rgb(20, 140, 60);
+  --dy-green-soft: rgb(220, 245, 225);
+  --dy-red: rgb(200, 40, 40);
+  --dy-red-soft: rgb(250, 225, 225);
+  --dy-red-ink: rgb(160, 30, 30);
+  --dy-amber: rgb(220, 150, 20);
+  --dy-amber-soft: rgb(252, 240, 210);
+  --dy-amber-ink: rgb(150, 90, 0);
+  --dy-teal: rgb(0, 130, 130);
+  --dy-teal-ink: rgb(0, 100, 100);
+  --dy-selection: rgb(200, 220, 255);
+  --font-dy-mono: monospace;
+}
+.pane {
+  height: 240px;
+  margin: 8px;
+}

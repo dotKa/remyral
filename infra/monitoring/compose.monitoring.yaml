@@ -1,0 +1,108 @@
+# p16-observability (docs/ops/monitoring.md §8): optional Prometheus + Grafana next to the control plane. OFF by default:
+# the services are in the `monitoring` profile and this overlay is only used when named. Nothing here is needed for
+# Ayarlar → Sistem durumu (the console's own status page, log search and recent traces work without it).
+#
+#   cd /opt/remyral-src && sudo docker compose -p remyral-prod --env-file /data/remyral/prod/stack.env \
+#     --env-file /data/remyral/prod/release.env \
+#     -f infra/coolify/compose.yaml -f infra/monitoring/compose.monitoring.yaml --profile monitoring up -d
+#
+# Paths below are relative to infra/coolify (the first -f file sets the compose project directory).
+#
+# What it changes:
+#   - master: /metrics listens on the internal compose network (METRICS_HOST=0.0.0.0) behind a bearer token
+#     (METRICS_TOKEN_FILE); still never on the API port, never routed by Traefik, never published.
+#   - prometheus: scrapes master:9464 every 30 s over the internal network, keeps 15 days; no published port.
+#   - grafana: provisioned data source + dashboards (infra/monitoring/grafana), published on 127.0.0.1:3300 of the host
+#     ONLY (an SSH tunnel or a localhost-only reverse proxy reaches it); its own admin login (password from a file).
+#
+# Secrets (host, before the first `up`; the uids are the containers' users):
+#   METRICS_TOKEN=$(openssl rand -hex 32)
+#   printf '%s' "$METRICS_TOKEN" | sudo install -m 0440 -o 10001 -g 65534 /dev/stdin /data/remyral/prod/secrets/metrics.token
+#   openssl rand -base64 24 | tr -d '\n' | sudo install -m 0440 -o 472 -g 472 /dev/stdin /data/remyral/prod/secrets/grafana-admin.password
+#
+# Rollback: the same command without this overlay (master back to loopback /metrics), then
+#   docker compose -p remyral-prod rm -sf prometheus grafana  (volumes promdata / grafanadata can be removed by hand).
+
+services:
+  master:
+    environment:
+      METRICS_HOST: 0.0.0.0
+      METRICS_TOKEN_FILE: /run/secrets/remyral/metrics.token
+
+  prometheus:
+    # prom/prometheus:v3.9.1, multi-arch index digest, pinned 2026-10-23.
+    image: prom/prometheus:v3.9.1@sha256:1f0f50f06acaceb0f5670d2c8a658a599affe7b0d8e78b898c1035653849a702
+    profiles: [monitoring]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}
+      - --storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-2GB}
+      - --web.listen-address=:9090
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Read by uid 65534 (nobody) through the file's group (see the install line above).
+      - ${REMYRAL_SECRETS_DIR:-/data/remyral/prod/secrets}/metrics.token:/etc/prometheus/metrics.token:ro
+      - promdata:/prometheus
+    depends_on:
+      master:
+        condition: service_healthy
+    networks: [internal]
+    mem_limit: ${PROMETHEUS_MEM_LIMIT:-384m}
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:9090/-/ready']
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    labels:
+      - traefik.enable=false
+
+  grafana:
+    # grafana/grafana:13.0.1, multi-arch index digest, pinned 2026-10-23.
+    image: grafana/grafana:13.0.1@sha256:0f86bada30d65ef9d0183b90c1e2682ac92d53d95da8bed322b984ea78a4a73a
+    profiles: [monitoring]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana-admin.password
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_AUTH_ANONYMOUS_ENABLED: 'false'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: 'false'
+      GF_NEWS_NEWS_FEED_ENABLED: 'false'
+      GF_PLUGINS_PREINSTALL_DISABLED: 'true'
+      GF_LOG_MODE: console
+      GF_SERVER_HTTP_PORT: '3000'
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://127.0.0.1:3300/}
+    volumes:
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      - ${REMYRAL_SECRETS_DIR:-/data/remyral/prod/secrets}/grafana-admin.password:/run/secrets/grafana-admin.password:ro
+      - grafanadata:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    networks: [internal]
+    # Loopback of the host only: never 0.0.0.0, never a Traefik route.
+    ports:
+      - '127.0.0.1:${GRAFANA_PORT:-3300}:3000'
+    mem_limit: ${GRAFANA_MEM_LIMIT:-256m}
+    labels:
+      - traefik.enable=false
+
+volumes:
+  promdata: {}
+  grafanadata: {}

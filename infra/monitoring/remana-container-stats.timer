@@ -1,0 +1,12 @@
+# Runs remana-container-stats.service once a minute (p1-monitoring).
+[Unit]
+Description=Remana container stats every minute
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=5
+Persistent=false
+
+[Install]
+WantedBy=timers.target

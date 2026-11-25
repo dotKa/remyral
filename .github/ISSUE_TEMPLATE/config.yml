@@ -1,0 +1,4 @@
+# Issue chooser: only the forms in this directory. Security reports never go to a public issue: with SECURITY.md
+# present and private vulnerability reporting enabled, GitHub adds "Report a security vulnerability" (the
+# repository's Security advisories form) to this chooser itself, so no repository URL is hard-coded here.
+blank_issues_enabled: false

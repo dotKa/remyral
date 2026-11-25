@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Remyral worker daemon - launchd LaunchDaemon (p2-service-macos).
+  Installed to /Library/LaunchDaemons/com.remyral.worker.plist (root:wheel 0644) by
+  infra/worker/macos/install.sh, which puts the absolute path of the system-wide
+  Node 24 binary into the first ProgramArguments entry. Design: docs/design/p2-service-install.md.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.remyral.worker</string>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>@NODE@</string>
+		<string>/Library/Application Support/RemyralWorker/bin/remyral-worker.mjs</string>
+		<string>run</string>
+		<string>--config</string>
+		<string>/Library/Application Support/RemyralWorker/config.json</string>
+	</array>
+
+	<!-- Dedicated hidden role account (ADR-0007); never root, never the interactive user. -->
+	<key>UserName</key>
+	<string>_remyralworker</string>
+	<key>GroupName</key>
+	<string>_remyralworker</string>
+
+	<!-- Start at boot; restart after a crash (non-zero exit or signal), stay down after a
+	     clean exit 0 (graceful stop). launchd cannot exempt exit 78 (config error): it is
+	     retried every ThrottleInterval and logged. -->
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+
+	<!-- SIGTERM, then up to 60 s for the daemon to cancel jobs before SIGKILL. -->
+	<key>ExitTimeOut</key>
+	<integer>60</integer>
+
+	<!-- Standard = light resource limits; Background would throttle agent jobs hard. -->
+	<key>ProcessType</key>
+	<string>Standard</string>
+
+	<key>WorkingDirectory</key>
+	<string>/Library/Application Support/RemyralWorker/data</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>/Library/Application Support/RemyralWorker/data/home</string>
+		<key>NODE_ENV</key>
+		<string>production</string>
+		<key>PATH</key>
+		<string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<!-- 077: everything the daemon creates is private to the role account. -->
+	<key>Umask</key>
+	<integer>63</integer>
+	<key>SoftResourceLimits</key>
+	<dict>
+		<key>NumberOfFiles</key>
+		<integer>65536</integer>
+	</dict>
+
+	<!-- JSON lines (secrets redacted by the daemon). -->
+	<key>StandardOutPath</key>
+	<string>/Library/Logs/RemyralWorker/remyral-worker.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Library/Logs/RemyralWorker/remyral-worker.log</string>
+</dict>
+</plist>

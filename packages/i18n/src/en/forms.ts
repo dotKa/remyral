@@ -1,0 +1,112 @@
+import type { Shape } from '../shape.js';
+import type tr from '../tr/forms.js';
+
+/** English twins of the p15-form-pattern texts. */
+export default {
+  bar: {
+    region: 'Unsaved changes',
+    dirty: 'You have unsaved changes',
+    save: 'Save',
+    saving: 'Saving…',
+    discard: 'Discard',
+    saved: 'Saved',
+    failed: 'Could not save — see the form for details.',
+  },
+  guard: {
+    title: 'You have unsaved changes',
+    body: 'This page has changes you have not saved. Save them before you leave, or leave them behind.',
+    save: 'Save',
+    saving: 'Saving…',
+    leave: 'Leave without saving',
+    stay: 'Cancel',
+    failed: 'Could not save; the errors are shown in the form. You are still on this page.',
+  },
+  instant: {
+    saving: 'Saving…',
+    saved: 'Saved ✓',
+    undone: 'The change was undone.',
+  },
+  issues: {
+    required: 'This field is required.',
+    invalid: 'This value is not valid.',
+    tooSmall: 'The value is too small or too short.',
+    tooBig: 'The value is too large or too long.',
+    notFound: 'No such record.',
+    duplicate: 'This value is already in use.',
+    notAllowed: 'This value is not allowed.',
+    other: (p) => `This value was not accepted (${p.code}).`,
+  },
+  tabs: {
+    profile: {
+      label: 'Profile sections',
+      look: 'Language',
+      session: 'Session',
+      password: 'Password',
+      rules: 'Personal rules',
+      import: 'Import',
+    },
+    security: {
+      label: 'Security sections',
+      auto: 'Auto mode',
+      presets: 'Presets',
+      stepUp: 'Code confirmation',
+      events: 'Events that ask for a code',
+      autonomy: 'Agent autonomy',
+      tokens: 'API tokens',
+      fleet: 'Fleet',
+    },
+    chat: {
+      label: 'Chat sections',
+      mine: 'My conversations',
+      assistant: 'Assistant',
+      limits: 'Limits',
+    },
+    notifications: {
+      label: 'Notification sections',
+      sound: 'Sound and preview',
+      targets: 'Channels',
+      events: 'Notification types',
+    },
+    integrations: {
+      label: 'Integration sections',
+      overview: 'Overview',
+      github: 'GitHub',
+      ops: 'Coolify and Cloudflare',
+      bedrock: 'Amazon Bedrock',
+      gitHosts: 'GitLab and Bitbucket',
+      storage: 'Storage',
+    },
+    project: {
+      network: 'Network access',
+      limits: 'Limits and routing',
+    },
+    opsSafety: {
+      label: 'Operations safety sections',
+      keys: 'Keys and expiry',
+      brake: 'Cost brake',
+      projects: 'Project ceilings',
+      limits: 'Request limits',
+      breaker: 'Rollout circuit breaker',
+    },
+    releases: {
+      label: 'Release sections',
+      rollout: 'Rollout',
+      releases: 'Uploaded releases',
+      attempts: 'Update attempts',
+    },
+    diagnostics: {
+      label: 'Diagnostics sections',
+      doctor: 'Doctor',
+      report: 'Support report',
+      settings: 'Support settings',
+    },
+    enforcement: {
+      label: 'Limit and quota sections',
+      limits: 'Usage limits',
+      holds: 'Pauses and kill switch',
+      load: 'Concurrency and budgets',
+      events: 'Recent decisions',
+      policy: 'Quota policy',
+    },
+  },
+} satisfies Shape<typeof tr>;

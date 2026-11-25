@@ -1,0 +1,14 @@
+# Remyral worker — trigger for the privileged updater (p2-signed-updates).
+# The worker (unprivileged) atomically writes an activation request into its own data dir; systemd
+# (not the worker) then starts remyral-worker-update.service as root. The worker cannot start, stop or
+# parameterise that service: the request is only a hint, and every byte it names is re-verified.
+
+[Unit]
+Description=Remyral worker update requests
+
+[Path]
+PathChanged=/var/lib/remyral-worker/updates/request.json
+Unit=remyral-worker-update.service
+
+[Install]
+WantedBy=multi-user.target

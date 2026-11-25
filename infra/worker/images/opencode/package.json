@@ -1,0 +1,10 @@
+{
+  "name": "remyral-runtime-opencode",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "Locked install of the opencode runtime pin for the container image (p7-supply-chain). Regenerate: docs/security/dependency-policy.md §4.",
+  "dependencies": {
+    "opencode-ai": "1.19.4"
+  }
+}

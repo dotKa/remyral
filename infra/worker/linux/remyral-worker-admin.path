@@ -1,0 +1,13 @@
+# Remyral worker - trigger for AI machine administration sessions (p5-machine-admin, ADR-0021). The worker writes
+# the master-signed session grant of a running machine-admin job into its own data dir; systemd (not the worker)
+# then starts remyral-worker-admin.service as root, which verifies the master's signature before doing anything.
+
+[Unit]
+Description=Remyral worker machine-administration session requests
+
+[Path]
+PathChanged=/var/lib/remyral-worker/machine-admin/session-request.json
+Unit=remyral-worker-admin.service
+
+[Install]
+WantedBy=multi-user.target

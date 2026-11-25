@@ -1,0 +1,80 @@
+# Remyral worker daemon — systemd system unit (p2-service-linux).
+# Installed by infra/worker/linux/install.sh, which puts the absolute path of the system-wide
+# Node 24 binary in front of ExecStart. Design: docs/design/p2-service-install.md.
+# Owner guide: docs/ops/worker-install.md.
+
+[Unit]
+Description=Remyral worker
+Wants=network-online.target
+After=network-online.target
+# Keep restarting forever (with RestartSec and, on systemd >= 254, the exponential backoff
+# drop-in): a worker that gives up after N crashes is an outage on an unattended machine.
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+User=remyral-worker
+Group=remyral-worker
+ExecStart=@NODE@ /opt/remyral-worker/remyral-worker.mjs run --config /etc/remyral-worker/config.json
+WorkingDirectory=/var/lib/remyral-worker
+Environment=NODE_ENV=production
+Environment=HOME=/var/lib/remyral-worker/home
+UMask=0077
+
+# --- Restart policy (A-FLEET-4) ---------------------------------------------------------
+# Crash (non-zero exit, signal, watchdog) -> restart. Clean stop (exit 0) -> stays stopped.
+# Exit 78 (EX_CONFIG: bad config/permissions/keystore) is not retried: a restart loop
+# cannot fix it, the owner must (journalctl -u remyral-worker shows why).
+Restart=on-failure
+RestartSec=5s
+RestartPreventExitStatus=78
+
+# --- Stop: graceful job cancel ------------------------------------------------------------
+# SIGTERM goes to the daemon only (KillMode=mixed); it cancels jobs and terminates its own
+# child trees (10 s grace each, in parallel), flushes the store and exits 0. Whatever is
+# left in the cgroup after TimeoutStopSec gets SIGKILL.
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=60s
+# An agent child killed by the kernel OOM killer must not take the daemon down with it.
+OOMPolicy=continue
+
+# --- Logging: JSON lines on stderr -> journald ----------------------------------------------
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=remyral-worker
+
+# --- Hardening (ADR-0007, threat model T-SBX-1) -------------------------------------------
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictSUIDSGID=yes
+LockPersonality=yes
+# Whole file system read-only except the worker's own state + workspace root.
+ProtectSystem=strict
+ReadWritePaths=/var/lib/remyral-worker
+# /home, /root and /run/user are invisible: agents cannot read the interactive user's
+# ~/.ssh, browser profiles or keyrings.
+ProtectHome=true
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictRealtime=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+# Not set on purpose (see the design note): MemoryDenyWriteExecute (breaks V8's JIT),
+# RestrictNamespaces / SystemCallFilter (break bubblewrap-based runtime sandboxes such as
+# Claude Code's), ProcSubset=pid (breaks os.cpus()/os.totalmem() used by facts/probe).
+# Resource ceilings against runaway agents (T-SBX-5); per-job limits are p3-sandbox.
+TasksMax=4096
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

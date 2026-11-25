@@ -1,0 +1,14 @@
+# Systemd-capable Debian image for the Add machine e2e (infra/worker/linux/test/onboarding-e2e.sh).
+# Test-only. BASE is either a plain Debian (no Node at all: the installer must bootstrap the pinned Node)
+# or the official node:24 image (a usable system-wide Node 24 that the installer must keep using).
+# curl + ca-certificates: what the one-line install command needs; gpgv ships with Debian (apt needs it).
+ARG BASE=debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
+FROM ${BASE}
+ENV container=docker DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends systemd systemd-sysv dbus procps passwd curl ca-certificates gpgv \
+ && rm -rf /var/lib/apt/lists/* \
+ && systemctl mask systemd-firstboot.service systemd-udevd.service systemd-modules-load.service \
+      sys-kernel-debug.mount sys-kernel-tracing.mount getty.target console-getty.service
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

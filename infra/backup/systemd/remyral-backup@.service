@@ -1,0 +1,31 @@
+# Off-host encrypted backup of Remyral environment %i (p1-backups, docs/ops/backups.md).
+# Installed by infra/backup/install.sh; started by remyral-backup@%i.timer.
+[Unit]
+Description=Remyral encrypted off-host backup (%i)
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Environment=REMYRAL_ENV=%i
+# aws/docker CLIs may write small caches under $HOME; keep them in the only writable path.
+Environment=HOME=/var/lib/remyral-backup
+ExecStart=/usr/local/lib/remyral-backup/backup.sh --config /etc/remyral/backup/%i.env
+TimeoutStartSec=12min
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+# Root is needed for the Docker socket and to read stack.env/secrets (0600/0400). Narrow the rest.
+UMask=0077
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/remyral-backup
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+NoNewPrivileges=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SyslogIdentifier=remyral-backup

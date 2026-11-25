@@ -1,0 +1,1 @@
+{"id":"2","type":"response","command":"prompt","success":false,"error":"No API key found for the selected model.\n\nUse /login to log into a provider via OAuth or API key. See:\n  /opt/pi/node_modules/@earendil-works/pi-coding-agent/docs/providers.md\n  /opt/pi/node_modules/@earendil-works/pi-coding-agent/docs/models.md"}

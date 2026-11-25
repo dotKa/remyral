@@ -1,0 +1,48 @@
+# Supply-chain gate (p7-supply-chain, A-SEC-4): docs/design/p7-supply-chain.md, docs/security/dependency-policy.md.
+# Every action is pinned to a full commit SHA (checked by scripts/security/pin-audit.mjs).
+name: supply-chain
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly: new advisories appear without any change on our side.
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  supply-chain:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # No later step pushes or calls the API: keep the token out of .git/config.
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+          # The automatic pnpm cache needs pnpm before `corepack enable` installs it (see ci.yml).
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Pins (manifests, lockfiles, images, actions, runtime pins)
+        run: pnpm security:pins
+      - name: Runtime checksums against npm / PyPI / ghcr.io
+        run: pnpm security:runtime-checksums
+      - name: pnpm audit (production dependencies) and registry signatures
+        run: pnpm security:audit
+      - name: SBOMs (workspace, apps, declared images)
+        run: pnpm security:sbom
+      - name: OSV vulnerability scan with allowlist
+        run: pnpm security:scan
+      - name: Upload SBOMs and the vulnerability report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom-${{ github.sha }}
+          path: dist/sbom/
+          retention-days: 90

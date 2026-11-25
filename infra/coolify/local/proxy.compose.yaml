@@ -1,0 +1,38 @@
+# Local stand-in for the Coolify proxy (`coolify-proxy`), used by `pnpm e2e:compose` only.
+# Mirrors what infra/coolify/compose.yaml relies on in Coolify: Traefik v3, entry points named `http` and
+# `https`, the Docker provider (opt-in via traefik.enable), the file provider watching /traefik/dynamic
+# and certificates under /traefik/certs (Coolify mounts /data/coolify/proxy at /traefik).
+# Bound to 127.0.0.1 on high ports; the e2e network gives the proxy the production hostname as an alias
+# so containers on that network reach https://<domain> exactly as Cloudflare would.
+name: ${E2E_PROXY_PROJECT:?}
+
+services:
+  proxy:
+    # traefik:v3.7.14, multi-arch index digest, pinned 2026-10-13.
+    image: traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c
+    command:
+      - --entrypoints.http.address=:80
+      - --entrypoints.https.address=:443
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=${PROXY_NETWORK:?}
+      - --providers.docker.constraints=Label(`com.docker.compose.project`,`${E2E_APP_PROJECT:?}`)
+      - --providers.file.directory=/traefik/dynamic
+      - --providers.file.watch=true
+      - --log.level=WARN
+      - --accesslog=false
+    ports:
+      - 127.0.0.1:${E2E_HTTPS_PORT:?}:443
+      - 127.0.0.1:${E2E_HTTP_PORT:?}:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${E2E_PROXY_DIR:?}:/traefik:ro
+    networks:
+      proxy:
+        aliases:
+          - ${REMYRAL_DOMAIN:?}
+
+networks:
+  proxy:
+    name: ${PROXY_NETWORK:?}
+    external: true

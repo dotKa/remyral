@@ -1,0 +1,26 @@
+{
+  "Rules": [
+    {
+      "ID": "frequent-15min-keep-14d",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "remana/frequent/" },
+      "Expiration": { "Days": 14 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 7 }
+    },
+    {
+      "ID": "daily-keep-400d",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "remana/daily/" },
+      "Transitions": [{ "Days": 30, "StorageClass": "GLACIER_IR" }],
+      "Expiration": { "Days": 400 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 30 }
+    },
+    {
+      "ID": "housekeeping",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "" },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 1 },
+      "Expiration": { "ExpiredObjectDeleteMarker": true }
+    }
+  ]
+}

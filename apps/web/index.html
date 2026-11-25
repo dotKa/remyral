@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover: the shell pads itself with env(safe-area-inset-*) (p5-mobile).
+         interactive-widget=resizes-content: Android Chrome shrinks the layout above the keyboard (p5-chat-ux). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ecf1f8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#040d1c" media="(prefers-color-scheme: dark)" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="apple-mobile-web-app-title" content="Remyral" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- p17-remyral-brand: the saved light / dark choice marks <html> before the first paint (no inline script: CSP). -->
+    <script src="/theme-boot.js"></script>
+    <title>Remyral</title>
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- p8-pwa: installable app. The service worker (/sw.js) caches only the hashed static shell and the
+         offline page; authenticated API responses are never intercepted or cached. -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>The Remyral console needs JavaScript.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+*.md
+.claude/
+**/*.generated.ts
+
+# Hand-tuned standalone design mockups (p12-diyalog: the target design, kept byte-for-byte)
+docs/design/redesign/
+brand/

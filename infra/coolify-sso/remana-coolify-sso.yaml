@@ -1,0 +1,107 @@
+# p5-coolify-sso: Traefik dynamic configuration for Coolify's own proxy (coolify-proxy, Traefik v3).
+# Design: docs/design/p5-coolify-sso.md §3 · Steps: docs/ops/coolify-sso.md
+#
+# Install: Coolify UI → Servers → (localhost) → Proxy → Dynamic Configurations → add a file named
+# `remana-coolify-sso.yaml` with this content (Coolify writes it to /data/coolify/proxy/dynamic/, which the proxy
+# watches — no restart). Production values are filled in; for another environment replace
+#   coolify.example.org → the gate host (COOLIFY_SSO_HOST)      remyral-prod-master → <project>-master
+# where <project> is the install's compose project (REMYRAL_PROJECT, default remyral-<env>; installs created before the
+# rename keep their own project name — use that).
+#
+# What it does: every request for the Coolify host — UI, assets, Livewire, the realtime WebSocket (/app, Reverb
+# :6001) and the terminal WebSocket (/terminal/ws, :6002) — passes the `remana-coolify-auth` forwardAuth middleware
+# first. The master answers 200 only for a browser holding a valid gate cookie of an owner/admin; anything else gets
+# the master's 302 (into the console) or 401/403 straight from Traefik, so Coolify never sees it.
+#
+# Coolify's own routers for its instance domain (generated into coolify.yaml when Settings → Instance's Domain is
+# set: coolify-http/-https, coolify-reverb-*, coolify-terminal-*) have rule-length priorities (< 100). The explicit
+# priorities ≥ 10000 below always win, so those routers can never serve the host without the gate.
+http:
+  middlewares:
+    remana-coolify-auth:
+      forwardAuth:
+        # Internal: Traefik → master over the `coolify` Docker network (network alias set in infra/coolify/compose.yaml).
+        address: http://remyral-prod-master:8080/forward-auth/coolify
+        # Traefik sets X-Forwarded-Method/-Proto/-Host/-Uri/-For itself from the real request.
+        trustForwardHeader: false
+        # Only what the decision needs reaches the master (no Authorization, no bodies). CF-Connecting-IP lets the
+        # master resolve the client IP like for console requests (TRUSTED_CLIENT_IP_SOURCES).
+        authRequestHeaders:
+          - Accept
+          - Cookie
+          - Sec-Fetch-Dest
+          - Sec-Fetch-Mode
+          - Sec-Fetch-Site
+          - Upgrade
+          - User-Agent
+          - Cf-Connecting-Ip
+        maxResponseBodySize: 16384
+    remana-coolify-callback-path:
+      replacePath:
+        path: /coolify-sso/callback
+    remana-coolify-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+  routers:
+    # The one path on the Coolify host that goes to the master: redeem the console's one-time ticket for the gate
+    # cookie. No forwardAuth (that is what it establishes); the master checks the ticket, the state cookie and the host.
+    remana-coolify-sso-callback:
+      rule: Host(`coolify.example.org`) && Path(`/_remana/sso/callback`)
+      entryPoints: [https]
+      priority: 10100
+      middlewares: [remana-coolify-callback-path]
+      service: remana-coolify-sso-master
+      tls: {}
+    # Realtime (Laravel Reverb): the browser connects to wss://<host>/app/<key>; /apps is Reverb's HTTP API.
+    remana-coolify-realtime:
+      rule: Host(`coolify.example.org`) && PathPrefix(`/app`)
+      entryPoints: [https]
+      priority: 10050
+      middlewares: [remana-coolify-auth]
+      service: remana-coolify-realtime
+      tls: {}
+    # Terminal WebSocket.
+    remana-coolify-terminal:
+      rule: Host(`coolify.example.org`) && PathPrefix(`/terminal/ws`)
+      entryPoints: [https]
+      priority: 10050
+      middlewares: [remana-coolify-auth]
+      service: remana-coolify-terminal
+      tls: {}
+    # Everything else: the Coolify UI.
+    remana-coolify-ui:
+      rule: Host(`coolify.example.org`)
+      entryPoints: [https]
+      priority: 10000
+      middlewares: [remana-coolify-auth]
+      service: remana-coolify-ui
+      # No certresolver: the certificate is chosen by SNI (Cloudflare Origin Certificate when installed,
+      # docs/ops/deploy-coolify.md §4; until then Traefik's default certificate under Cloudflare "Full").
+      tls: {}
+    # Plain HTTP (only reachable when bypassing Cloudflare): redirect, never serve.
+    remana-coolify-http:
+      rule: Host(`coolify.example.org`)
+      entryPoints: [http]
+      priority: 10000
+      middlewares: [remana-coolify-to-https]
+      service: remana-coolify-ui
+
+  services:
+    remana-coolify-ui:
+      loadBalancer:
+        servers:
+          - url: http://coolify:8080
+    remana-coolify-realtime:
+      loadBalancer:
+        servers:
+          - url: http://coolify:6001
+    remana-coolify-terminal:
+      loadBalancer:
+        servers:
+          - url: http://coolify:6002
+    remana-coolify-sso-master:
+      loadBalancer:
+        servers:
+          - url: http://remyral-prod-master:8080

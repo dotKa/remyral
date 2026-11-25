@@ -1,0 +1,34 @@
+/*
+ * p17-panel-motion (docs/design/p17-panel-motion.md §2): the motion tokens of the Diyalog UI — durations, easings and
+ * the stagger step. Motion only: no colour, font or theme value lives here (those are diyalog.css / the theme), so the
+ * two can change independently. motionKit.tsx reads the JS-driven ones (height, FLIP) from the same variables, with
+ * the values below as its fallback when no CSS is loaded (tests).
+ *
+ * Budget (by design): UI feedback ≤ 300 ms, entrances ≤ 400 ms. Exits are faster than entries.
+ */
+[data-ui='diyalog'] {
+  /* Easings: strong ease-out for anything entering or answering the person; strong ease-in-out for something moving
+     or resizing on screen; linear only for constant progress. */
+  --dy-m-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --dy-m-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* Durations. */
+  --dy-m-press: 120ms; /* a button / chip press */
+  --dy-m-swap: 180ms; /* a state chip cross-fade (Onay bekliyor → Çalışıyor) */
+  --dy-m-line: 180ms; /* a live log line arriving */
+  --dy-m-fill: 280ms; /* a step segment / slot / meter filling */
+  --dy-m-height: 220ms; /* a card growing or shrinking (JS: SmoothHeight) */
+  --dy-m-flip: 220ms; /* a list row moving to its new place (JS: useFlip) */
+  --dy-m-layout: 280ms; /* workflow cards gliding to an arrangement (JS: WorkflowEditor glide, in-out) */
+  --dy-m-enter: 240ms; /* a message arriving in the thread */
+  --dy-m-card: 320ms; /* a card arriving in the thread (draft, result, question) */
+  --dy-m-dialog: 200ms; /* a modal dialog rising in (backdrop fade + 8 px rise from 0.98 scale) */
+  --dy-m-dialog-exit: 150ms; /* the same dialog leaving (exits are faster than entries) */
+  --dy-m-toast: 200ms; /* a toast rising in at the bottom corner (p17-toasts-shortcuts; the dialog's 8 px rise) */
+  --dy-m-toast-exit: 150ms; /* the toast leaving (faster than its entry) */
+  --dy-m-shake: 280ms; /* a wrong code */
+  --dy-m-pulse: 1.6s; /* the ring of a machine that is connecting (constant, opacity + scale) */
+
+  /* Stagger: items that arrive together follow each other this far apart (at most STAGGER_MAX steps, motionKit.tsx). */
+  --dy-m-stagger: 50ms;
+}

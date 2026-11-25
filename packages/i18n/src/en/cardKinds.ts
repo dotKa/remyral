@@ -1,0 +1,57 @@
+import type { Shape } from '../shape.js';
+import type tr from '../tr/cardKinds.js';
+
+/** p18-plan-mode W4 (registry labels): the kind pill of every live card of the Diyalog console. */
+export default {
+  fallback: 'Record',
+  draft: {
+    job: 'Job draft',
+    workflowRun: 'Workflow run',
+    workerConfig: 'Machine setting',
+    approvalDecision: 'Approval',
+    jobMessage: 'Message to a job',
+    machineTask: 'Machine task',
+    toolInstall: 'Tool install',
+    skill: 'Skill',
+    automation: 'Automation',
+    opsAction: 'Deploy',
+    monitor: 'Monitor',
+    jobResume: 'Resume',
+    jobAction: 'Job action',
+    memoryChange: 'Memory',
+    workflow: 'Workflow',
+    accountAction: 'Runtime account',
+  },
+  needs: {
+    approval: 'Approval',
+    automation: 'Automation',
+    deploy: 'Deploy',
+    failed: 'Failure',
+    blocked: 'Cannot start',
+    pairing: 'Pairing',
+    memoryReview: 'Memory',
+    machine: 'Machine',
+  },
+  ops: {
+    approval: 'Approval',
+    deploy: 'Deploy',
+    merge: 'Merge',
+    failed: 'Failed',
+    limit: 'Limit',
+    running: 'Running',
+  },
+  job: {
+    pause: 'Paused',
+    queue: 'Queued',
+    subtasks: 'Subtasks',
+    continuity: 'Session continuity',
+    verification: 'Verification',
+    integration: 'Integration',
+    changes: 'Changes',
+    deploy: 'Release',
+    outputs: 'Outputs',
+    previews: 'Preview',
+    runtime: 'Runtime and result',
+    memory: 'Memory',
+  },
+} satisfies Shape<typeof tr>;

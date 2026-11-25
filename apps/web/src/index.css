@@ -1,0 +1,475 @@
+@import 'tailwindcss';
+/* p12-diyalog: the Diyalog tokens, fonts and theme extension — scoped to [data-ui='diyalog'] (inert elsewhere). */
+@import './diyalog/diyalog.css';
+/* p12-diyalog-parity: conversation list, details panel and the classic-component bridge (scoped the same way). */
+@import './diyalog/chat/chat.css';
+/* p12-diyalog-cmdk: open / close motion of drawers, panels, sheets, dropdowns and dialogs (reduced motion: none). */
+@import './diyalog/motion.css';
+
+/* The @font-face rules live in fonts.css (imported first by main.tsx). */
+
+/*
+ * p6-ui-refactor (docs/design/p6-ui-refactor.md §3): a cool "signal board" palette (p17-remyral-brand: the
+ * Remyral navy / off-white / teal values of the Diyalog tokens). Light is the default; dark
+ * follows prefers-color-scheme. Components only use the semantic utilities below (bg-surface, text-muted,
+ * border-line, text-accent, bg-warn-soft, ...), never raw palette colours, so both schemes stay consistent.
+ * `accent` is the plan's "signal"; `warn` is its "attention" (needs you, warnings); `signal`, `attention` and
+ * `ink` are aliases for new code.
+ */
+:root {
+  color-scheme: light dark;
+  --c-canvas: #ecf1f8;
+  --c-surface: #ffffff;
+  --c-surface-2: #edf2f8;
+  --c-line: #d8e2ee;
+  --c-line-strong: #a8b6c8;
+  --c-fg: #0a1f3d;
+  --c-muted: #42526b;
+  --c-accent: #00786a;
+  --c-accent-hover: #00665a;
+  --c-accent-fg: #ffffff;
+  --c-accent-soft: #daf5ef;
+  --c-danger: #b42318;
+  --c-danger-soft: #fcefed;
+  --c-warn: #9a5b00;
+  --c-warn-soft: #fdf3df;
+  --c-ok: #1d6b3a;
+  --c-ok-soft: #e8f5ec;
+}
+
+/* p17-remyral-brand: the theme switch (Açık / Koyu / Sistem) sets data-theme on <html> before the first paint
+   (public/theme-boot.js); without it the device's scheme applies. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --c-canvas: #040d1c;
+    --c-surface: #0d2140;
+    --c-surface-2: #081731;
+    --c-line: #1a3152;
+    --c-line-strong: #29446a;
+    --c-fg: #e9f0f9;
+    --c-muted: #a9b7ca;
+    --c-accent: #00d1b2;
+    --c-accent-hover: #5fe3cd;
+    --c-accent-fg: #061328;
+    --c-accent-soft: #06363a;
+    --c-danger: #ff8a80;
+    --c-danger-soft: #2b1715;
+    --c-warn: #e9b657;
+    --c-warn-soft: #2a2112;
+    --c-ok: #6fd69a;
+    --c-ok-soft: #12261b;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --c-canvas: #040d1c;
+  --c-surface: #0d2140;
+  --c-surface-2: #081731;
+  --c-line: #1a3152;
+  --c-line-strong: #29446a;
+  --c-fg: #e9f0f9;
+  --c-muted: #a9b7ca;
+  --c-accent: #00d1b2;
+  --c-accent-hover: #5fe3cd;
+  --c-accent-fg: #061328;
+  --c-accent-soft: #06363a;
+  --c-danger: #ff8a80;
+  --c-danger-soft: #2b1715;
+  --c-warn: #e9b657;
+  --c-warn-soft: #2a2112;
+  --c-ok: #6fd69a;
+  --c-ok-soft: #12261b;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+  --color-fg: var(--c-fg);
+  --color-ink: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-accent: var(--c-accent);
+  --color-accent-hover: var(--c-accent-hover);
+  --color-accent-fg: var(--c-accent-fg);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-signal: var(--c-accent);
+  --color-signal-soft: var(--c-accent-soft);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-warn: var(--c-warn);
+  --color-warn-soft: var(--c-warn-soft);
+  --color-attention: var(--c-warn);
+  --color-attention-soft: var(--c-warn-soft);
+  --color-ok: var(--c-ok);
+  --color-ok-soft: var(--c-ok-soft);
+}
+
+/*
+ * Type (plan §3; p17-remyral-brand): Inter for the UI, JetBrains Mono for ids, hashes, versions and code only (fonts.css).
+ * Scale 12 / 13 / 14 (body) / 16 / 20 / 26 = text-xs, text-meta, text-sm, text-base, text-xl, text-2xl.
+ * Shape: radius 6 for controls (rounded-md), 10 for panels (rounded-lg).
+ */
+@theme {
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.25rem;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 2.125rem;
+  --radius-lg: 0.625rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas text-fg antialiased;
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    /* Reserve the scrollbar gutter so content does not jump when a page becomes scrollable. */
+    scrollbar-gutter: stable;
+  }
+  :focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.5);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  /*
+   * p5-mobile: 44 × 44 px touch targets on phones and on any coarse pointer (docs/design/p5-mobile.md §3).
+   * In the base layer and with :where() (specificity 0) so a component can still opt out deliberately; a
+   * larger min-height beats the h-9/h-10 utilities without touching every component.
+   */
+  @media (width < 48rem), (pointer: coarse) {
+    :where(
+      button,
+      select,
+      [role='button'],
+      [role='tab'],
+      input:not([type='checkbox'], [type='radio'], [type='range'], [type='hidden'], [type='file'])
+    ) {
+      min-height: 2.75rem;
+    }
+    :where(button, [role='button'], [role='tab']) {
+      min-width: 2.75rem;
+    }
+    /* No grey flash on tap (iOS); the :active/hover styles give the feedback. */
+    :where(a, button, summary, label) {
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
+}
+
+/*
+ * p5-mobile: `tap` turns a stand-alone text link or a <summary> into a 44 px tall target on phones/coarse
+ * pointers (running-text links stay inline: WCAG 2.5.8 inline exception). `tap-box` gives a small control
+ * (a checkbox in a table cell) a 44 × 44 hit area around it.
+ */
+@layer utilities {
+  @media (width < 48rem), (pointer: coarse) {
+    .tap {
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+    }
+    /* Keeps the disclosure marker (display: list-item); the padding makes a ≥ 44 px row for text-xs/sm. */
+    summary.tap {
+      display: list-item;
+      min-height: 0;
+      padding-block: 0.875rem;
+    }
+    .tap-box {
+      display: inline-flex;
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+/*
+ * p5-live: classes emitted by the strict ANSI parser (src/lib/ansi.ts ANSI_CLASSES) — the only way agent
+ * output gets colour (no inline styles; CSP style-src 'self'). The 16-colour palette is tuned for both
+ * schemes; the read-only terminal view uses its own dark surface.
+ */
+@layer components {
+  .live-term {
+    background: #0b0e14;
+    color: #d6dde6;
+    color-scheme: dark;
+  }
+  .ansi-b {
+    font-weight: 700;
+  }
+  .ansi-d {
+    opacity: 0.7;
+  }
+  .ansi-i {
+    font-style: italic;
+  }
+  .ansi-u {
+    text-decoration: underline;
+  }
+  .ansi-fg-0 {
+    color: #3b4252;
+  }
+  .ansi-fg-1 {
+    color: #c8322b;
+  }
+  .ansi-fg-2 {
+    color: #2f8132;
+  }
+  .ansi-fg-3 {
+    color: #a06a00;
+  }
+  .ansi-fg-4 {
+    color: #2f5fd0;
+  }
+  .ansi-fg-5 {
+    color: #a03aa0;
+  }
+  .ansi-fg-6 {
+    color: #1d8291;
+  }
+  .ansi-fg-7 {
+    color: #6b7280;
+  }
+  .ansi-fg-8 {
+    color: #6b7280;
+  }
+  .ansi-fg-9 {
+    color: #e5534b;
+  }
+  .ansi-fg-10 {
+    color: #3fa34d;
+  }
+  .ansi-fg-11 {
+    color: #c99400;
+  }
+  .ansi-fg-12 {
+    color: #4f7ff0;
+  }
+  .ansi-fg-13 {
+    color: #c05cc0;
+  }
+  .ansi-fg-14 {
+    color: #24a3b5;
+  }
+  .ansi-fg-15 {
+    color: #9aa3af;
+  }
+  .ansi-bg-0 {
+    background: #3b4252;
+  }
+  .ansi-bg-1 {
+    background: #f6d5d3;
+  }
+  .ansi-bg-2 {
+    background: #d4ecd5;
+  }
+  .ansi-bg-3 {
+    background: #f3e3bd;
+  }
+  .ansi-bg-4 {
+    background: #d3def8;
+  }
+  .ansi-bg-5 {
+    background: #eed5ee;
+  }
+  .ansi-bg-6 {
+    background: #cfe9ed;
+  }
+  .ansi-bg-7 {
+    background: #e5e7eb;
+  }
+  .ansi-bg-8 {
+    background: #9aa3af;
+  }
+  .ansi-bg-9 {
+    background: #f9c4c1;
+  }
+  .ansi-bg-10 {
+    background: #c2ebc6;
+  }
+  .ansi-bg-11 {
+    background: #f6e3a6;
+  }
+  .ansi-bg-12 {
+    background: #c4d4fa;
+  }
+  .ansi-bg-13 {
+    background: #f0c8f0;
+  }
+  .ansi-bg-14 {
+    background: #bde8ee;
+  }
+  .ansi-bg-15 {
+    background: #f3f4f6;
+  }
+  .diff-add {
+    background: var(--c-ok-soft);
+    color: var(--c-ok);
+  }
+  .diff-del {
+    background: var(--c-danger-soft);
+    color: var(--c-danger);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ansi-fg-0 {
+    color: #7b8394;
+  }
+  :root:not([data-theme='light']) .ansi-fg-1 {
+    color: #ff7b72;
+  }
+  :root:not([data-theme='light']) .ansi-fg-2 {
+    color: #7ee787;
+  }
+  :root:not([data-theme='light']) .ansi-fg-3 {
+    color: #e3b341;
+  }
+  :root:not([data-theme='light']) .ansi-fg-4 {
+    color: #79a8ff;
+  }
+  :root:not([data-theme='light']) .ansi-fg-5 {
+    color: #d2a8ff;
+  }
+  :root:not([data-theme='light']) .ansi-fg-6 {
+    color: #56d4dd;
+  }
+  :root:not([data-theme='light']) .ansi-fg-7 {
+    color: #c9d1d9;
+  }
+  :root:not([data-theme='light']) .ansi-bg-0 {
+    background: #1f2430;
+  }
+  :root:not([data-theme='light']) .ansi-bg-1 {
+    background: #4a1d1b;
+  }
+  :root:not([data-theme='light']) .ansi-bg-2 {
+    background: #1b3a20;
+  }
+  :root:not([data-theme='light']) .ansi-bg-3 {
+    background: #3d3112;
+  }
+  :root:not([data-theme='light']) .ansi-bg-4 {
+    background: #1b2a4a;
+  }
+  :root:not([data-theme='light']) .ansi-bg-5 {
+    background: #3a1f45;
+  }
+  :root:not([data-theme='light']) .ansi-bg-6 {
+    background: #133a40;
+  }
+  :root:not([data-theme='light']) .ansi-bg-7 {
+    background: #30363d;
+  }
+}
+:root[data-theme='dark'] .ansi-fg-0 {
+  color: #7b8394;
+}
+:root[data-theme='dark'] .ansi-fg-1 {
+  color: #ff7b72;
+}
+:root[data-theme='dark'] .ansi-fg-2 {
+  color: #7ee787;
+}
+:root[data-theme='dark'] .ansi-fg-3 {
+  color: #e3b341;
+}
+:root[data-theme='dark'] .ansi-fg-4 {
+  color: #79a8ff;
+}
+:root[data-theme='dark'] .ansi-fg-5 {
+  color: #d2a8ff;
+}
+:root[data-theme='dark'] .ansi-fg-6 {
+  color: #56d4dd;
+}
+:root[data-theme='dark'] .ansi-fg-7 {
+  color: #c9d1d9;
+}
+:root[data-theme='dark'] .ansi-bg-0 {
+  background: #1f2430;
+}
+:root[data-theme='dark'] .ansi-bg-1 {
+  background: #4a1d1b;
+}
+:root[data-theme='dark'] .ansi-bg-2 {
+  background: #1b3a20;
+}
+:root[data-theme='dark'] .ansi-bg-3 {
+  background: #3d3112;
+}
+:root[data-theme='dark'] .ansi-bg-4 {
+  background: #1b2a4a;
+}
+:root[data-theme='dark'] .ansi-bg-5 {
+  background: #3a1f45;
+}
+:root[data-theme='dark'] .ansi-bg-6 {
+  background: #133a40;
+}
+:root[data-theme='dark'] .ansi-bg-7 {
+  background: #30363d;
+}
+.live-term .ansi-fg-0 {
+  color: #7b8394;
+}
+.live-term .ansi-fg-1 {
+  color: #ff7b72;
+}
+.live-term .ansi-fg-2 {
+  color: #7ee787;
+}
+.live-term .ansi-fg-3 {
+  color: #e3b341;
+}
+.live-term .ansi-fg-4 {
+  color: #79a8ff;
+}
+.live-term .ansi-fg-5 {
+  color: #d2a8ff;
+}
+.live-term .ansi-fg-6 {
+  color: #56d4dd;
+}
+.live-term .ansi-fg-7 {
+  color: #c9d1d9;
+}
+
+/*
+ * p5-chat-ux: while the chat composer has focus on a phone (on-screen keyboard up), the bottom tab bar steps
+ * aside so the conversation keeps the room; the chat frame then only clears the home indicator. Unlayered so it
+ * wins over the utilities on the same elements.
+ */
+@media (width < 48rem) {
+  body:has([data-chat-composer]:focus) [data-bottom-bar] {
+    display: none;
+  }
+  body:has([data-chat-composer]:focus) [data-chat-main] {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

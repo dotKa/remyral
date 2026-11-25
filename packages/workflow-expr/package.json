@@ -1,0 +1,27 @@
+{
+  "name": "@remyral/workflow-expr",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "The workflow expression language (JSONata 2.2.2, pinned exactly): compile + static AST scan (refused functions, regex limits), deterministic bindings ($now fixed per node run) and a worker-thread sandbox pool with a hard 250 ms deadline and input / output size caps. See ADR-0055 and docs/design/p14-workflow-engine.md §4.",
+  "exports": {
+    ".": {
+      "@remyral/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "jsonata": "2.2.2",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "vitest": "5.0.4"
+  }
+}

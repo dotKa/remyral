@@ -1,0 +1,44 @@
+# Optional variant of the dev worker image with the four agent runtimes installed at their exact pins
+# (docs/compat/README.md §1, ADR-0012), for credential-free hands-on checks (docs/compat/handson-2026-10-13.md).
+# No credentials are baked in or needed; no model is ever called.
+#
+# Build after the base image:
+#   docker build -f infra/dev/docker-worker/Dockerfile --build-context bundle=apps/worker/dist \
+#     -t remyral-worker-dev infra/dev/docker-worker
+#   docker build -f infra/dev/docker-worker/Dockerfile.runtimes -t remyral-worker-dev:runtimes infra/dev/docker-worker
+#
+# npm packages are installed with --ignore-scripts (codex.md T1, pi.md); each runtime gets its own prefix
+# under /opt/remyral/runtimes/<runtime> and one symlink in /usr/local/bin, so the probe finds exactly the pin.
+ARG BASE_IMAGE=remyral-worker-dev
+FROM ${BASE_IMAGE}
+USER root
+
+# bubblewrap: Codex / Claude Code Linux sandbox (needs unprivileged user namespaces at run time).
+# procps: `ps` for process-tree checks. (ADR-0023: OpenHands and the uv-managed CPython it needed were removed.)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends bubblewrap procps \
+  && rm -rf /var/lib/apt/lists/*
+
+ARG CLAUDE_AGENT_SDK_VERSION=0.3.310
+ARG CODEX_VERSION=0.164.0
+ARG PI_VERSION=1.4.0
+ARG OPENCODE_VERSION=1.19.4
+
+RUN set -eu; \
+  R=/opt/remyral/runtimes; \
+  npm_i() { dir="$1"; shift; mkdir -p "$dir"; npm install --prefix "$dir" --ignore-scripts --no-audit --no-fund --save-exact "$@"; }; \
+  # Claude Code: the Agent SDK pin bundles the CLI as a platform package; expose that binary as `claude`.
+  npm_i "$R/claude-code" "@anthropic-ai/claude-agent-sdk@${CLAUDE_AGENT_SDK_VERSION}"; \
+  claude_bin="$(find "$R/claude-code/node_modules/@anthropic-ai" -maxdepth 2 -type f -name claude -path '*claude-agent-sdk-linux-*' | head -n1)"; \
+  test -n "$claude_bin"; ln -s "$claude_bin" /usr/local/bin/claude; \
+  npm_i "$R/codex" "@openai/codex@${CODEX_VERSION}"; \
+  ln -s "$R/codex/node_modules/.bin/codex" /usr/local/bin/codex; \
+  npm_i "$R/pi" "@earendil-works/pi-coding-agent@${PI_VERSION}"; \
+  ln -s "$R/pi/node_modules/.bin/pi" /usr/local/bin/pi; \
+  # OpenCode's postinstall only copies the platform binary over bin/opencode.exe; do that explicitly instead.
+  npm_i "$R/opencode" "opencode-ai@${OPENCODE_VERSION}"; \
+  oc_bin="$(find "$R/opencode/node_modules" -maxdepth 3 -type f -name opencode -path '*opencode-linux-*/bin/*' | grep -v musl | grep -v baseline | head -n1)"; \
+  test -n "$oc_bin"; ln -s "$oc_bin" /usr/local/bin/opencode; \
+  chown -R root:root "$R"; chmod -R go-w "$R"
+
+USER remyral

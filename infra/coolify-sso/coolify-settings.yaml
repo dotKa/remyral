@@ -1,0 +1,37 @@
+# p5-coolify-sso: the exact Coolify settings (entered in the Coolify UI; Coolify keeps them in its own database).
+# Verified against the Coolify v4.4.6 source (app/Livewire/SettingsOauth.php, app/Auth/Oidc/*,
+# app/Services/Auth/OauthLoginService.php, app/Models/Server.php::setupDynamicProxyConfiguration).
+# Steps and checks: docs/ops/coolify-sso.md.
+
+settings_general: # Settings → General (instance)
+  instance_domain: https://coolify.example.org
+  # Coolify then writes /data/coolify/proxy/dynamic/coolify.yaml with its own routers for this host
+  # (UI → coolify:8080, /app + /apps → coolify:6001, /terminal/ws → coolify:6002, certresolver letsencrypt).
+  # remana-coolify-sso.yaml outranks all of them (priority ≥ 10000) and puts the gate in front.
+
+settings_auth: # Settings → Authentication / Registration
+  registration_enabled: false # "Registration Allowed" off: nobody can create Coolify accounts
+  disable_password_registration_when_oauth_enabled: true
+
+settings_oauth_openid_connect: # Settings → OAuth → "OpenID Connect" card
+  enabled: true
+  login_button_label: Remyral console
+  client_id: coolify
+  client_secret: '<contents of /data/remyral/prod/secrets/coolify-oidc-client-secret>'
+  issuer_url: https://console.example.org/api/oidc # = SSO_CONSOLE_ORIGIN + /api/oidc, exact, no trailing slash
+  redirect_uri: https://coolify.example.org/auth/oidc/callback # = OIDC_COOLIFY_REDIRECT_URIS (exact match)
+  scopes: openid email profile
+  use_pkce: true # required by the master (S256 only)
+  require_verified_email: true # the master always sends email_verified=true for mapped accounts
+  allow_oidc_user_creation: false # only existing Coolify accounts (matched by e-mail) may sign in
+  auto_join_new_users_to_root_team: false
+  clock_skew_seconds: 60
+
+# Master side (Coolify resource "remana" → Environment Variables), for reference:
+master_environment:
+  SSO_CONSOLE_ORIGIN: https://console.example.org
+  OIDC_SIGNING_KEY_FILE: /run/secrets/remana/oidc-signing.pem
+  OIDC_COOLIFY_CLIENT_SECRET_FILE: /run/secrets/remana/coolify-oidc-client-secret
+  OIDC_COOLIFY_REDIRECT_URIS: https://coolify.example.org/auth/oidc/callback
+  OIDC_EMAIL_MAP: <console-username>=<e-mail of the existing Coolify admin account>
+  COOLIFY_SSO_HOST: coolify.example.org

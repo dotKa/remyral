@@ -1,0 +1,798 @@
+/*
+ * p12-diyalog Faz 0 (docs/design/p12-diyalog.md §3): the Diyalog design language — tokens, fonts and the few
+ * component rules utilities cannot express. Everything is scoped to `[data-ui='diyalog']`: the variables exist only
+ * inside that subtree (the shell, the sign-in frame and the step-up dialog are scope roots). The `dy-*` Tailwind colours
+ * below resolve to nothing outside the scope. Colours follow prefers-color-scheme; `data-theme="light|dark"` on the
+ * scope root overrides it (harness, tests, a later theme switch).
+ *
+ * p17-remyral-brand (docs/design/p17-remyral-rebrand.md, "Brand theme"): the Remyral palette on the same tokens —
+ * Deep Navy #0A1F3D is the ink of light and the page of dark, Off White #F6FAFF the thread, Slate #94A3B8 the faint
+ * text of dark, Electric Teal #00D1B2 the accent of dark (text and fills) and the brand mark (`--dy-brand`) in both;
+ * on light, text and solid fills use a darker teal derived from it (#00786A, 5.3:1 on white) because the bright teal
+ * reads 1.9:1 on white. Every pair the console draws is checked for WCAG AA (test/diyalog-polish.test.tsx; the ratios
+ * are listed in the design note).
+ *
+ * Fonts (src/fonts.css, self-hosted, CSP `font-src 'self'`): Inter for the UI text, Plus Jakarta Sans for headings,
+ * JetBrains Mono for ids, hashes, versions and code.
+ */
+
+/* ------------------------------------------------------------------ tokens (docs/design/redesign/diyalog-mockup.html) */
+[data-ui='diyalog'] {
+  color-scheme: light;
+  --dy-bg: #ecf1f8;
+  --dy-thread: #f6faff;
+  --dy-card: #ffffff;
+  --dy-sunk: #edf2f8;
+  --dy-line: #d8e2ee;
+  --dy-line-2: #bfccdb;
+  --dy-ink: #0a1f3d;
+  --dy-muted: #42526b;
+  --dy-faint: #52627a;
+  --dy-me: #13305a;
+  --dy-me-ink: #ffffff;
+  --dy-teal: #00786a;
+  --dy-teal-soft: #daf5ef;
+  --dy-teal-ink: #00665a;
+  --dy-amber: #9c5c00;
+  --dy-amber-soft: #fff1d6;
+  --dy-amber-ink: #7a4800;
+  --dy-red: #c23b33;
+  --dy-red-soft: #fce6e3;
+  --dy-red-ink: #9a2a23;
+  --dy-green: #1d7a4c;
+  --dy-green-soft: #ddf2e6;
+  --dy-violet: #6a4bd1;
+  --dy-violet-soft: #ece7fc;
+  --dy-cc: #7454d9;
+  --dy-cx: #13875f;
+  --dy-pi: #976800;
+  --dy-oc: #1266ff;
+  /* Text on a solid teal / amber / runtime fill (avatars, primary marks, warn buttons). */
+  --dy-on-fill: #ffffff;
+  /* p17-remyral-brand: Electric Teal as a mark (never text on light), and the Deep Navy tile the colour symbol sits
+     on (the rail's home link, the assistant's avatar) — the same in both themes, like the app icon. */
+  --dy-brand: #00d1b2;
+  --dy-brand-tile: #0a1f3d;
+  --dy-cmd-bg: #061328;
+  --dy-cmd-ink: #e6eef8;
+  --dy-cmd-line: transparent;
+  --dy-shadow: 0 1px 2px rgb(10 31 61 / 0.06), 0 6px 18px -10px rgb(10 31 61 / 0.22);
+  --dy-shadow-pop: 0 14px 34px -12px rgb(10 31 61 / 0.35);
+  --dy-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  /* p14-diyalog-polish: the boundary of a form field (≥ 3:1 against the card, WCAG 1.4.11; `line-2` stays the quieter
+     line of buttons and separators), the focus halo around a field, and the hover veils of solid buttons — a dark
+     ink fill lightens, a coloured fill (amber, teal, red) darkens. */
+  --dy-field: #7d8aa1;
+  --dy-focus-ring: color-mix(in srgb, var(--dy-teal) 26%, transparent);
+  --dy-veil-ink: rgb(255 255 255 / 0.13);
+  --dy-veil-fill: rgb(0 0 0 / 0.1);
+  --dy-selection: color-mix(in srgb, var(--dy-brand) 26%, transparent);
+  /* p14-diyalog-polish-2 (docs/design/p14-diyalog-polish-2.md §4): named values that were copied as literals — the
+     lift of a selected segment, the scrim under dialogs / sheets / phone menus — and the elevation edge: in dark, a
+     surface that sits higher gets a faint top highlight (light from above), because a shadow is invisible on a near-
+     black page. Radii: 14 a section / object card, 10 a notice or segmented track, 9 a control, 7 a segment. */
+  --dy-shadow-seg: 0 1px 2px rgb(10 31 61 / 0.1);
+  --dy-scrim: rgb(6 19 40 / 0.45);
+  /* p15-workspace-retention: the image lightbox backdrop and its controls (dark in both themes). */
+  --dy-lightbox: rgb(3 10 22 / 0.92);
+  --dy-lightbox-ctl: rgb(3 10 22 / 0.6);
+  --dy-edge: 0 0 0 0 transparent;
+  --dy-r-card: 14px;
+  --dy-r-band: 10px;
+  --dy-r-ctl: 9px;
+  --dy-primary: var(--dy-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) [data-ui='diyalog']:not([data-theme='light']) {
+    color-scheme: dark;
+    --dy-bg: #040d1c;
+    --dy-thread: #071429;
+    --dy-card: #0d2140;
+    --dy-sunk: #081731;
+    --dy-line: #1a3152;
+    --dy-line-2: #29446a;
+    --dy-ink: #e9f0f9;
+    --dy-muted: #a9b7ca;
+    --dy-faint: #94a3b8;
+    --dy-me: #d5e2f3;
+    --dy-me-ink: #0a1f3d;
+    --dy-teal: #00d1b2;
+    --dy-teal-soft: #06363a;
+    --dy-teal-ink: #5fe3cd;
+    --dy-amber: #f0b048;
+    --dy-amber-soft: #2e2412;
+    --dy-amber-ink: #f6c877;
+    --dy-red: #f07a70;
+    --dy-red-soft: #331a19;
+    --dy-red-ink: #f7a39b;
+    --dy-green: #5cc98d;
+    --dy-green-soft: #16291f;
+    --dy-violet: #a58ef7;
+    --dy-violet-soft: #241e3b;
+    --dy-cc: #a58ef7;
+    --dy-cx: #47c795;
+    --dy-pi: #e2b04a;
+    --dy-oc: #7dd3f7;
+    --dy-on-fill: #061328;
+    --dy-cmd-bg: #020812;
+    --dy-cmd-line: #1a3152;
+    --dy-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 22px -12px rgb(0 0 0 / 0.7);
+    --dy-shadow-pop: 0 14px 34px -12px rgb(0 0 0 / 0.8);
+    --dy-field: #607898;
+    --dy-veil-ink: rgb(0 0 0 / 0.1);
+    --dy-veil-fill: rgb(255 255 255 / 0.1);
+    --dy-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.035), 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 22px -12px rgb(0 0 0 / 0.7);
+    --dy-shadow-seg: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.45);
+    --dy-scrim: rgb(2 8 18 / 0.62);
+    --dy-edge: inset 0 1px 0 rgb(255 255 255 / 0.035);
+    /* p17-remyral-brand: every colour token has a dark value of its own (the same where it does not change). */
+    --dy-cmd-ink: #e6eef8;
+    --dy-brand: #00d1b2;
+    --dy-brand-tile: #0a1f3d;
+    --dy-lightbox: rgb(3 10 22 / 0.92);
+    --dy-lightbox-ctl: rgb(3 10 22 / 0.6);
+    --dy-focus-ring: color-mix(in srgb, var(--dy-teal) 30%, transparent);
+    --dy-selection: color-mix(in srgb, var(--dy-brand) 30%, transparent);
+    --dy-primary: #c9d6e6;
+  }
+}
+
+/* p17-remyral-brand: the theme switch's "Koyu" (data-theme on <html>, public/theme-boot.js) or a scope root's own
+   data-theme; a scope root marked light stays light. */
+:root[data-theme='dark'] [data-ui='diyalog']:not([data-theme='light']),
+[data-ui='diyalog'][data-theme='dark'] {
+  color-scheme: dark;
+  --dy-bg: #040d1c;
+  --dy-thread: #071429;
+  --dy-card: #0d2140;
+  --dy-sunk: #081731;
+  --dy-line: #1a3152;
+  --dy-line-2: #29446a;
+  --dy-ink: #e9f0f9;
+  --dy-muted: #a9b7ca;
+  --dy-faint: #94a3b8;
+  --dy-me: #d5e2f3;
+  --dy-me-ink: #0a1f3d;
+  --dy-teal: #00d1b2;
+  --dy-teal-soft: #06363a;
+  --dy-teal-ink: #5fe3cd;
+  --dy-amber: #f0b048;
+  --dy-amber-soft: #2e2412;
+  --dy-amber-ink: #f6c877;
+  --dy-red: #f07a70;
+  --dy-red-soft: #331a19;
+  --dy-red-ink: #f7a39b;
+  --dy-green: #5cc98d;
+  --dy-green-soft: #16291f;
+  --dy-violet: #a58ef7;
+  --dy-violet-soft: #241e3b;
+  --dy-cc: #a58ef7;
+  --dy-cx: #47c795;
+  --dy-pi: #e2b04a;
+  --dy-oc: #7dd3f7;
+  --dy-on-fill: #061328;
+  --dy-cmd-bg: #020812;
+  --dy-cmd-line: #1a3152;
+  --dy-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 22px -12px rgb(0 0 0 / 0.7);
+  --dy-shadow-pop: 0 14px 34px -12px rgb(0 0 0 / 0.8);
+  --dy-field: #607898;
+  --dy-veil-ink: rgb(0 0 0 / 0.1);
+  --dy-veil-fill: rgb(255 255 255 / 0.1);
+  --dy-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.035), 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 22px -12px rgb(0 0 0 / 0.7);
+  --dy-shadow-seg: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.45);
+  --dy-scrim: rgb(2 8 18 / 0.62);
+  --dy-edge: inset 0 1px 0 rgb(255 255 255 / 0.035);
+  /* p17-remyral-brand: every colour token has a dark value of its own (the same where it does not change). */
+  --dy-cmd-ink: #e6eef8;
+  --dy-brand: #00d1b2;
+  --dy-brand-tile: #0a1f3d;
+  --dy-lightbox: rgb(3 10 22 / 0.92);
+  --dy-lightbox-ctl: rgb(3 10 22 / 0.6);
+  --dy-focus-ring: color-mix(in srgb, var(--dy-teal) 30%, transparent);
+  --dy-selection: color-mix(in srgb, var(--dy-brand) 30%, transparent);
+  --dy-primary: #c9d6e6;
+}
+
+/* Tailwind theme extension: `bg-dy-card`, `text-dy-muted`, `font-dy`, `font-dy-mono`, `shadow-dy`, `ease-dy`, … */
+@theme inline {
+  --color-dy-bg: var(--dy-bg);
+  --color-dy-thread: var(--dy-thread);
+  --color-dy-card: var(--dy-card);
+  --color-dy-sunk: var(--dy-sunk);
+  --color-dy-line: var(--dy-line);
+  --color-dy-line-2: var(--dy-line-2);
+  --color-dy-field: var(--dy-field);
+  --color-dy-ink: var(--dy-ink);
+  --color-dy-muted: var(--dy-muted);
+  --color-dy-faint: var(--dy-faint);
+  --color-dy-me: var(--dy-me);
+  --color-dy-me-ink: var(--dy-me-ink);
+  --color-dy-teal: var(--dy-teal);
+  --color-dy-teal-soft: var(--dy-teal-soft);
+  --color-dy-teal-ink: var(--dy-teal-ink);
+  --color-dy-amber: var(--dy-amber);
+  --color-dy-amber-soft: var(--dy-amber-soft);
+  --color-dy-amber-ink: var(--dy-amber-ink);
+  --color-dy-red: var(--dy-red);
+  --color-dy-red-soft: var(--dy-red-soft);
+  --color-dy-red-ink: var(--dy-red-ink);
+  --color-dy-green: var(--dy-green);
+  --color-dy-green-soft: var(--dy-green-soft);
+  --color-dy-violet: var(--dy-violet);
+  --color-dy-violet-soft: var(--dy-violet-soft);
+  --color-dy-cc: var(--dy-cc);
+  --color-dy-cx: var(--dy-cx);
+  --color-dy-pi: var(--dy-pi);
+  --color-dy-oc: var(--dy-oc);
+  --color-dy-on-fill: var(--dy-on-fill);
+  --color-dy-brand: var(--dy-brand);
+  --color-dy-brand-tile: var(--dy-brand-tile);
+  --color-dy-cmd: var(--dy-cmd-bg);
+  --color-dy-cmd-ink: var(--dy-cmd-ink);
+  --color-dy-cmd-line: var(--dy-cmd-line);
+  --shadow-dy: var(--dy-shadow);
+  --shadow-dy-pop: var(--dy-shadow-pop);
+  --shadow-dy-seg: var(--dy-shadow-seg);
+  --shadow-dy-edge: var(--dy-edge);
+  --color-dy-scrim: var(--dy-scrim);
+  --color-dy-lightbox: var(--dy-lightbox);
+  --color-dy-lightbox-ctl: var(--dy-lightbox-ctl);
+  --ease-dy: var(--dy-ease);
+}
+
+@theme {
+  --font-dy: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-dy-display:
+    'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-dy-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ------------------------------------------------------------------ surfaces that speak Diyalog */
+@layer components {
+  /* A region in the new language (shared parts outside `.dy-surface` keep the base font and colours). */
+  .dy-surface {
+    font-family: var(--font-dy);
+    color: var(--dy-ink);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .dy-surface :where(code, kbd, samp, .dy-mono) {
+    font-family: var(--font-dy-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  /* p17-remyral-brand: headings in the brand's primary face (Plus Jakarta Sans); sizes and line heights stay. */
+  .dy-surface :where(h1, h2, h3) {
+    font-family: var(--font-dy-display);
+  }
+  [data-ui='diyalog'] :focus-visible {
+    outline: 2px solid var(--dy-teal);
+    outline-offset: 2px;
+  }
+
+  /* Live state: a slow breath on what is running now (opacity only). */
+  .dy-breathe {
+    animation: dy-breathe 2.4s ease-in-out infinite;
+  }
+  /* A thread item that arrived while the thread was open rises in once (the mockup's one moment; 200 ms since
+     p14-diyalog-polish-2 — it read as lag at 420 ms when several arrive). */
+  .dy-enter {
+    animation: dy-enter 200ms var(--dy-ease) both;
+  }
+  /* Pressable feedback. */
+  .dy-press {
+    transition:
+      transform 140ms var(--dy-ease),
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease,
+      box-shadow 140ms ease;
+  }
+  .dy-press:active {
+    transform: scale(0.97);
+  }
+  /* Countdown track: the fill shrinks with transform (no layout). */
+  .dy-track-fill {
+    transform-origin: left;
+    transition: transform 1s linear;
+  }
+  /* Long threads: off-screen items skip layout and paint until they scroll near (virtualization-ready). */
+  .dy-thread-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 120px;
+  }
+  /* p12-chat-scroll-anchor: while a conversation opens at a row, every row is laid out at its real height (and
+     remembered for later), so the opening position is measured on real sizes, not 120 px placeholders. */
+  [data-anchoring] .dy-thread-item {
+    content-visibility: visible;
+  }
+  /* p12-diyalog Faz 1: a decision row opening inside a card (code field), quick and from just above. */
+  .dy-reveal {
+    animation: dy-reveal 180ms var(--dy-ease) both;
+  }
+  /* A card that was just decided: the outcome line settles in (opacity + a small lift; no layout animation). */
+  .dy-settle {
+    animation: dy-settle 200ms var(--dy-ease) both;
+  }
+  /* The "new events" pill: rises from the composer edge. */
+  .dy-pill {
+    animation: dy-reveal 200ms var(--dy-ease) both;
+  }
+  /* A card reached with j / k or a jump link: a brief ring, no scroll animation (keyboard actions never animate). */
+  /* Cards reached by j / k or a jump stop clear of the sticky top bar + summary and the composer. */
+  [data-card] {
+    scroll-margin-top: 8.5rem;
+    scroll-margin-bottom: 9rem;
+  }
+  [data-card]:focus-visible {
+    outline: 2px solid var(--dy-teal);
+    outline-offset: 3px;
+  }
+  .dy-noscrollbar {
+    scrollbar-width: none;
+  }
+  .dy-noscrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/*
+ * p12-diyalog Faz 4 (docs/design/p12-diyalog.md §12): the bridge. A Diyalog screen reuses classic components where
+ * they hold business rules (machine admin, enforcement forms, budgets, policy editors, …) instead of copying the
+ * rules. Inside `.dy-bridge` the classic semantic tokens (`--c-*`, which every classic utility reads) and the classic
+ * font variables resolve to the Diyalog ones, so those components speak the new language — light and dark — without
+ * a line changed. Scoped under [data-ui='diyalog'].
+ */
+/* p12-diyalog-final: `.dy-log` is the Diyalog log viewer's scope (`common/logs.tsx`) — the shared virtualized line
+   engine draws its rows with the semantic tokens, which resolve to the Diyalog ones here. */
+[data-ui='diyalog'] :is(.dy-bridge, .dy-log) {
+  --c-canvas: var(--dy-thread);
+  --c-surface: var(--dy-card);
+  --c-surface-2: var(--dy-sunk);
+  --c-line: var(--dy-line);
+  --c-line-strong: var(--dy-line-2);
+  --c-fg: var(--dy-ink);
+  --c-muted: var(--dy-muted);
+  --c-accent: var(--dy-teal);
+  --c-accent-hover: var(--dy-teal-ink);
+  --c-accent-fg: var(--dy-on-fill);
+  --c-accent-soft: var(--dy-teal-soft);
+  --c-danger: var(--dy-red-ink);
+  --c-danger-soft: var(--dy-red-soft);
+  --c-warn: var(--dy-amber-ink);
+  --c-warn-soft: var(--dy-amber-soft);
+  --c-ok: var(--dy-green);
+  --c-ok-soft: var(--dy-green-soft);
+  --font-sans: var(--font-dy);
+  --font-mono: var(--font-dy-mono);
+  font-family: var(--font-dy);
+  color: var(--dy-ink);
+}
+/* Classic panels inside a Diyalog screen take the Diyalog card shape (radius 14, the soft shadow). */
+[data-ui='diyalog'] .dy-bridge :where(.rounded-lg.border.bg-surface) {
+  border-radius: 14px;
+}
+
+/* p12-diyalog Faz 2: a card with nothing to say renders nothing; its slot takes no gap (unlayered: wins over the
+   item's own `flex` utility). */
+.dy-thread-item:empty {
+  display: none;
+}
+
+/*
+ * p14-diyalog-polish (docs/design/p14-diyalog-polish.md): one finish for the native form controls and solid buttons,
+ * applied here instead of in ~100 call sites. Unlayered on purpose: it must win over the per-field utilities
+ * (`outline-none`, `border-dy-line-2`) that silenced the focus ring. Only Diyalog surfaces (`.dy-surface`) match.
+ */
+[data-ui='diyalog'] .dy-surface {
+  accent-color: var(--dy-teal);
+  scrollbar-color: var(--dy-line-2) transparent;
+}
+[data-ui='diyalog'] .dy-surface ::selection {
+  background-color: var(--dy-selection);
+}
+
+/* Bordered text fields, selects and text areas: a 3:1 boundary, and a teal border plus a soft halo while focused
+   (a field always shows where typing goes; the halo is a box-shadow, so nothing moves). Borderless fields that live
+   inside a framed composer (`border-0`) keep their frame's own focus treatment; invalid fields keep their red. */
+[data-ui='diyalog']
+  .dy-surface
+  :is(
+    input:not(
+      [type='checkbox'],
+      [type='radio'],
+      [type='range'],
+      [type='file'],
+      [type='color'],
+      [type='hidden']
+    ),
+    select,
+    textarea
+  ):not([class~='border-0'], [aria-invalid='true'], [class~='border-dy-teal'], [class~='border-dy-red']) {
+  border-color: var(--dy-field);
+}
+[data-ui='diyalog']
+  .dy-surface
+  :is(
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+    select,
+    textarea
+  ) {
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+[data-ui='diyalog']
+  .dy-surface
+  :is(
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+    select,
+    textarea
+  ):not([class~='border-0']):focus {
+  outline: none;
+  border-color: var(--dy-teal);
+  box-shadow: 0 0 0 3px var(--dy-focus-ring);
+}
+[data-ui='diyalog']
+  .dy-surface
+  :is(input, select, textarea):not([class~='border-0'])[aria-invalid='true']:focus {
+  border-color: var(--dy-red);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dy-red) 24%, transparent);
+}
+[data-ui='diyalog'] .dy-surface :is(input, select, textarea):disabled {
+  cursor: not-allowed;
+}
+
+/* Single selects: the browser's own arrow sat 4 px from the edge and differed per platform and theme; one drawn
+   chevron in the muted ink, with room for it. */
+[data-ui='diyalog'] .dy-surface select:not([multiple], [size]) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.25rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--dy-muted) 50%),
+    linear-gradient(135deg, var(--dy-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.125rem) 50%,
+    calc(100% - 0.8125rem) 50%;
+  background-size:
+    0.3125rem 0.3125rem,
+    0.3125rem 0.3125rem;
+  background-repeat: no-repeat;
+}
+[data-ui='diyalog'] .dy-surface select option {
+  background-color: var(--dy-card);
+  color: var(--dy-ink);
+}
+
+/* File pickers: the native "Choose file" button in the secondary-button shape. */
+[data-ui='diyalog'] .dy-surface input[type='file'] {
+  font-size: 0.875rem;
+  color: var(--dy-muted);
+}
+[data-ui='diyalog'] .dy-surface input[type='file']::file-selector-button {
+  margin-right: 0.75rem;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--dy-line-2);
+  border-radius: 9px;
+  background-color: var(--dy-card);
+  color: var(--dy-ink);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-ui='diyalog'] .dy-surface input[type='file']:not(:disabled)::file-selector-button:hover {
+    border-color: var(--dy-ink);
+  }
+}
+
+/* A disabled solid button read as an enabled one in dark mode (a light-grey slab at 55 %): it now drops its fill
+   and reads as unavailable in both themes. A busy one keeps its fill (it is working, not unavailable). */
+[data-ui='diyalog']
+  .dy-press:is(
+    [class~='bg-dy-ink'],
+    [class~='bg-dy-amber'],
+    [class~='bg-dy-teal'],
+    [class~='bg-dy-red']
+  ):disabled:not([aria-busy='true']) {
+  border-color: var(--dy-line-2);
+  background-color: var(--dy-sunk);
+  color: var(--dy-faint);
+  opacity: 1;
+}
+
+/* Solid buttons (ink, amber, teal, red fills) had no hover state at all: a veil over the fill, drawn with an inset
+   shadow (no layout, no colour token per variant). Pointer devices only — touch gets the press scale. */
+@media (hover: hover) and (pointer: fine) {
+  [data-ui='diyalog'] .dy-press[class~='bg-dy-ink']:not(:disabled, [aria-disabled='true']):hover {
+    box-shadow: inset 0 0 0 100vmax var(--dy-veil-ink);
+  }
+  [data-ui='diyalog']
+    .dy-press:is([class~='bg-dy-amber'], [class~='bg-dy-teal'], [class~='bg-dy-red']):not(
+      :disabled,
+      [aria-disabled='true']
+    ):hover {
+    box-shadow: inset 0 0 0 100vmax var(--dy-veil-fill);
+  }
+  /* Ghost and quiet buttons: a faint wash, so every pressable answers the pointer. */
+  [data-ui='diyalog'] .dy-press[class~='bg-transparent']:not(:disabled, [aria-disabled='true']):hover {
+    background-color: color-mix(in srgb, var(--dy-sunk) 80%, transparent);
+  }
+}
+
+/*
+ * p14-diyalog-polish-2 (docs/design/p14-diyalog-polish-2.md): the second pass — hierarchy, a coherent dark theme and
+ * motion. Same scope rules as above: every selector starts with [data-ui='diyalog'].
+ */
+
+/* Dark primary: the solid ink button was the text colour (#e6eaf2) as a fill — the loudest thing on every dark screen,
+   louder than the amber decision it sits next to. It takes a softer slate (`--dy-primary`); light is unchanged (the
+   token is the ink there). Placed before the disabled rule below in specificity terms: that one still wins. */
+[data-ui='diyalog'] .dy-press[class~='bg-dy-ink'] {
+  border-color: var(--dy-primary);
+  background-color: var(--dy-primary);
+}
+
+/* The top bar names the page only once the h1 has scrolled under it (ScreenFrame sets data-shown). */
+[data-ui='diyalog'] .dy-bar-title {
+  transition: opacity 150ms ease;
+}
+[data-ui='diyalog'] .dy-bar-title[data-shown='false'] {
+  opacity: 0;
+}
+
+/* Action rows that scroll sideways on phones fade out at the end while there is more to scroll (scroll-driven, where
+   supported; elsewhere they simply scroll). */
+@supports (animation-timeline: scroll()) {
+  @media (width < 40rem) {
+    [data-ui='diyalog'] :is(.dy-action-row, .dy-scroll-fade) {
+      animation: dy-row-fade linear both;
+      animation-timeline: scroll(self inline);
+    }
+  }
+}
+/* …and tighten on phones so the usual three or four actions fit a 390 px screen without scrolling at all. */
+@media (width < 40rem) {
+  [data-ui='diyalog'] .dy-action-row {
+    gap: 0.375rem;
+  }
+  [data-ui='diyalog'] .dy-action-row > .dy-press[class~='border'] {
+    padding-inline: 0.625rem;
+  }
+  [data-ui='diyalog'] .dy-action-row > .dy-press[class~='border-transparent'] {
+    padding-inline: 0.5rem;
+  }
+}
+
+/* p17-ui-polish: a compact row (Row `compact`) on phones — title | actions, then the meta line under both, ending
+   with the figures (Row moves them there); the text and end columns dissolve into one grid. */
+@media (width < 40rem) {
+  [data-ui='diyalog'] li[data-dy-compact] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 0.5rem;
+    row-gap: 0.125rem;
+    align-items: start;
+  }
+  [data-ui='diyalog'] li[data-dy-compact][data-dy-lead] {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+  }
+  [data-ui='diyalog'] li[data-dy-compact] > :is(.dy-rowc-text, .dy-rowc-end) {
+    display: contents;
+  }
+  [data-ui='diyalog'] li[data-dy-compact] > .dy-rowc-lead {
+    grid-row: 1 / span 2;
+  }
+  [data-ui='diyalog'] li[data-dy-compact] .dy-rowc-title {
+    grid-column: -3 / -2;
+    grid-row: 1;
+  }
+  [data-ui='diyalog'] li[data-dy-compact] .dy-rowc-meta {
+    grid-column: -3 / -1;
+    grid-row: 2;
+  }
+  [data-ui='diyalog'] li[data-dy-compact] .dy-rowc-actions {
+    grid-column: -2 / -1;
+    grid-row: 1;
+    margin-block: -0.25rem;
+    justify-self: end;
+    min-width: max-content;
+    overflow: visible;
+    animation: none;
+  }
+}
+
+/* List updates: a row that appears (first load after the skeleton, a new job, a row put back) fades in instead of
+   snapping; a quick re-render retargets (a transition, not a keyframe). Opacity only — nothing moves. */
+[data-ui='diyalog'] .dy-rows > li,
+[data-ui='diyalog'] [data-dy-skeleton] {
+  transition: opacity 180ms ease;
+}
+@starting-style {
+  [data-ui='diyalog'] .dy-rows > li,
+  [data-ui='diyalog'] [data-dy-skeleton] {
+    opacity: 0;
+  }
+}
+
+/* Notices and confirmations (the toast moments of this UI: "Kaydedildi", an API error, a read error) arrive from just
+   above in 180 ms; they are inline bands, so they never cover anything. */
+[data-ui='diyalog'] .dy-notice {
+  transition:
+    opacity 180ms ease,
+    transform 180ms var(--dy-ease);
+}
+@starting-style {
+  [data-ui='diyalog'] .dy-notice {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Disclosures (<details>: "Rakamları göster", "Tamamı", settings sections) open and close with their height instead of
+   snapping, where the browser can animate to `auto`. */
+@supports (interpolate-size: allow-keywords) {
+  [data-ui='diyalog'] .dy-surface {
+    interpolate-size: allow-keywords;
+  }
+  [data-ui='diyalog'] .dy-surface details::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    opacity: 0;
+    transition:
+      block-size 180ms var(--dy-ease),
+      opacity 150ms ease,
+      content-visibility 180ms allow-discrete;
+  }
+  [data-ui='diyalog'] .dy-surface details[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ui='diyalog'] .dy-notice {
+    transition: opacity 180ms ease;
+  }
+  @starting-style {
+    [data-ui='diyalog'] .dy-notice {
+      transform: none;
+    }
+  }
+  [data-ui='diyalog'] .dy-surface details::details-content {
+    transition: none;
+  }
+  [data-ui='diyalog'] .dy-bar-title {
+    transition: none;
+  }
+}
+
+/* p17-remyral-brand: the lock-up follows the theme — navy wordmark on light, white wordmark on dark (Brand.tsx).
+   Unlayered, so it wins over the `block` utility on the images. */
+[data-ui='diyalog'] .dy-logo-on-dark {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  [data-ui='diyalog']:not([data-theme='light'], :root[data-theme='light'] *) .dy-logo-on-light {
+    display: none;
+  }
+  [data-ui='diyalog']:not([data-theme='light'], :root[data-theme='light'] *) .dy-logo-on-dark {
+    display: block;
+  }
+}
+[data-ui='diyalog']:is([data-theme='dark'], :root[data-theme='dark'] :not([data-theme='light']))
+  .dy-logo-on-light {
+  display: none;
+}
+[data-ui='diyalog']:is([data-theme='dark'], :root[data-theme='dark'] :not([data-theme='light']))
+  .dy-logo-on-dark {
+  display: block;
+}
+
+@keyframes dy-breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes dy-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dy-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dy-settle {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reduced motion: no movement; state still reads through colour, shape and text. */
+@media (prefers-reduced-motion: reduce) {
+  .dy-breathe,
+  .dy-enter,
+  .dy-reveal,
+  .dy-settle,
+  .dy-pill {
+    animation: none;
+  }
+  .dy-press,
+  .dy-track-fill {
+    transition: none;
+  }
+  .dy-press:active {
+    transform: none;
+  }
+}
+[data-motion='reduce'] .dy-breathe,
+[data-motion='reduce'] .dy-enter,
+[data-motion='reduce'] .dy-reveal,
+[data-motion='reduce'] .dy-settle,
+[data-motion='reduce'] .dy-pill {
+  animation: none;
+}
+[data-motion='reduce'] .dy-track-fill {
+  transition: none;
+}
+
+/* p14-diyalog-polish-2: the scroll-fade frames and the in-app reduced-motion switch for the new moments. */
+@keyframes dy-row-fade {
+  from {
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  98% {
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  to {
+    mask-image: none;
+  }
+}
+[data-motion='reduce'] :is(.dy-notice, .dy-rows > li, [data-dy-skeleton], .dy-bar-title) {
+  transition: none;
+}
+
+/* p16-chat-complete: the conversation's print page (/chat/:id/yazdir) prints alone — the shell around it does not. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-print-root],
+  [data-print-root] * {
+    visibility: visible;
+  }
+  [data-print-root] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+  [data-print-hide] {
+    display: none !important;
+  }
+}

@@ -1,0 +1,60 @@
+/**
+ * p19-install-scripts (ADR-0068, docs/design/p19-install-scripts.md): npm kurulum betiklerinin değerlendirilmesi ve
+ * onayı — Ayarlar → Güvenlik → Kurulum betikleri, sohbetteki onay kartı ve başarısız MCP kurulumundaki bağlantı.
+ */
+export default {
+  tab: 'Kurulum betikleri',
+  title: 'Onaylı kurulum betikleri',
+  hint: 'Bazı npm paketleri kurulurken kendi kodunu çalıştırır (ör. makineye özel bir dosya indirir). Burada onaylanan paket sürümünün betiği, o paketi kullanan yerel MCP sunucusu kurulurken makinelerde çalışır. Onay tam o sürüm ve paket dosyası içindir; yeni sürüm yeniden onay ister.',
+  sandbox:
+    'Linux makinelerde betik bubblewrap içinde çalışır: dosya sistemi salt okunur, makinenin veri klasörü ve korunan ev klasörleri gizlidir, yalnızca kurulum klasörüne yazabilir; ağ açıktır. macOS ve Windows makinelerde yalıtım yoktur.',
+  evaluateTitle: 'Paket değerlendir',
+  name: 'Paket',
+  version: 'Sürüm',
+  namePlaceholder: 'ör. frida',
+  versionPlaceholder: 'ör. 17.23.2',
+  evaluate: 'Değerlendir',
+  evaluating: 'Değerlendiriliyor…',
+  reason: 'Neden (isteğe bağlı)',
+  approve: 'Onayla',
+  stepUp: 'Kurulum betiği onayı',
+  approving: 'Onaylanıyor…',
+  approved: (p: { pkg: string }) => `${p.pkg} için kurulum betiği onaylandı.`,
+  revoke: 'Onayı kaldır',
+  revoked: (p: { pkg: string }) => `${p.pkg} için onay kaldırıldı.`,
+  revokeTitle: (p: { pkg: string }) => `${p.pkg} onayı kaldırılsın mı?`,
+  revokeBody:
+    'Yeni kurulumlar bu betiği artık çalıştırmaz; paket yine gerekiyorsa kurulum reddedilir. Kurulu olan sunucular kaldırılana ya da yeniden kurulana kadar kalır.',
+  empty: 'Henüz onaylanmış kurulum betiği yok.',
+  active: 'Etkin',
+  revokedState: (p: { who: string; when: string }) => `Kaldırıldı (${p.who}, ${p.when})`,
+  by: (p: { who: string; when: string }) => `${p.who} · ${p.when}`,
+  viaChat: 'sohbetten',
+  noScript: 'Bu sürümün kurulum betiği yok; onaylanacak bir şey yok.',
+  facts: {
+    scripts: 'Betikler',
+    gyp: 'Yerel derleme (binding.gyp → node-gyp rebuild)',
+    hosts: 'Betikte geçen adresler',
+    hostsNone: 'yok',
+    publisher: 'Yayınlayan',
+    trusted: 'güvenilir yayın (CI, OIDC)',
+    provenance: 'Kaynak kanıtı (provenance)',
+    yes: 'var',
+    no: 'yok',
+    signatures: 'Kayıt defteri imzası',
+    repository: 'Depo',
+    published: 'Yayın tarihi',
+    integrity: 'Bütünlük özeti',
+    maintainers: 'Bakımcılar',
+    unknown: 'bilinmiyor',
+  },
+  card: {
+    label: 'Kurulum betiği onayı',
+    kind: 'Kurulum betiği',
+    note: 'Onaylarsan bu sürümlerin kurulum betikleri, onları kullanan yerel MCP sunucusu kurulurken makinelerde çalışır (Linux: bubblewrap içinde; macOS / Windows: yalıtımsız). Betik metinleri paket yazarlarınındır; onaydan sonra kurulumu yeniden dene.',
+    untrusted: 'Paket yazarının metni',
+  },
+  failure: {
+    link: 'Kurulum betiklerini değerlendir',
+  },
+};

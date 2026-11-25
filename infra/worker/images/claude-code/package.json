@@ -1,0 +1,10 @@
+{
+  "name": "remyral-runtime-claude-code",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "Locked install of the claude-code runtime pin for the container image (p7-supply-chain). Regenerate: docs/security/dependency-policy.md §4.",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.310"
+  }
+}

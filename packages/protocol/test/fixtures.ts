@@ -1,0 +1,951 @@
+import { randomUUID } from 'node:crypto';
+
+let seq = 0;
+
+export function envelope<E extends Record<string, unknown>>(type: string, extra: E = {} as E) {
+  return {
+    protocolVersion: '1.0',
+    type,
+    messageId: randomUUID(),
+    seq: seq++,
+    ts: '2026-10-12T19:00:00.000Z',
+    correlationId: 'corr-1',
+    ...extra,
+  };
+}
+
+export const workerId = 'wrk_mac1';
+export const jobId = 'job_01';
+export const lease = { attemptId: 'att_01', epoch: 3 };
+export const publicKey = 'A'.repeat(43);
+export const signature = 'B'.repeat(86);
+
+export const facts = {
+  os: 'darwin',
+  osVersion: '26.0',
+  arch: 'arm64',
+  hostname: 'mac-1',
+  cpuCount: 10,
+  memoryBytes: 34359738368,
+  diskFreeBytes: 107374182400,
+};
+
+/** One valid example per WorkerToMaster message type. */
+export const workerMessages = {
+  HELLO: envelope('HELLO', {
+    payload: {
+      supportedVersions: ['1.0'],
+      workerVersion: '0.1.0',
+      publicKey,
+      pairingCode: 'ABCD-EFGH',
+      facts,
+    },
+  }),
+  AUTH: envelope('AUTH', { workerId, payload: { nonce: 'n'.repeat(32), signature } }),
+  CAPABILITIES: envelope('CAPABILITIES', {
+    workerId,
+    payload: {
+      runtimes: [
+        {
+          runtime: 'opencode',
+          version: '1.19.0',
+          installed: true,
+          authenticated: 'unknown',
+          capabilities: { streaming: { status: 'supported' }, resume: { status: 'unverified', note: 'P0' } },
+        },
+      ],
+      sandboxProfiles: ['host-restricted'],
+      maxParallelJobs: 2,
+      tools: [{ name: 'git', version: '2.50.0' }],
+    },
+  }),
+  HEARTBEAT: envelope('HEARTBEAT', {
+    workerId,
+    payload: {
+      state: 'busy',
+      runningJobs: [{ jobId, ...lease }],
+      load: { cpuPercent: 42.5, memoryFreeBytes: 1024, diskFreeBytes: 2048 },
+    },
+  }),
+  LEASE_ACK: envelope('LEASE_ACK', { workerId, jobId, payload: { ...lease, accepted: true } }),
+  EVENT: envelope('EVENT', {
+    workerId,
+    jobId,
+    payload: { ...lease, event: { kind: 'usage', inputTokens: 10, provenance: 'reported-by-runtime' } },
+  }),
+  LOG_CHUNK: envelope('LOG_CHUNK', {
+    workerId,
+    jobId,
+    payload: { ...lease, stream: 'stdout', chunkSeq: 0, data: 'hello', redacted: true },
+  }),
+  JOB_RESULT: envelope('JOB_RESULT', {
+    workerId,
+    jobId,
+    payload: {
+      ...lease,
+      outcome: 'succeeded',
+      summary: 'done',
+      commits: [{ sha: 'a'.repeat(40), branch: 'rac/job_01/att_01' }],
+    },
+  }),
+  ACK: envelope('ACK', { workerId, seq: 0, payload: { throughSeq: 12 } }),
+  ROTATE_KEY: envelope('ROTATE_KEY', {
+    workerId,
+    seq: 0,
+    payload: {
+      nonce: 'n'.repeat(32),
+      newPublicKey: 'C'.repeat(43),
+      oldKeySignature: signature,
+      newKeySignature: signature,
+    },
+  }),
+  ARTIFACT_REF: envelope('ARTIFACT_REF', {
+    workerId,
+    jobId,
+    payload: {
+      ...lease,
+      artifactId: 'art_1',
+      name: 'report.json',
+      mediaType: 'application/json',
+      sizeBytes: 12,
+      sha256: 'c'.repeat(64),
+    },
+  }),
+  UPDATE_STATUS: envelope('UPDATE_STATUS', {
+    workerId,
+    seq: 0,
+    payload: {
+      attemptId: '0f9d6a52-7c1e-4b8e-9f43-2a51c2a9e001',
+      version: '1.2.0',
+      phase: 'rolled_back',
+      reason: 'health_check_failed',
+      currentVersion: '1.1.0',
+    },
+  }),
+  ASSISTANT_UPDATE: envelope('ASSISTANT_UPDATE', {
+    workerId,
+    seq: 0,
+    payload: {
+      turnId: '00000000-0000-4000-8000-0000000000c1',
+      seq: 3,
+      kind: 'tool_call',
+      callId: 'toolu_01',
+      tool: 'list_jobs',
+      input: { project: 'alpha' },
+    },
+  }),
+  MACHINE_ADMIN_REQUEST: envelope('MACHINE_ADMIN_REQUEST', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000d1',
+      op: { kind: 'exec', shell: 'powershell', command: 'Get-Service Spooler', timeoutSec: 60 },
+    },
+  }),
+  SUBTASK_REQUEST: envelope('SUBTASK_REQUEST', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000e1',
+      op: {
+        kind: 'create',
+        title: 'Thumbnails',
+        prompt: 'Generate three thumbnails for the video script in the input.',
+        runtime: 'codex',
+        requires: ['image-generation'],
+        inputs: [{ name: 'script.md', contentBase64: Buffer.from('# Script\n').toString('base64') }],
+        wait: true,
+      },
+    },
+  }),
+  QUESTION_REQUEST: envelope('QUESTION_REQUEST', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000f1',
+      op: {
+        kind: 'ask',
+        title: 'Deploy target',
+        questions: [
+          {
+            id: 'q1',
+            prompt: 'Which environment?',
+            kind: 'single',
+            options: [{ label: 'preview' }, { label: 'production', description: 'needs an approval' }],
+            allowOther: true,
+          },
+        ],
+        timeoutSec: 1800,
+      },
+    },
+  }),
+  MACHINE_ADMIN_RESULT: envelope('MACHINE_ADMIN_RESULT', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000d1',
+      state: 'succeeded',
+      exitCode: 0,
+      durationMs: 812,
+      output: 'Running  Spooler  Print Spooler',
+      truncated: false,
+    },
+  }),
+  APPROVAL_POLICY_STATUS: envelope('APPROVAL_POLICY_STATUS', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      changeId: '00000000-0000-4000-8000-0000000000e1',
+      seq: 2,
+      outcome: 'applied',
+      application: 'live',
+      detail: 'Claude Code switched its permission mode.',
+    },
+  }),
+  JOB_MESSAGE_STATUS: envelope('JOB_MESSAGE_STATUS', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      messageId: '00000000-0000-4000-8000-0000000000f1',
+      status: 'failed',
+      code: 'run_ended',
+      detail: 'The agent finished its turn before it took the message.',
+    },
+  }),
+  OPS_UPDATE: envelope('OPS_UPDATE', {
+    workerId,
+    seq: 0,
+    payload: {
+      commandId: '00000000-0000-4000-8000-0000000000a1',
+      seq: 2,
+      kind: 'login.start',
+      state: 'waiting_for_user',
+      login: {
+        runtime: 'codex',
+        url: 'https://auth.openai.com/codex/device',
+        userCode: 'ABCD-EFGHI',
+        expectsCode: false,
+      },
+    },
+  }),
+  CREDENTIAL_STATUS: envelope('CREDENTIAL_STATUS', {
+    workerId,
+    seq: 0,
+    payload: { credentialId: 'anthropic-main', version: 2, outcome: 'applied' },
+  }),
+  WORKER_CONFIG_STATUS: envelope('WORKER_CONFIG_STATUS', {
+    workerId,
+    seq: 0,
+    payload: {
+      generation: 3,
+      outcome: 'applied',
+      report: {
+        source: 'panel',
+        generation: 3,
+        documentHash: 'e'.repeat(64),
+        appliedAt: '2026-10-14T10:00:00.000Z',
+        effective: {
+          projects: ['alpha'],
+          allowedRuntimes: ['codex'],
+          maxParallelJobs: 2,
+          sandboxProfiles: ['container'],
+          runtimeAuth: { codex: 'secret-ref' },
+          labels: { site: 'home' },
+        },
+        ceiling: {
+          projects: null,
+          repoHosts: ['github.com'],
+          allowedRuntimes: null,
+          maxParallelJobs: 4,
+          sandboxProfiles: null,
+          pinnedRuntimes: [],
+        },
+        blocked: [{ path: 'projects.beta', code: 'blocked_by_local_ceiling', detail: 'host not allowed' }],
+      },
+    },
+  }),
+  SERVICE_REQUEST: envelope('SERVICE_REQUEST', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000f9',
+      op: {
+        kind: 'start',
+        request: { name: 'web', command: 'pnpm dev --port 5173', port: 5173, tunnel: 'quick' },
+      },
+    },
+  }),
+  SERVICE_STATUS: envelope('SERVICE_STATUS', {
+    workerId,
+    seq: 0,
+    payload: {
+      serviceId: '00000000-0000-4000-8000-00000000a001',
+      revision: 1,
+      state: 'running',
+      health: 'healthy',
+      pid: 4242,
+      restarts: 0,
+      tunnel: { state: 'running', url: 'https://abc-def.trycloudflare.com' },
+      cpuPercent: 3.5,
+      memoryBytes: 104857600,
+      at: '2026-10-12T19:00:00.000Z',
+    },
+  }),
+  SERVICE_LOGS: envelope('SERVICE_LOGS', {
+    workerId,
+    seq: 0,
+    payload: {
+      requestId: '00000000-0000-4000-8000-0000000000fa',
+      serviceId: '00000000-0000-4000-8000-00000000a001',
+      status: 'ok',
+      lines: [{ at: '2026-10-12T19:00:00.000Z', stream: 'stdout', text: 'ready on :5173' }],
+      truncated: false,
+    },
+  }),
+  IDE_STATUS: envelope('IDE_STATUS', {
+    workerId,
+    seq: 0,
+    payload: {
+      workspaceId: '00000000-0000-4000-8000-00000000e001',
+      revision: 1,
+      state: 'running',
+      streams: 2,
+      lastActivityAt: '2026-10-12T19:00:00.000Z',
+      branch: 'remyral/ide/ayse/fix',
+      memoryBytes: 734003200,
+      at: '2026-10-12T19:00:00.000Z',
+    },
+  }),
+  IDE_GIT_RESULT: envelope('IDE_GIT_RESULT', {
+    workerId,
+    seq: 0,
+    payload: {
+      requestId: '00000000-0000-4000-8000-00000000e002',
+      workspaceId: '00000000-0000-4000-8000-00000000e001',
+      status: 'ok',
+      branch: 'remyral/ide/ayse/fix',
+      head: 'a'.repeat(40),
+      committed: true,
+      pushed: true,
+    },
+  }),
+  IDE_FILE_DATA: envelope('IDE_FILE_DATA', {
+    workerId,
+    seq: 0,
+    payload: {
+      requestId: '00000000-0000-4000-8000-00000000e004',
+      workspaceId: '00000000-0000-4000-8000-00000000e001',
+      status: 'ok',
+      text: 'export const a = 1;\n',
+    },
+  }),
+  IDE_EVENT: envelope('IDE_EVENT', {
+    workerId,
+    seq: 0,
+    payload: {
+      kind: 'terminal.open',
+      workspaceId: '00000000-0000-4000-8000-00000000e001',
+      eventId: '00000000-0000-4000-8000-00000000e003',
+      at: '2026-10-12T19:00:00.000Z',
+      name: 'bash',
+    },
+  }),
+  STREAM_ACCEPT: envelope('STREAM_ACCEPT', { workerId, seq: 0, payload: { streamId: 1, window: 262144 } }),
+  WORKFILES_DATA: envelope('WORKFILES_DATA', {
+    workerId,
+    seq: 0,
+    payload: {
+      requestId: '00000000-0000-4000-8000-0000000000fb',
+      status: 'ok',
+      entries: [{ path: 'out/index.html', kind: 'file', size: 120, mtime: '2026-10-12T19:00:00.000Z' }],
+      truncated: false,
+    },
+  }),
+  WORKFILES_STATUS: envelope('WORKFILES_STATUS', {
+    workerId,
+    seq: 0,
+    payload: {
+      maxBytes: 10737418240,
+      usedBytes: 120,
+      kept: [
+        {
+          jobId,
+          attemptId: 'att_01',
+          projectId: 'genel',
+          outcome: 'failed',
+          sizeBytes: 120,
+          files: 1,
+          keptAt: '2026-10-12T19:00:00.000Z',
+          expiresAt: '2026-10-26T19:00:00.000Z',
+          pinnedUntil: null,
+        },
+      ],
+      removed: [],
+    },
+  }),
+  WORKFILES_FETCH: envelope('WORKFILES_FETCH', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: { ...lease, requestId: '00000000-0000-4000-8000-0000000000fc', op: { op: 'list' } },
+  }),
+  INPUT_BUNDLE_REQUEST: envelope('INPUT_BUNDLE_REQUEST', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000fd',
+      op: { op: 'read', index: 0, offset: 0 },
+    },
+  }),
+  BLOB_UPLOAD_REQUEST: envelope('BLOB_UPLOAD_REQUEST', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000f1',
+      artifactId: 'ws-o0-0123456789abcdef',
+      name: 'app-release.apk',
+      mediaType: 'application/vnd.android.package-archive',
+      sizeBytes: 150 * 1024 * 1024,
+      sha256: 'c'.repeat(64),
+      parts: [
+        { sizeBytes: 64 * 1024 * 1024, sha256: 'd'.repeat(64) },
+        { sizeBytes: 64 * 1024 * 1024, sha256: 'e'.repeat(64) },
+        { sizeBytes: 22 * 1024 * 1024, sha256: 'f'.repeat(64) },
+      ],
+    },
+  }),
+  BLOB_UPLOAD_COMPLETE: envelope('BLOB_UPLOAD_COMPLETE', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000f2',
+      uploadId: '00000000-0000-4000-8000-0000000000f3',
+      parts: [{ n: 1, etag: '"abc"' }],
+    },
+  }),
+};
+
+const spec = {
+  runtime: 'claude-code',
+  prompt: 'Fix the failing test',
+  repository: {
+    url: 'https://github.com/example/repo.git',
+    baseRef: 'main',
+    workBranch: 'rac/job_01/att_01',
+  },
+  sandboxProfile: 'container',
+  approvalPolicy: 'ask-sensitive',
+  limits: { maxDurationSec: 3600, maxCostUsd: 5 },
+};
+const leaseObj = { epoch: 3, token: 't'.repeat(32), expiresAt: '2026-10-12T19:05:00.000Z' };
+
+/** One valid example per MasterToWorker message type. */
+export const masterMessages = {
+  CHALLENGE: envelope('CHALLENGE', {
+    payload: { nonce: 'n'.repeat(32), expiresAt: '2026-10-12T19:01:00.000Z' },
+  }),
+  SESSION_ESTABLISHED: envelope('SESSION_ESTABLISHED', {
+    workerId,
+    payload: { negotiatedVersion: '1.0', sessionExpiresAt: '2026-10-12T19:15:00.000Z', resumeFromSeq: 7 },
+  }),
+  ENROLL_PENDING: envelope('ENROLL_PENDING', {
+    workerId,
+    payload: {
+      fingerprint: `SHA256:${Array.from({ length: 16 }, () => 'AB12').join('-')}`,
+      expiresAt: '2026-10-12T19:10:00.000Z',
+    },
+  }),
+  ACK: envelope('ACK', { workerId, seq: 0, payload: { throughSeq: 3 } }),
+  ENROLL_APPROVED: envelope('ENROLL_APPROVED', {
+    workerId,
+    payload: { workerId, approvedAt: '2026-10-12T19:00:00.000Z' },
+  }),
+  ASSIGN_JOB: envelope('ASSIGN_JOB', {
+    workerId,
+    jobId,
+    payload: { attemptId: 'att_01', lease: leaseObj, spec },
+  }),
+  RENEW_LEASE: envelope('RENEW_LEASE', {
+    workerId,
+    jobId,
+    payload: { attemptId: 'att_01', lease: leaseObj },
+  }),
+  CANCEL_JOB: envelope('CANCEL_JOB', { workerId, jobId, payload: { ...lease, reason: 'user request' } }),
+  APPROVAL_DECISION: envelope('APPROVAL_DECISION', {
+    workerId,
+    jobId,
+    payload: { ...lease, approvalId: 'apr_1', decision: 'deny', decidedBy: 'usr_1' },
+  }),
+  DRAIN: envelope('DRAIN', { workerId, payload: { reason: 'maintenance' } }),
+  ROTATE_CREDENTIAL: envelope('ROTATE_CREDENTIAL', {
+    workerId,
+    payload: { deadline: '2026-10-13T00:00:00.000Z', reason: 'scheduled' },
+  }),
+  CREDENTIAL_ROTATED: envelope('CREDENTIAL_ROTATED', {
+    workerId,
+    seq: 0,
+    payload: {
+      fingerprint: `SHA256:${Array.from({ length: 16 }, () => 'CD34').join('-')}`,
+      status: 'active',
+    },
+  }),
+  UPDATE_POLICY: envelope('UPDATE_POLICY', {
+    workerId,
+    payload: {
+      policyVersion: 2,
+      policy: {
+        allowedProjects: ['prj_1'],
+        allowedRuntimes: ['codex', 'pi'],
+        allowedSandboxProfiles: ['container'],
+        maxParallelJobs: 1,
+      },
+    },
+  }),
+  APPLY_CREDENTIAL: envelope('APPLY_CREDENTIAL', {
+    workerId,
+    seq: 0,
+    payload: {
+      credentialId: 'anthropic-main',
+      version: 2,
+      kind: 'anthropic',
+      env: 'ANTHROPIC_API_KEY',
+      sealed: {
+        alg: 'x25519-hkdf-sha256-a256gcm',
+        keyId: 'K'.repeat(22),
+        epk: 'E'.repeat(43),
+        iv: 'I'.repeat(16),
+        ct: 'C'.repeat(40),
+      },
+      issuedAt: '2026-10-14T10:00:00.000Z',
+      signature: { kid: 'kid1', signature: 'B'.repeat(86) },
+    },
+  }),
+  REVOKE_CREDENTIAL: envelope('REVOKE_CREDENTIAL', {
+    workerId,
+    seq: 0,
+    payload: { credentialId: 'anthropic-main', version: 2, issuedAt: '2026-10-14T10:00:00.000Z' },
+  }),
+  ASSISTANT_TURN: envelope('ASSISTANT_TURN', {
+    workerId,
+    seq: 0,
+    payload: {
+      turnId: '00000000-0000-4000-8000-0000000000c1',
+      sessionKey: '00000000-0000-4000-8000-0000000000c2',
+      runtime: 'claude-code',
+      model: 'claude-sonnet-4-5',
+      issuedAt: '2026-10-14T10:00:00.000Z',
+      expiresAt: '2026-10-14T10:02:00.000Z',
+      message: 'Which workers are offline?',
+      history: '',
+      signature: { kid: 'kid1', signature: 'B'.repeat(86) },
+    },
+  }),
+  ASSISTANT_TOOL_RESULT: envelope('ASSISTANT_TOOL_RESULT', {
+    workerId,
+    seq: 0,
+    payload: {
+      turnId: '00000000-0000-4000-8000-0000000000c1',
+      callId: 'toolu_01',
+      isError: false,
+      content: '{"items":[]}',
+    },
+  }),
+  ASSISTANT_CANCEL: envelope('ASSISTANT_CANCEL', {
+    workerId,
+    seq: 0,
+    payload: { turnId: '00000000-0000-4000-8000-0000000000c1', reason: 'user stopped' },
+  }),
+  JOB_MESSAGE: envelope('JOB_MESSAGE', {
+    workerId,
+    jobId,
+    payload: {
+      ...lease,
+      messageId: '00000000-0000-4000-8000-0000000000c3',
+      text: 'Also run the linter.',
+      sentBy: '00000000-0000-4000-8000-0000000000c4',
+    },
+  }),
+  SET_APPROVAL_POLICY: envelope('SET_APPROVAL_POLICY', {
+    workerId,
+    jobId,
+    payload: {
+      ...lease,
+      changeId: '00000000-0000-4000-8000-0000000000e1',
+      seq: 2,
+      approvalPolicy: 'ask-all',
+      autoApproveOptIn: false,
+      changedBy: '00000000-0000-4000-8000-0000000000c4',
+      issuedAt: '2026-10-16T10:00:00.000Z',
+      signature: { kid: 'kid-0001', signature },
+    },
+  }),
+  PAUSE_JOB: envelope('PAUSE_JOB', {
+    workerId,
+    jobId,
+    payload: {
+      ...lease,
+      approvalId: 'appr-1',
+      reason: 'no decision for 60 min; paused to free the slot',
+      retainUntil: '2026-10-25T10:00:00.000Z',
+    },
+  }),
+  QUESTION_STATUS: envelope('QUESTION_STATUS', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000f1',
+      state: 'answered',
+      questionId: '00000000-0000-4000-8000-0000000000f2',
+      answers: [{ id: 'q1', choices: ['preview'] }],
+      answeredBy: 'alex',
+      answeredAt: '2026-10-21T10:00:00.000Z',
+    },
+  }),
+  SUBTASK_STATUS: envelope('SUBTASK_STATUS', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000e1',
+      state: 'succeeded',
+      subtaskId: '00000000-0000-4000-8000-0000000000e2',
+      title: 'Thumbnails',
+      runtime: 'codex',
+      worker: 'desktop-pc',
+      summary: 'Generated three images.',
+      files: [
+        {
+          inputId: 'in-0a1b2c3d4e5f6a7b',
+          name: '0000e2-thumb-1.png',
+          mediaType: 'image/png',
+          sizeBytes: 1024,
+          sha256: 'a'.repeat(64),
+        },
+      ],
+    },
+  }),
+  MACHINE_ADMIN_DECISION: envelope('MACHINE_ADMIN_DECISION', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000d1',
+      state: 'granted',
+      grant: {
+        issuedAt: '2026-10-14T10:00:00.000Z',
+        expiresAt: '2026-10-14T10:05:00.000Z',
+        signature: { kid: 'kid-0001', signature },
+      },
+    },
+  }),
+  OPS_COMMAND: envelope('OPS_COMMAND', {
+    workerId,
+    seq: 0,
+    payload: {
+      commandId: '00000000-0000-4000-8000-0000000000a1',
+      issuedAt: '2026-10-14T10:00:00.000Z',
+      expiresAt: '2026-10-14T10:02:00.000Z',
+      op: { kind: 'runtime.install', runtime: 'codex', version: '0.162.1' },
+    },
+  }),
+  ROTATE_VAULT_KEY: envelope('ROTATE_VAULT_KEY', {
+    workerId,
+    seq: 0,
+    payload: { requestId: '00000000-0000-4000-8000-000000000001' },
+  }),
+  APPLY_WORKER_CONFIG: envelope('APPLY_WORKER_CONFIG', {
+    workerId,
+    seq: 0,
+    payload: {
+      generation: 3,
+      documentHash: 'e'.repeat(64),
+      issuedAt: '2026-10-14T10:00:00.000Z',
+      document: {
+        schemaVersion: 1,
+        projects: { alpha: { repositories: ['https://github.com/acme/alpha.git'] } },
+        allowedRuntimes: ['codex', 'opencode'],
+        maxParallelJobs: 2,
+        sandboxProfiles: ['container'],
+        workspace: { retainFailed: 3 },
+        labels: { site: 'home' },
+        runtimes: {
+          codex: { auth: { mode: 'secret-ref', credentialRef: { source: 'worker-store', name: 'openai' } } },
+          opencode: { model: 'anthropic/claude-sonnet-4-5' },
+        },
+      },
+      signature: { kid: 'abcd1234', signature: 'B'.repeat(86) },
+    },
+  }),
+  UPDATE_AVAILABLE: envelope('UPDATE_AVAILABLE', {
+    workerId,
+    seq: 0,
+    payload: {
+      attemptId: '0f9d6a52-7c1e-4b8e-9f43-2a51c2a9e001',
+      version: '1.2.0',
+      channel: 'stable',
+      sha256: 'd'.repeat(64),
+      size: 912_345,
+      manifestUrl: '/v1/worker/releases/1.2.0/manifest',
+      artifactUrl: '/v1/worker/releases/1.2.0/artifact',
+      downloadToken: 'T'.repeat(43),
+      tokenExpiresAt: '2026-10-12T19:15:00.000Z',
+      rollback: false,
+      force: false,
+    },
+  }),
+  SERVICE_START: envelope('SERVICE_START', {
+    workerId,
+    seq: 0,
+    payload: {
+      spec: {
+        serviceId: '00000000-0000-4000-8000-00000000a001',
+        projectId: 'shop',
+        name: 'web',
+        source: { kind: 'job', jobId, attemptId: 'att_01' },
+        cwd: null,
+        command: 'pnpm dev',
+        env: { NODE_ENV: 'development' },
+        secretEnv: { API_KEY: 'secret:vault-abc' },
+        port: 5173,
+        health: { kind: 'none' },
+        restart: { policy: 'on-failure', maxRestarts: 5, windowSec: 600 },
+        sandboxProfile: 'host-restricted',
+        limits: {},
+        expiresAt: null,
+        tunnel: 'none',
+      },
+      revision: 1,
+      issuedAt: '2026-10-12T19:00:00.000Z',
+      signature: { kid: 'abcd1234', signature: 'B'.repeat(86) },
+    },
+  }),
+  SERVICE_CONTROL: envelope('SERVICE_CONTROL', {
+    workerId,
+    seq: 0,
+    payload: {
+      serviceId: '00000000-0000-4000-8000-00000000a001',
+      op: 'stop',
+      reason: 'stopped by owner',
+      issuedAt: '2026-10-12T19:00:00.000Z',
+      signature: { kid: 'abcd1234', signature: 'B'.repeat(86) },
+    },
+  }),
+  SERVICE_TUNNEL: envelope('SERVICE_TUNNEL', {
+    workerId,
+    seq: 0,
+    payload: {
+      serviceId: '00000000-0000-4000-8000-00000000a001',
+      tunnelId: '00000000-0000-4000-8000-00000000a002',
+      hostname: 'web-abcdefghij.preview.example.com',
+      port: 5173,
+      expiresAt: '2026-10-12T23:00:00.000Z',
+      connectorToken: 'e'.repeat(64),
+      issuedAt: '2026-10-12T19:00:00.000Z',
+      signature: { kid: 'abcd1234', signature: 'B'.repeat(86) },
+    },
+  }),
+  SERVICE_LOGS_REQUEST: envelope('SERVICE_LOGS_REQUEST', {
+    workerId,
+    seq: 0,
+    payload: {
+      serviceId: '00000000-0000-4000-8000-00000000a001',
+      requestId: '00000000-0000-4000-8000-0000000000fb',
+      lines: 100,
+    },
+  }),
+  SERVICE_RESULT: envelope('SERVICE_RESULT', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000f9',
+      status: 'ok',
+      services: [
+        {
+          id: '00000000-0000-4000-8000-00000000a001',
+          name: 'web',
+          workerId,
+          state: 'starting',
+          health: 'unknown',
+          url: null,
+          port: 5173,
+          expiresAt: null,
+          startedByThisJob: true,
+          detail: null,
+        },
+      ],
+    },
+  }),
+  IDE_START: envelope('IDE_START', {
+    workerId,
+    seq: 0,
+    payload: {
+      spec: {
+        workspaceId: '00000000-0000-4000-8000-00000000e001',
+        projectId: 'shop',
+        userId: 'u-1',
+        name: 'fix',
+        source: {
+          kind: 'repository',
+          repositoryUrl: 'https://github.com/acme/shop.git',
+          baseRef: 'main',
+          branch: 'remyral/ide/ayse/fix',
+        },
+        memoryMb: 4096,
+        idleMinutes: 30,
+        sandboxProfile: 'host-restricted',
+        gitAuthor: { name: 'Ayse', email: 'ayse@example.com' },
+      },
+      revision: 1,
+      issuedAt: '2026-10-12T19:00:00.000Z',
+      signature: { kid: 'abcd1234', signature: 'B'.repeat(86) },
+    },
+  }),
+  IDE_CONTROL: envelope('IDE_CONTROL', {
+    workerId,
+    seq: 0,
+    payload: {
+      workspaceId: '00000000-0000-4000-8000-00000000e001',
+      op: 'stop',
+      reason: 'idle',
+      issuedAt: '2026-10-12T19:00:00.000Z',
+      signature: { kid: 'abcd1234', signature: 'B'.repeat(86) },
+    },
+  }),
+  IDE_GIT: envelope('IDE_GIT', {
+    workerId,
+    seq: 0,
+    payload: {
+      requestId: '00000000-0000-4000-8000-00000000e002',
+      workspaceId: '00000000-0000-4000-8000-00000000e001',
+      op: 'push',
+      message: 'fix checkout',
+      gitToken: 'ghs_example',
+      gitTokenUsername: 'x-access-token',
+      issuedAt: '2026-10-12T19:00:00.000Z',
+      signature: { kid: 'abcd1234', signature: 'B'.repeat(86) },
+    },
+  }),
+  IDE_FILE_REQUEST: envelope('IDE_FILE_REQUEST', {
+    workerId,
+    seq: 0,
+    payload: {
+      requestId: '00000000-0000-4000-8000-00000000e004',
+      workspaceId: '00000000-0000-4000-8000-00000000e001',
+      path: 'src/app.ts',
+    },
+  }),
+  IDE_NOTICE: envelope('IDE_NOTICE', {
+    workerId,
+    seq: 0,
+    payload: {
+      workspaceId: '00000000-0000-4000-8000-00000000e001',
+      eventId: '00000000-0000-4000-8000-00000000e003',
+      status: 'ok',
+      message: 'Pushed; pull request #12 updated.',
+      url: 'https://github.com/acme/shop/pull/12',
+    },
+  }),
+  STREAM_OPEN: envelope('STREAM_OPEN', {
+    workerId,
+    seq: 0,
+    payload: {
+      streamId: 1,
+      target: 'ide',
+      workspaceId: '00000000-0000-4000-8000-00000000e001',
+      window: 262144,
+    },
+  }),
+  STREAM_WINDOW: envelope('STREAM_WINDOW', { workerId, seq: 0, payload: { streamId: 1, credit: 65536 } }),
+  STREAM_CLOSE: envelope('STREAM_CLOSE', { workerId, seq: 0, payload: { streamId: 1, mode: 'fin' } }),
+  ERROR: envelope('ERROR', { payload: { code: 'upgrade_required', message: 'speak 2.x', retryable: false } }),
+  WORKFILES_REQUEST: envelope('WORKFILES_REQUEST', {
+    workerId,
+    seq: 0,
+    payload: {
+      requestId: '00000000-0000-4000-8000-0000000000fd',
+      jobId,
+      attemptId: 'att_01',
+      op: { op: 'read', path: 'out/index.html', offset: 0 },
+    },
+  }),
+  WORKFILES_FETCH_DATA: envelope('WORKFILES_FETCH_DATA', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      requestId: '00000000-0000-4000-8000-0000000000fe',
+      status: 'ok',
+      offset: 0,
+      data: 'aGVsbG8=',
+      eof: true,
+      size: 5,
+    },
+  }),
+  INPUT_BUNDLE_DATA: envelope('INPUT_BUNDLE_DATA', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000fd',
+      status: 'ok',
+      offset: 0,
+      data: 'aGVsbG8=',
+      eof: true,
+    },
+  }),
+  BLOB_UPLOAD_GRANT: envelope('BLOB_UPLOAD_GRANT', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000f1',
+      status: 'ok',
+      uploadId: '00000000-0000-4000-8000-0000000000f3',
+      target: 'object-store',
+      put: {
+        url: 'https://bucket.example.com/artifacts/x?X-Amz-Signature=abc',
+        headers: { 'content-type': 'application/zip', 'x-amz-checksum-sha256': 'q83vEjRWeJA=' },
+      },
+      expiresAt: '2026-10-12T19:15:00.000Z',
+    },
+  }),
+  BLOB_UPLOAD_STATUS: envelope('BLOB_UPLOAD_STATUS', {
+    workerId,
+    jobId,
+    seq: 0,
+    payload: {
+      ...lease,
+      requestId: '00000000-0000-4000-8000-0000000000f2',
+      uploadId: '00000000-0000-4000-8000-0000000000f3',
+      status: 'verified',
+    },
+  }),
+};

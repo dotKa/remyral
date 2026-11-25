@@ -1,0 +1,17 @@
+{
+  "name": "Remyral",
+  "tagline": "Many agents. One intelligence.",
+  "colors": {
+    "Deep Navy": "#0A1F3D",
+    "Electric Teal": "#00D1B2",
+    "Soft Cyan": "#7DD3F7",
+    "Off White": "#F6FAFF",
+    "Slate": "#94A3B8",
+    "Electric Blue": "#1266FF"
+  },
+  "font": [
+    "Plus Jakarta Sans",
+    "Inter",
+    "JetBrains Mono"
+  ]
+}

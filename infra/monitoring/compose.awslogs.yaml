@@ -1,0 +1,37 @@
+# Overlay for infra/coolify/compose.yaml: ship the application containers' stdout/stderr to CloudWatch
+# Logs (p1-monitoring, docs/ops/monitoring.md). Use it together with the base file:
+#
+#   docker compose -p remyral-prod --env-file /data/remyral/prod/stack.env \
+#     -f infra/coolify/compose.yaml -f infra/monitoring/compose.awslogs.yaml up -d
+#
+# (product defaults; an install created before the rename uses its own compose project and data dir instead.)
+#
+# - Docker's `awslogs` driver runs in the Docker daemon and authenticates with the instance role
+#   (CloudWatchAgentServerPolicy grants logs:CreateLogStream/PutLogEvents). Nothing secret is configured.
+# - The log group is created by infra/monitoring/cloudformation.json with its retention and data
+#   protection (masking) policy; `awslogs-create-group=false` so a missing group fails loudly instead of
+#   silently creating one without retention.
+# - `mode: non-blocking` + a bounded buffer: a CloudWatch outage drops log lines, it never blocks the
+#   master's stdout. Docker's dual logging keeps `docker logs` working from the local cache.
+# - What is shipped: master + migrate (pino JSON, path-redacted and then pattern-redacted line by line by
+#   apps/master/src/logging.ts `redactingLogStream`) and web (nginx access/error lines, no query strings
+#   with secrets: the console never puts secrets in URLs). Postgres and Redis keep the local json-file
+#   driver: Postgres error DETAIL lines can quote row values (personal data) and are not shipped.
+x-awslogs: &awslogs
+  driver: awslogs
+  options:
+    awslogs-region: ${AWS_REGION:-us-east-1}
+    awslogs-group: /remana/${REMYRAL_ENV:-prod}/containers # the log group is a live AWS resource (frozen name)
+    awslogs-create-group: 'false'
+    # Log stream = container name (e.g. remyral-prod-master-1): stable across restarts.
+    tag: '{{.Name}}'
+    mode: non-blocking
+    max-buffer-size: 4m
+
+services:
+  master:
+    logging: *awslogs
+  migrate:
+    logging: *awslogs
+  web:
+    logging: *awslogs

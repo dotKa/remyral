@@ -1,0 +1,28 @@
+# Remyral worker - elevated broker of AI machine administration (p5-machine-admin, ADR-0021). Installed by
+# infra/worker/linux/install.sh, which puts the absolute path of the system-wide Node 24 binary in front of ExecStart.
+# Design: docs/design/p5-machine-admin.md   Owner guide: docs/ops/machine-admin.md
+#
+# Started by remyral-worker-admin.path when the worker hands over the session grant of a machine-admin job. The
+# updater bundle verifies the master's signature on the session itself (pinned masterLeaseKeys, else the keys the
+# master publishes over TLS), honours the local veto (localCeiling.allowMachineAdmin: false in the root-owned
+# config), then runs, as root, only commands the master signed for this worker, job, attempt and request — one
+# signature per command, each logged on the master. It ends with the job (end marker), when the grant expires or
+# when the worker stops sending heartbeats.
+#
+# Deliberately NOT sandboxed: administering the machine (packages, services, /etc) is the purpose of this unit;
+# the controls are the per-command master signatures, the owner-only opt-in and the local veto.
+
+[Unit]
+Description=Remyral worker machine administration (master-signed commands only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=@NODE@ /opt/remyral-worker/remyral-worker-updater.mjs admin-session --config /etc/remyral-worker/config.json
+TimeoutStartSec=13h
+UMask=0022
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=remyral-worker-admin

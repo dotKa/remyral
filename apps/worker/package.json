@@ -1,0 +1,35 @@
+{
+  "name": "@remyral/worker",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Remyral worker: daemon core (`run`: config, state machine, durable store, device identity, redacting logs) and the P0 `probe` inventory command.",
+  "bin": {
+    "remyral-worker": "./dist/remyral-worker.mjs"
+  },
+  "exports": {
+    ".": {
+      "@remyral/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "bundle": "node scripts/bundle.mjs"
+  },
+  "dependencies": {
+    "@remyral/agent-adapters": "workspace:*",
+    "@remyral/observability": "workspace:*",
+    "@remyral/protocol": "workspace:*",
+    "ws": "8.22.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@opentelemetry/sdk-trace": "2.12.0",
+    "@types/ws": "8.18.2",
+    "esbuild": "0.28.2"
+  }
+}

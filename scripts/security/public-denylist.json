@@ -1,0 +1,181 @@
+{
+  "$comment": "Public-repository leak check (scripts/security/public-denylist.mjs). Generic rules only: they name no installation and no person. A maintainer's own domains, addresses, hosts, names and private paths go in a private list outside the repository (--extra), never here and never hashed: a hash of a short value is cheap to brute-force. Every allow / except entry needs a reason. Rules are evaluated in order and a line reports each category once, so the more specific rule of a category comes first.",
+  "version": 2,
+  "allow": [
+    {
+      "glob": "scripts/security/public-denylist.json",
+      "reason": "the denylist itself: rule patterns and allowlist globs name what they forbid"
+    }
+  ],
+  "topLevel": {
+    "reason": "a new top-level directory or root file is a public-surface decision: add it here deliberately",
+    "entries": [
+      ".dockerignore",
+      ".env.example",
+      ".gitattributes",
+      ".github",
+      ".gitignore",
+      ".gitleaks.toml",
+      ".npmrc",
+      ".nvmrc",
+      ".prettierignore",
+      ".prettierrc.json",
+      "ACCEPTANCE.md",
+      "AGENTS.md",
+      "ARCHITECTURE.md",
+      "CHANGELOG.md",
+      "CODE_OF_CONDUCT.md",
+      "CONTRIBUTING.md",
+      "LICENSE",
+      "NOTICE",
+      "README.md",
+      "ROADMAP.md",
+      "SECURITY.md",
+      "THIRD_PARTY_NOTICES.md",
+      "TRADEMARKS.md",
+      "apps",
+      "brand",
+      "docs",
+      "eslint.config.js",
+      "infra",
+      "package.json",
+      "packages",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "scripts",
+      "tsconfig.base.json",
+      "tsconfig.json",
+      "vitest.config.ts",
+      "vitest.shared.ts"
+    ]
+  },
+  "rules": [
+    {
+      "id": "aws-arn-account",
+      "category": "cloud-id",
+      "severity": "error",
+      "$comment": "123456789012 is the AWS documentation account id",
+      "pattern": "\\barn:aws[a-z-]*:[a-z0-9-]*:[a-z0-9-]*:(?!123456789012:)\\d{12}:"
+    },
+    {
+      "id": "aws-resource-id",
+      "category": "cloud-id",
+      "severity": "error",
+      "pattern": "\\b(?:i|sg|vpc|subnet|eipalloc)-(?:[0-9a-f]{8}|[0-9a-f]{17})\\b"
+    },
+    {
+      "id": "ec2-public-hostname",
+      "category": "cloud-id",
+      "severity": "error",
+      "pattern": "\\bec2-\\d{1,3}-\\d{1,3}-\\d{1,3}-\\d{1,3}\\.",
+      "flags": "i"
+    },
+    {
+      "id": "ec2-internal-hostname",
+      "category": "cloud-id",
+      "severity": "error",
+      "$comment": "the default host name of an EC2 instance names its private address; docs and tests use synthetic names",
+      "pattern": "\\bip-\\d{1,3}-\\d{1,3}-\\d{1,3}-\\d{1,3}\\b",
+      "except": [
+        {
+          "pattern": "\\bip-(?:10-0-0-\\d{1,3}|172-31-1-1|192-0-2-\\d{1,3}|198-51-100-\\d{1,3}|203-0-113-\\d{1,3})\\b",
+          "reason": "obviously synthetic sample host names used by tests and examples (first addresses of a range, documentation ranges)"
+        }
+      ]
+    },
+    {
+      "id": "ssh-key-path",
+      "category": "host-access",
+      "severity": "error",
+      "$comment": "an ssh command with an explicit key file under ~/.ssh names a key file and usually a host; docs use <key> / <host>",
+      "pattern": "\\bssh\\s+(?:-\\S+\\s+)*-i\\s+(?:~|\\$HOME|\\$\\{HOME\\})/\\.ssh/"
+    },
+    {
+      "id": "public-ipv4",
+      "category": "ipv4",
+      "severity": "warning",
+      "type": "public-ipv4",
+      "$comment": "warning only, and only where host addresses live: version strings such as 2.56.0.3 look like addresses",
+      "scope": ["docs/ops/**", "infra/**", "scripts/deploy/**"],
+      "except": [
+        {
+          "pattern": "TRUSTED_CLIENT_IP_SOURCES:-[0-9a-f.:/,]+",
+          "reason": "Cloudflare's published edge ranges (cloudflare.com/ips) as the default trusted proxy sources of the Coolify proxy"
+        },
+        {
+          "pattern": "MinGit \\d+(?:\\.\\d+){3}",
+          "reason": "a four-part Git for Windows (MinGit) version number, not an address"
+        }
+      ]
+    },
+    {
+      "id": "home-path",
+      "category": "local-path",
+      "severity": "error",
+      "$comment": "a real home directory names a person; generic names (alex, user, runner, ubuntu, one- or two-letter names, system folders, the product's own service accounts) are placeholders",
+      "pattern": "(?<![\\w.~/-])(?:/(?:Users|home)/|[A-Za-z]:\\\\{1,2}Users\\\\{1,2})(?![A-Za-z0-9_]{1,2}(?![\\w-]))(?!(?:alex|alice|bob|jane|john|someone|owner|user|users|username|me|you|name|runner|ubuntu|ec2-user|admin|administrator|root|dev|developer|op|operator|svc|service|node|worker|worker-user|build|ci|app|guest|test|example|[Ss]hared|[Pp]ublic|[Dd]efault|remyral|_remyral|_remyralworker)(?![\\w-]))[A-Za-z0-9_][\\w.-]*"
+    },
+    {
+      "id": "app-support-path",
+      "category": "local-path",
+      "severity": "error",
+      "$comment": "Library/Application Support is the standard macOS location of the product's own worker directories (RemyralWorker, legacy RemanaWorker, remyral-worker) and of the browser / password-manager profiles the macOS sandbox denies (apps/worker/src/sandbox/host/seatbelt.ts); any other application directory there is someone's local tooling",
+      "pattern": "Library/Application Support/(?!(?:Remyral|Remana)Worker\\b|remyral-worker\\b|Google/Chrome\\b|Chromium\\b|Firefox\\b|BraveSoftware\\b|Microsoft Edge\\b|1Password\\b)",
+      "flags": "i"
+    },
+    {
+      "id": "mac-hostname",
+      "category": "machine-name",
+      "severity": "error",
+      "pattern": "(?<![\\w-])[\\w-]+-MacBook-[\\w-]*\\.local\\b",
+      "flags": "i"
+    },
+    {
+      "id": "windows-hostname",
+      "category": "machine-name",
+      "severity": "error",
+      "$comment": "the generated default name of a Windows machine",
+      "pattern": "\\b(?:DESKTOP|LAPTOP)-[A-Z0-9]{7}\\b",
+      "allow": [
+        {
+          "glob": "apps/master/migrations/0166_worker_update_notice.sql",
+          "reason": "applied migration, never edited (checksummed by the migrator): its header comment cites a historical update rollback"
+        }
+      ]
+    },
+    {
+      "id": "free-mail",
+      "category": "personal-mail",
+      "severity": "error",
+      "pattern": "@(?:gmail|googlemail|icloud|me|outlook|hotmail|live|yahoo|proton|protonmail|gmx|yandex)\\.[a-z]",
+      "flags": "i",
+      "allow": [
+        {
+          "glob": "infra/worker/node/keys/*.asc",
+          "reason": "vendored Node.js release signing keys: the OpenPGP user ids carry the releasers' public addresses"
+        }
+      ]
+    },
+    {
+      "id": "commit-email",
+      "category": "commit-metadata",
+      "severity": "error",
+      "type": "commit-email",
+      "$comment": "history mode: an author / committer address git made up from the local user and machine name (user.email unset). Contributors' real addresses are theirs to publish and pass; a maintainer's own addresses belong in the private list.",
+      "pattern": "(?:\\.(?:local|localdomain|lan|home|internal)|@[^@.]+|\\(none\\))$",
+      "flags": "i"
+    },
+    {
+      "id": "owner-note",
+      "category": "owner-note",
+      "severity": "warning",
+      "pattern": "(?:İstek|Karar) \\(\\d{4}-"
+    },
+    {
+      "id": "top-level",
+      "category": "top-level",
+      "severity": "error",
+      "type": "top-level"
+    }
+  ]
+}

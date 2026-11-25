@@ -1,0 +1,36 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "cwagent",
+    "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+  },
+  "metrics": {
+    "namespace": "Remana/Host",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "aggregation_dimensions": [["InstanceId"]],
+    "metrics_collected": {
+      "cpu": {
+        "totalcpu": true,
+        "measurement": ["usage_active", "usage_iowait", "usage_steal"]
+      },
+      "mem": {
+        "measurement": ["used_percent", "available"]
+      },
+      "swap": {
+        "measurement": ["used_percent"]
+      },
+      "disk": {
+        "resources": ["/"],
+        "measurement": ["used_percent", "inodes_used"],
+        "ignore_file_system_types": ["sysfs", "devtmpfs", "tmpfs", "overlay", "squashfs"]
+      }
+    }
+  },
+  "logs": {
+    "metrics_collected": {
+      "emf": {}
+    }
+  }
+}

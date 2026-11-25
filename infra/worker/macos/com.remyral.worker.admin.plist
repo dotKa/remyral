@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Remyral worker - elevated broker of AI machine administration (p5-machine-admin, ADR-0021). Installed by
+  infra/worker/macos/install.sh (which substitutes @NODE@). Design: docs/design/p5-machine-admin.md, owner guide:
+  docs/ops/machine-admin.md.
+
+  launchd (not the worker) starts it as root when the worker writes the master-signed session grant of a running
+  machine-admin job into its own data dir (WatchPaths). The updater bundle verifies that grant itself, honours the
+  local veto (localCeiling.allowMachineAdmin: false), runs only commands the master signed for this job attempt and
+  exits when the session ends. Idle runs exit at once. It is not kept alive.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.remyral.worker.admin</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@NODE@</string>
+    <string>/Library/Application Support/RemyralWorker/bin/remyral-worker-updater.mjs</string>
+    <string>admin-session</string>
+    <string>--config</string>
+    <string>/Library/Application Support/RemyralWorker/config.json</string>
+  </array>
+  <key>UserName</key>
+  <string>root</string>
+  <key>GroupName</key>
+  <string>wheel</string>
+  <key>WatchPaths</key>
+  <array>
+    <string>/Library/Application Support/RemyralWorker/data/machine-admin/session-request.json</string>
+  </array>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>WorkingDirectory</key>
+  <string>/Library/Application Support/RemyralWorker/bin</string>
+  <key>Umask</key>
+  <integer>18</integer>
+  <key>StandardOutPath</key>
+  <string>/Library/Logs/RemyralWorker/remyral-worker-admin.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Library/Logs/RemyralWorker/remyral-worker-admin.log</string>
+</dict>
+</plist>

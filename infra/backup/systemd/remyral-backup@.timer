@@ -1,0 +1,14 @@
+# Every 15 minutes (RPO ≤ 15 min, docs/ops/slo.md). Persistent: a run missed while the host was down
+# happens right after boot.
+[Unit]
+Description=Remyral encrypted off-host backup every 15 minutes (%i)
+
+[Timer]
+OnCalendar=*:00/15
+AccuracySec=10s
+RandomizedDelaySec=30
+Persistent=true
+Unit=remyral-backup@%i.service
+
+[Install]
+WantedBy=timers.target

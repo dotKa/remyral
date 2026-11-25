@@ -1,0 +1,18 @@
+# Remana container stats → CloudWatch (p1-monitoring). Installed by infra/monitoring/install-host.sh.
+[Unit]
+Description=Remana container stats to CloudWatch (EMF via the local CloudWatch agent)
+After=docker.service amazon-cloudwatch-agent.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/remana/monitoring.env
+# ProtectHome hides /root; give the docker CLI an empty private config directory instead.
+Environment=DOCKER_CONFIG=/tmp/docker-config
+ExecStart=/usr/local/lib/remana/container-stats.sh
+# Read-only view of the system; it only talks to the Docker socket and UDP 127.0.0.1:25888.
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+TimeoutStartSec=50

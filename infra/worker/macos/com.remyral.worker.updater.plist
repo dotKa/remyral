@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Remyral worker — privileged updater (p2-signed-updates). Installed by infra/worker/macos/install.sh
+  (which substitutes @NODE@). Design: docs/design/p2-signed-updates.md, owner guide:
+  docs/ops/worker-updates.md.
+
+  launchd (not the worker) starts it as root when the worker writes an activation request into its
+  own data dir (WatchPaths), and once at load/boot (resumes an interrupted health check). It re-verifies
+  the staged release with its own pinned keys, switches the bundle in bin/ atomically, kickstarts
+  com.remyral.worker, checks its health and rolls back on failure. It is not kept alive.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.remyral.worker.updater</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@NODE@</string>
+    <string>/Library/Application Support/RemyralWorker/bin/remyral-worker-updater.mjs</string>
+    <string>apply</string>
+    <string>--config</string>
+    <string>/Library/Application Support/RemyralWorker/config.json</string>
+  </array>
+  <key>UserName</key>
+  <string>root</string>
+  <key>GroupName</key>
+  <string>wheel</string>
+  <key>WatchPaths</key>
+  <array>
+    <string>/Library/Application Support/RemyralWorker/data/updates/request.json</string>
+    <!-- p5-sandbox-ops: signed sandbox.prepare hand-over; `apply` verifies and processes it too. -->
+    <string>/Library/Application Support/RemyralWorker/data/sandbox/prepare-request.json</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>WorkingDirectory</key>
+  <string>/Library/Application Support/RemyralWorker/bin</string>
+  <!-- 022: installed files stay world-readable for the worker's role account. -->
+  <key>Umask</key>
+  <integer>18</integer>
+  <key>StandardOutPath</key>
+  <string>/Library/Logs/RemyralWorker/remyral-worker-updater.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Library/Logs/RemyralWorker/remyral-worker-updater.log</string>
+</dict>
+</plist>

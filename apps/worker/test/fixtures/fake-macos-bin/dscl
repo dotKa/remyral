@@ -1,0 +1,32 @@
+#!/bin/sh
+# Fake read-only dscl for installer dry-run tests (service-installers.test.ts).
+#   FAKE_TAKEN_IDS   space-separated ids already used by users/groups
+#   FAKE_ROLE_USER   "<uid>:<shell>" if _remyralworker exists, empty otherwise
+# Any write (-create/-delete) fails loudly: a dry-run must never get here.
+case "$2" in
+  -create | -delete | -append | -passwd) echo "fake dscl: write attempted: $*" >&2; exit 99 ;;
+  -list)
+    for id in $FAKE_TAKEN_IDS; do echo "_fake$id $id"; done
+    exit 0 ;;
+  -read)
+    case "$3" in
+      /Users/_remyralworker)
+        [ -n "$FAKE_ROLE_USER" ] || exit 56
+        uid=${FAKE_ROLE_USER%%:*}
+        shell=${FAKE_ROLE_USER#*:}
+        case "$4" in
+          UniqueID) echo "UniqueID: $uid" ;;
+          PrimaryGroupID) echo "PrimaryGroupID: $uid" ;;
+          UserShell) echo "UserShell: $shell" ;;
+          *) echo "RecordName: _remyralworker" ;;
+        esac
+        exit 0 ;;
+      /Groups/_remyralworker)
+        [ -n "$FAKE_ROLE_USER" ] || exit 56
+        echo "PrimaryGroupID: ${FAKE_ROLE_USER%%:*}"
+        exit 0 ;;
+    esac
+    exit 56 ;;
+esac
+echo "fake dscl: unsupported: $*" >&2
+exit 98

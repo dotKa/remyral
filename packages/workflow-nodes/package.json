@@ -1,0 +1,29 @@
+{
+  "name": "@remyral/workflow-nodes",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Pure workflow node catalog (typed node kinds, ports, config schemas, placement), the v1/v2 definition schemas with lossless v1 conversion, v2 graph validation and the interpreter core. No I/O. See ADR-0055 and docs/design/p14-workflow-engine.md.",
+  "exports": {
+    ".": {
+      "@remyral/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@remyral/protocol": "workspace:*",
+    "@remyral/scheduler": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@remyral/i18n": "workspace:*",
+    "@types/node": "24.19.2",
+    "vitest": "5.0.4"
+  }
+}

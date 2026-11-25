@@ -1,0 +1,258 @@
+{
+  "capturedAt": "2026-10-13",
+  "binary": "codex-cli 0.162.1 (darwin-arm64)",
+  "how": "codex --no-daemon app-server --listen stdio:// --strict-config -c cli_auth_credentials_store=\"ephemeral\" -c history.persistence=\"none\"; throw-away HOME/CODEX_HOME, no credentials, no turn started; repo AGENTS.md present. Paths replaced by <ROOT>; host name and installation id replaced.",
+  "lines": [
+    {
+      "dir": "out",
+      "msg": {
+        "method": "initialize",
+        "id": 1,
+        "params": {
+          "clientInfo": {
+            "name": "remyral-capture",
+            "title": null,
+            "version": "0.0.0"
+          },
+          "capabilities": {
+            "experimentalApi": false,
+            "requestAttestation": false
+          }
+        }
+      }
+    },
+    {
+      "dir": "in",
+      "msg": {
+        "id": 1,
+        "result": {
+          "userAgent": "remyral-capture/0.162.1 (Mac OS 26.6.0; arm64) unknown (remyral-capture; 0.0.0)",
+          "codexHome": "<ROOT>/codex-home",
+          "platformFamily": "unix",
+          "platformOs": "macos"
+        }
+      }
+    },
+    {
+      "dir": "out",
+      "msg": {
+        "method": "initialized"
+      }
+    },
+    {
+      "dir": "out",
+      "msg": {
+        "method": "account/read",
+        "id": 2,
+        "params": {
+          "refreshToken": false
+        }
+      }
+    },
+    {
+      "dir": "in",
+      "msg": {
+        "method": "remoteControl/status/changed",
+        "params": {
+          "status": "disabled",
+          "serverName": "<HOST>",
+          "installationId": "00000000-0000-4000-8000-000000000000",
+          "environmentId": null
+        },
+        "emittedAtMs": 1791860551532
+      }
+    },
+    {
+      "dir": "in",
+      "msg": {
+        "id": 2,
+        "result": {
+          "account": null,
+          "requiresOpenaiAuth": true,
+          "workspaceRouting": null
+        }
+      }
+    },
+    {
+      "dir": "out",
+      "msg": {
+        "method": "config/read",
+        "id": 3,
+        "params": {
+          "includeLayers": false,
+          "cwd": "<ROOT>/ws"
+        }
+      }
+    },
+    {
+      "dir": "in",
+      "msg": {
+        "id": 3,
+        "result": {
+          "config": {
+            "approval_policy": null,
+            "sandbox_mode": null,
+            "cli_auth_credentials_store": "ephemeral",
+            "history": {
+              "persistence": "none",
+              "max_bytes": null
+            }
+          },
+          "note": "abridged"
+        }
+      }
+    },
+    {
+      "dir": "out",
+      "msg": {
+        "method": "thread/start",
+        "id": 4,
+        "params": {
+          "cwd": "<ROOT>/ws",
+          "approvalPolicy": "untrusted",
+          "approvalsReviewer": "user",
+          "sandbox": "workspace-write",
+          "ephemeral": true
+        }
+      }
+    },
+    {
+      "dir": "in",
+      "msg": {
+        "id": 4,
+        "result": {
+          "thread": {
+            "id": "01a13336-2f88-7013-aa1f-c2a92bff8ce3",
+            "environments": [
+              {
+                "environmentId": "local",
+                "cwd": "<ROOT>/ws",
+                "runtimeWorkspaceRoots": ["<ROOT>/ws"]
+              }
+            ],
+            "extra": null,
+            "sessionId": "01a13336-2f88-7013-aa1f-c2a92bff8ce3",
+            "forkedFromId": null,
+            "parentThreadId": null,
+            "preview": "",
+            "ephemeral": true,
+            "section": null,
+            "sectionEnteredAt": null,
+            "projectId": null,
+            "historyMode": "paginated",
+            "modelProvider": "openai",
+            "model": "gpt-6.1-sol",
+            "reasoningEffort": null,
+            "createdAt": 1791860551,
+            "updatedAt": 1791860551,
+            "recencyAt": 1791860551,
+            "status": {
+              "type": "idle"
+            },
+            "path": null,
+            "cwd": "<ROOT>/ws",
+            "cliVersion": "0.162.1",
+            "originator": "remyral-capture",
+            "source": "vscode",
+            "canAcceptDirectInput": true,
+            "threadSource": null,
+            "agentNickname": null,
+            "agentRole": null,
+            "gitInfo": null,
+            "name": null,
+            "daybreakEnabled": null,
+            "turns": []
+          },
+          "model": "gpt-6.1-sol",
+          "modelProvider": "openai",
+          "serviceTier": null,
+          "disabledPluginIds": [],
+          "cwd": "<ROOT>/ws",
+          "runtimeWorkspaceRoots": ["<ROOT>/ws"],
+          "instructionSources": ["<ROOT>/ws/AGENTS.md"],
+          "approvalPolicy": "untrusted",
+          "approvalsReviewer": "user",
+          "sandbox": {
+            "type": "workspaceWrite",
+            "writableRoots": [],
+            "networkAccess": false,
+            "excludeTmpdirEnvVar": false,
+            "excludeSlashTmp": false
+          },
+          "activePermissionProfile": null,
+          "reasoningEffort": null,
+          "multiAgentMode": "explicitRequestOnly"
+        }
+      }
+    },
+    {
+      "dir": "in",
+      "msg": {
+        "method": "thread/started",
+        "params": {
+          "thread": {
+            "id": "01a13336-2f88-7013-aa1f-c2a92bff8ce3",
+            "environments": [
+              {
+                "environmentId": "local",
+                "cwd": "<ROOT>/ws",
+                "runtimeWorkspaceRoots": ["<ROOT>/ws"]
+              }
+            ],
+            "extra": null,
+            "sessionId": "01a13336-2f88-7013-aa1f-c2a92bff8ce3",
+            "forkedFromId": null,
+            "parentThreadId": null,
+            "preview": "",
+            "ephemeral": true,
+            "section": null,
+            "sectionEnteredAt": null,
+            "projectId": null,
+            "historyMode": "paginated",
+            "modelProvider": "openai",
+            "model": "gpt-6.1-sol",
+            "reasoningEffort": null,
+            "createdAt": 1791860551,
+            "updatedAt": 1791860551,
+            "recencyAt": 1791860551,
+            "status": {
+              "type": "idle"
+            },
+            "path": null,
+            "cwd": "<ROOT>/ws",
+            "cliVersion": "0.162.1",
+            "originator": "remyral-capture",
+            "source": "vscode",
+            "canAcceptDirectInput": true,
+            "threadSource": null,
+            "agentNickname": null,
+            "agentRole": null,
+            "gitInfo": null,
+            "name": null,
+            "daybreakEnabled": null,
+            "turns": []
+          }
+        },
+        "emittedAtMs": 1791860551583
+      }
+    },
+    {
+      "dir": "out",
+      "msg": {
+        "method": "remyral/doesNotExist",
+        "id": 5,
+        "params": {}
+      }
+    },
+    {
+      "dir": "in",
+      "msg": {
+        "error": {
+          "code": -32600,
+          "message": "Invalid request: unknown variant `remyral/doesNotExist`, expected one of `initialize`, `server/diagnostics`, `userVerific…"
+        },
+        "id": 5
+      }
+    }
+  ]
+}

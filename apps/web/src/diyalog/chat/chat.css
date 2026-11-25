@@ -1,0 +1,247 @@
+/*
+ * p12-diyalog-parity (docs/design/p12-diyalog.md §13): the conversation list, the details panel and the shell-level
+ * dialogs of the Diyalog shell. The classic-component bridge itself (`.dy-bridge`) lives in diyalog.css (Faz 4).
+ *
+ * Modal dialogs the shell renders as its direct children (step-up, "Tüm ekranlar", keyboard shortcuts) take the same
+ * bridge: the classic dialog markup in the Diyalog palette and type.
+ */
+[data-ui='diyalog'] > dialog {
+  --c-canvas: var(--dy-bg);
+  --c-surface: var(--dy-card);
+  --c-surface-2: var(--dy-sunk);
+  --c-line: var(--dy-line);
+  --c-line-strong: var(--dy-line-2);
+  --c-fg: var(--dy-ink);
+  --c-muted: var(--dy-muted);
+  --c-accent: var(--dy-teal);
+  --c-accent-hover: var(--dy-teal-ink);
+  --c-accent-fg: var(--dy-on-fill);
+  --c-accent-soft: var(--dy-teal-soft);
+  --c-danger: var(--dy-red-ink);
+  --c-danger-soft: var(--dy-red-soft);
+  --c-warn: var(--dy-amber-ink);
+  --c-warn-soft: var(--dy-amber-soft);
+  --c-ok: var(--dy-green);
+  --c-ok-soft: var(--dy-green-soft);
+  --font-sans: var(--font-dy);
+  --font-mono: var(--font-dy-mono);
+  font-family: var(--font-dy);
+}
+
+/* The drawer / column / details motion lives in ../motion.css (p12-diyalog-cmdk). */
+
+/* A message reached from the details panel or a `?m=` link: a brief tint (no scroll animation under reduced motion). */
+[data-ui='diyalog'] [data-jump='true'] {
+  background: var(--dy-teal-soft);
+  border-radius: 12px;
+  transition: background-color 200ms ease;
+}
+
+/* Row actions (copy, star) show on hover / focus with a fine pointer; always on touch. */
+@media (hover: hover) and (pointer: fine) {
+  .dy-row-actions {
+    opacity: 0;
+    transition: opacity 140ms ease;
+  }
+  .dy-row:hover .dy-row-actions,
+  .dy-row:focus-within .dy-row-actions,
+  .dy-row-actions[data-on='true'] {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dy-row-actions {
+    transition: none;
+  }
+}
+
+/*
+ * p12-diyalog-final (classic p5-chat-ux behaviour): on phones the Sohbet composer sits above the bottom bar and lifts by
+ * the on-screen keyboard's inset (`--dy-kb`, chat/viewport.ts — iOS keeps the layout viewport when the keyboard opens;
+ * Android resizes it, inset 0). While the composer has focus the shell hides the bottom bar (index.css) and the
+ * composer drops to the keyboard's edge. Unlayered: wins over the dock's own `bottom` utility.
+ */
+/*
+ * p22-classic-removal §4: the dock fades into the thread only over its top padding (1.5 rem, `pt-6`);
+ * from the quick-chip row down it is opaque, so thread text scrolling under the dock never shows behind the chips or
+ * the field. (It was a 70 % gradient: the chip row sat in its transparent part.)
+ */
+.dy-composer-dock {
+  background: linear-gradient(to top, var(--dy-thread) calc(100% - 1.5rem), transparent);
+}
+/* p22-classic-removal §7: an open plan sheet / drawer holds the page still behind it (scrollLock.ts). The scroll position
+   is kept; scroll chaining from the overlay stops here too. */
+html[data-scroll-lock] {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+/* A sideways-scrolling row with more to see fades on that edge (scrollEdges.ts sets `data-more`). */
+.dy-edge-fade[data-more='end'] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+}
+.dy-edge-fade[data-more='start'] {
+  mask-image: linear-gradient(to left, #000 calc(100% - 2rem), transparent);
+}
+.dy-edge-fade[data-more='start end'] {
+  mask-image: linear-gradient(to right, transparent, #000 2rem, #000 calc(100% - 2rem), transparent);
+}
+
+@media (width < 48rem) {
+  .dy-composer-dock {
+    bottom: calc(3.5rem + env(safe-area-inset-bottom) + var(--dy-kb, 0px));
+  }
+  body:has([data-chat-composer]:focus) .dy-composer-dock {
+    bottom: var(--dy-kb, 0px);
+  }
+}
+
+/* p12-diyalog-w4 dialogs rise in: now every Diyalog dialog, in ../motion.css (p12-diyalog-cmdk). */
+
+/*
+ * p12-mention-badges (docs/design/p8-chat-attachments-mentions.md §3.1): a mention in a sent message is a badge — the
+ * type's icon and colour (a subtle tint of one Diyalog token per type), the label in ink (its contrast does not depend
+ * on the tint), a link to the target. Removed / not visible: dashed, muted, struck through. In the composer the same
+ * tint marks the token under the transparent field text.
+ */
+[data-mention] {
+  --dy-mx: var(--dy-muted);
+}
+[data-mention='project'] {
+  --dy-mx: var(--dy-teal);
+}
+[data-mention='job'] {
+  --dy-mx: var(--dy-violet);
+}
+[data-mention='worker'] {
+  --dy-mx: var(--dy-oc);
+}
+[data-mention='output'] {
+  --dy-mx: var(--dy-pi);
+}
+[data-mention='folder'] {
+  --dy-mx: var(--dy-green);
+}
+/* p15-chat-vault: vault credentials (and secret placeholders) — the amber "key" tint. */
+[data-mention='credential'],
+[data-mention='secret'] {
+  --dy-mx: var(--dy-amber);
+}
+.dy-mention {
+  display: inline-flex;
+  max-width: min(16rem, 100%);
+  align-items: center;
+  gap: 0.25rem;
+  vertical-align: baseline;
+  border: 1px solid color-mix(in srgb, var(--dy-mx) 38%, var(--dy-card));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--dy-mx) 13%, var(--dy-card));
+  padding: 0 0.375rem 0 0.25rem;
+  color: var(--dy-ink);
+  font-size: 0.875em;
+  font-weight: 600;
+  line-height: 1.5;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.dy-mention-icon {
+  width: 0.95em;
+  height: 0.95em;
+  flex-shrink: 0;
+  color: var(--dy-mx);
+}
+.dy-mention-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (hover: hover) and (pointer: fine) {
+  a.dy-mention:hover {
+    border-color: color-mix(in srgb, var(--dy-mx) 65%, var(--dy-card));
+    background: color-mix(in srgb, var(--dy-mx) 22%, var(--dy-card));
+  }
+  [data-role='me'] a.dy-mention:hover {
+    border-color: color-mix(in srgb, var(--dy-mx) 80%, var(--dy-me));
+    background: color-mix(in srgb, var(--dy-mx) 40%, var(--dy-me));
+  }
+}
+/* In the person's own bubble the tint mixes with the bubble; the text keeps the bubble's ink. */
+[data-role='me'] .dy-mention {
+  border-color: color-mix(in srgb, var(--dy-mx) 55%, var(--dy-me));
+  background: color-mix(in srgb, var(--dy-mx) 28%, var(--dy-me));
+  color: var(--dy-me-ink);
+}
+[data-role='me'] .dy-mention-icon {
+  color: currentColor;
+}
+.dy-mention[data-missing] {
+  border-style: dashed;
+  border-color: var(--dy-line-2);
+  background: transparent;
+  color: var(--dy-muted);
+  font-weight: 500;
+}
+[data-role='me'] .dy-mention[data-missing] {
+  border-color: color-mix(in srgb, var(--dy-me-ink) 45%, var(--dy-me));
+  background: transparent;
+  color: color-mix(in srgb, var(--dy-me-ink) 80%, var(--dy-me));
+}
+.dy-mention[data-missing] .dy-mention-icon {
+  color: currentColor;
+}
+.dy-mention[data-missing] .dy-mention-label {
+  text-decoration: line-through;
+}
+
+/* The facts card of a badge (hover after a short delay, focus at once): a quick settle, no movement when reduced. */
+.dy-mention-card {
+  transition:
+    opacity 140ms var(--dy-ease),
+    transform 140ms var(--dy-ease);
+}
+@starting-style {
+  .dy-mention-card {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dy-mention-card {
+    transform: none;
+    transition: opacity 140ms ease;
+  }
+}
+
+/* The composer: the picked tokens tinted under the field (the text itself stays the textarea's). */
+.dy-mention-mark {
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--dy-mx) 20%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dy-mx) 45%, transparent);
+  color: transparent;
+}
+
+/*
+ * p17-toasts-shortcuts (docs/design/p17-toasts-shortcuts.md §2.3): where the toasts sit. Desktop: the bottom-right
+ * corner, lifted over the Sohbet composer while one is on screen (`--dy-dock-h`, set by the composer). Phones (under
+ * 48rem): full width at the bottom, above the tab bar, the composer and the on-screen keyboard (`--dy-kb`); while the
+ * composer has focus the tab bar steps aside (index.css), and so does its room here.
+ */
+[data-ui='diyalog'] .dy-toaster {
+  right: 1rem;
+  bottom: calc(var(--dy-dock-h, 0px) + 1rem);
+  width: min(24rem, calc(100vw - 2rem));
+}
+@media (width < 48rem) {
+  [data-ui='diyalog'] .dy-toaster {
+    right: max(0.75rem, env(safe-area-inset-right));
+    left: max(0.75rem, env(safe-area-inset-left));
+    width: auto;
+    bottom: calc(3.5rem + env(safe-area-inset-bottom) + var(--dy-kb, 0px) + var(--dy-dock-h, 0px) + 0.5rem);
+  }
+  body:has([data-chat-composer]:focus) [data-ui='diyalog'] .dy-toaster {
+    bottom: calc(var(--dy-kb, 0px) + var(--dy-dock-h, 0px) + 0.5rem);
+  }
+}

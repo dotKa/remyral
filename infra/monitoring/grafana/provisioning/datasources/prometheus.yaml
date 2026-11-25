@@ -1,0 +1,15 @@
+# p16-observability: the Prometheus of compose.monitoring.yaml, provisioned (read-only in the UI).
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: remyral-prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      httpMethod: POST
+      timeInterval: 30s
+      prometheusType: Prometheus
