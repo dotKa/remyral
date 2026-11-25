@@ -145,6 +145,7 @@ describeIntegration('chat turns across a worker reconnect (integration)', { time
   }
 
   async function startP(opts: { resumeAware?: boolean } = {}): Promise<RunningWorker> {
+    const before = h.clock.now();
     const w = await runRealWorker(url, dirP, {
       capabilities: CAPS,
       assistant: {
@@ -154,6 +155,21 @@ describeIntegration('chat turns across a worker reconnect (integration)', { time
       },
     });
     workerP = w;
+    // The master has this connection (not the previous process's, whose end it may still be processing): else
+    // primaryAnswers can see the old connection as answering and the new one starts its stability period later.
+    await expect
+      .poll(
+        async () => {
+          const { rows } = await h.db.pool.query<{ connected_at: Date | null }>(
+            'SELECT connected_at FROM workers WHERE id = $1',
+            [primary],
+          );
+          const at = rows[0]?.connected_at ?? null;
+          return at !== null && at.getTime() >= before.getTime();
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(true);
     return w;
   }
 
