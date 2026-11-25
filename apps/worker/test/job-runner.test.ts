@@ -1014,6 +1014,8 @@ describe('JobRunner (p4-leases, p4-dispatch)', { timeout: 30_000 }, () => {
       const before = r.statuses.length;
       runner.onSessionReady();
       expect(r.statuses.length).toBeGreaterThan(before); // the latest status again
+      // The agent's first output after the message makes it read; cancel only then (a slow host may not be there yet).
+      await expect.poll(() => r.of(id), { timeout: 15_000 }).toContain('read');
       await runner.onMessage(
         control('CANCEL_JOB', msg.jobId, { attemptId: msg.payload.attemptId, epoch: 1 }),
       );

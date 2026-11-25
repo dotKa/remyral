@@ -431,7 +431,9 @@ describe('WsTransport disconnect reports (p17-chat-reconnect)', () => {
     if (h2?.type !== 'HELLO') throw new Error('no HELLO');
     const hello2 = h2;
     expect(hello2.payload.lastDisconnect).toMatchObject({ cause: 'pong_timeout', loopDelayMaxMs: 37 });
-    expect(hello2.payload.lastDisconnect?.pongWaitMs).toBeGreaterThanOrEqual(100);
+    // At least the 100 ms pong timeout, measured with Date.now (whole milliseconds against the timer's monotonic
+    // clock: 99 seen on a CI runner).
+    expect(hello2.payload.lastDisconnect?.pongWaitMs).toBeGreaterThanOrEqual(99);
     expect(hello2.payload.lastDisconnect?.connectedMs).toBeGreaterThanOrEqual(0);
     expect(Date.parse(hello2.payload.lastDisconnect?.at ?? '')).not.toBeNaN();
     const warn = r.lines.find((l) => l.msg === 'master did not answer ping; terminating connection');

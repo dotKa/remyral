@@ -40,6 +40,13 @@ jobs:
       - name: Start dev stack
         if: runner.os == 'Linux'
         run: pnpm dev:keygen && pnpm dev:up
+      # The selfhost tests run remyral-ctl, which needs OpenSSL >= 3; the macOS image puts an OpenSSL 1.1 first on PATH.
+      - name: OpenSSL 3 first on PATH
+        if: runner.os == 'macOS'
+        run: |
+          bin="$(brew --prefix openssl@3)/bin"
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/openssl" version
       # The scripts tests run shellcheck when it is installed; its version decides which warnings it reports.
       - name: Tool versions
         if: runner.os == 'Linux'
