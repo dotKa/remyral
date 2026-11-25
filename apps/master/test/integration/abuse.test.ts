@@ -419,6 +419,29 @@ describeIntegration(
       await h.stop();
     });
 
+    /**
+     * Whether `n` sockets opened together all stay open (the master released the slots of earlier sockets: it
+     * does so on its own socket's close, which can trail the client's). The probe sockets are closed again.
+     */
+    async function slotsFree(n: number): Promise<boolean> {
+      const probes = await Promise.all(Array.from({ length: n }, () => RawWorker.connect(url)));
+      const refused = await Promise.all(
+        probes.map((p) =>
+          Promise.race([
+            p.closed.then(() => true),
+            new Promise<boolean>((r) => {
+              setTimeout(() => {
+                r(false);
+              }, 300);
+            }),
+          ]),
+        ),
+      );
+      for (const p of probes) p.close();
+      await Promise.all(probes.map((p) => p.closed));
+      return !refused.includes(true);
+    }
+
     it('a third concurrent socket from one IP is closed with 4429; a slot frees when one closes', async () => {
       const a = await RawWorker.connect(url);
       const b = await RawWorker.connect(url);
@@ -426,22 +449,9 @@ describeIntegration(
       expect((await c.closed).code).toBe(4429);
       a.close();
       await a.closed;
-      await expect
-        .poll(async () => {
-          const d = await RawWorker.connect(url);
-          const closedEarly = await Promise.race([
-            d.closed.then(() => true),
-            new Promise<boolean>((r) => {
-              setTimeout(() => {
-                r(false);
-              }, 300);
-            }),
-          ]);
-          d.close();
-          return closedEarly;
-        })
-        .toBe(false);
+      await expect.poll(() => slotsFree(1)).toBe(true);
       b.close();
+      await b.closed;
     });
 
     it('a worker that keeps reconnecting is refused (rate_limited) once its session budget is used', async () => {
@@ -449,6 +459,8 @@ describeIntegration(
       directory.active.set(key.publicKey, 'wrk_loop');
       const answers: string[] = [];
       for (let i = 0; i < 3; i++) {
+        // The cap (2 per IP) must not refuse the socket before its handshake: earlier sockets are released.
+        await expect.poll(() => slotsFree(2)).toBe(true);
         const w = await RawWorker.connect(url, key);
         const answer = await w.handshake();
         answers.push(answer.type);

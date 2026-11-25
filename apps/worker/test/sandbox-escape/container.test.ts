@@ -10,6 +10,7 @@ import {
   snapshotTrustedGit,
   type AttemptGitView,
 } from '../../src/sandbox/attempt-git.js';
+import { RUNTIME_PINS } from '../../src/runtimes/pins.js';
 import { ContainerEngine } from '../../src/sandbox/container/engine.js';
 import { ContainerSandboxRunner } from '../../src/sandbox/container/runner.js';
 import { DEFAULT_LIMITS, type NetworkPolicy, type ResourceLimits } from '../../src/sandbox/types.js';
@@ -21,9 +22,11 @@ import { collect, dockerAvailable, ensureImages, expectOutcome, PROBE } from './
 /**
  * ADR-0007 `container` profile against a real engine (Docker Desktop, linux/arm64
  * VM on the macOS dev machine; rootless Linux engines are UNVERIFIED until CI).
- * Skipped when no engine is reachable or REMYRAL_SKIP_DOCKER_TESTS=1.
+ * Opt-in like the other real-engine suites (REMYRAL_TEST_DOCKER=1; it builds the runtime images, and a hosted CI
+ * runner's engine and user ids do not match a worker host); skipped as well when no engine is reachable or
+ * REMYRAL_SKIP_DOCKER_TESTS=1.
  */
-const enabled = dockerAvailable();
+const enabled = process.env.REMYRAL_TEST_DOCKER === '1' && dockerAvailable();
 const T = { timeout: 600_000 };
 
 const BASE = 'remyral/runtime-base:0.1.0';
@@ -304,6 +307,6 @@ describe.skipIf(!enabled)('container profile escape suite (real Docker)', T, () 
     const r = await run('jobc8', { ws: a.ws }, 'pi', ['--version'], { runtime: 'pi' });
     const exit = await r.proc.exited;
     expect(exit.code, r.proc.stderrTail()).toBe(0);
-    expect(r.proc.stdoutTail() + r.proc.stderrTail()).toContain('1.1.0');
+    expect(r.proc.stdoutTail() + r.proc.stderrTail()).toContain(RUNTIME_PINS.pi.version);
   });
 });

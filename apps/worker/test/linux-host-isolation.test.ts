@@ -1,6 +1,6 @@
 import { mkdir, realpath, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createSandboxRunners } from '../src/sandbox/factory.js';
 import { SandboxSettings } from '../src/sandbox/config.js';
 import {
@@ -599,6 +599,12 @@ describe('Sandbox card on Linux (status)', () => {
       },
     });
     await r.linuxIsolation?.verify();
+    // No container engine here: a real `podman info` (installed on some CI hosts) is slow and not what this tests.
+    vi.spyOn(r.container, 'check').mockResolvedValue({
+      ready: false,
+      reasonCode: 'engine_unavailable',
+      reason: 'no container engine (test)',
+    });
     const status = await buildSandboxStatus({
       runners: r,
       runnersError: null,

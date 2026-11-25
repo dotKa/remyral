@@ -156,10 +156,13 @@ describe('panel-managed configuration in the running daemon (ADR-0015)', { timeo
         blocked: [{ path: 'maxParallelJobs', code: 'blocked_by_local_ceiling' }],
       },
     });
-    expect(caps().at(-1)?.payload).toMatchObject({
-      maxParallelJobs: 2,
-      projects: ['alpha'],
-      workerConfig: { source: 'panel', generation: 1 },
+    // Another CAPABILITIES (e.g. the tool inventory) may come first: wait for the one with the applied config.
+    await vi.waitFor(() => {
+      expect(caps().at(-1)?.payload).toMatchObject({
+        maxParallelJobs: 2,
+        projects: ['alpha'],
+        workerConfig: { source: 'panel', generation: 1 },
+      });
     });
     expect(d.machine.maxParallelJobs).toBe(2);
 

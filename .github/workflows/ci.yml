@@ -39,6 +39,10 @@ jobs:
       - name: Start dev stack
         if: runner.os == 'Linux'
         run: pnpm dev:keygen && pnpm dev:up
+      # The scripts tests run shellcheck when it is installed; its version decides which warnings it reports.
+      - name: Tool versions
+        if: runner.os == 'Linux'
+        run: shellcheck --version || true
       - run: pnpm verify
         env:
           REMYRAL_INTEGRATION: ${{ runner.os == 'Linux' && 'run' || 'skip' }}
