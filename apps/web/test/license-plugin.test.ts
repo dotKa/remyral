@@ -6,7 +6,9 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { fontLicensePlugin, LICENSE_FILE } from '../license-plugin';
 
 const dir = mkdtempSync(join(tmpdir(), 'remyral-web-licenses-'));
-afterAll(() => rmSync(dir, { recursive: true, force: true }));
+afterAll(() => {
+  rmSync(dir, { recursive: true, force: true });
+});
 
 type WriteBundle = (options: { dir?: string }, bundle: Record<string, unknown>) => Promise<void>;
 const writeBundle = fontLicensePlugin().writeBundle as unknown as WriteBundle;

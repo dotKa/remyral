@@ -374,7 +374,7 @@ export class ConflictResolveService {
       targetCommits: jg.mergeCheck?.baseCommits ?? [],
     });
     const spec = rerunSpec(
-      source.spec as unknown as Record<string, unknown>,
+      source.spec,
       prompt,
       `Resolve conflicts: ${jobTitleOf(source.spec).title}`.slice(0, 200),
     );

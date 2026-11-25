@@ -292,7 +292,7 @@ export class GoalLedger {
     } catch (err) {
       this.deps.log.warn({ err }, 'goals not adopted');
     }
-    let available = true;
+    let available: boolean;
     try {
       available = (await this.deps.chat()?.status())?.available ?? false;
     } catch {
@@ -971,8 +971,9 @@ export class GoalLedger {
       if (entering) entered = { g, a, note };
       return true;
     });
-    if (entered !== null) {
-      const e: { g: GoalRow; a: GoalAssessment; note: MessageView | null } = entered;
+    // Assigned inside the transaction callback: TypeScript still sees the initial null here.
+    const e = entered as { g: GoalRow; a: GoalAssessment; note: MessageView | null } | null;
+    if (e !== null) {
       if (e.g.thread_id !== null && e.note !== null) this.deps.publish(e.g.thread_id, 'message', e.note);
     }
     if (changed) {

@@ -94,7 +94,7 @@ export function applyWorkflowPatch(
         const at = indexOf(op.id);
         if (at < 0) issues.push({ path, code: `unknown_node:${op.id}` });
         else if (op.node.id !== op.id) issues.push({ path: `${path}.node.id`, code: `id_mismatch:${op.id}` });
-        else nodes[at] = structuredClone(op.node) as Rec;
+        else nodes[at] = structuredClone(op.node);
         return;
       }
       case 'update_node': {
@@ -112,13 +112,13 @@ export function applyWorkflowPatch(
         for (const [k, v] of Object.entries(op.set ?? {})) {
           if (k === 'id') issues.push({ path: `${path}.set.id`, code: 'id_immutable' });
           else if (k === 'config') issues.push({ path: `${path}.set.config`, code: 'use_config_merge' });
-          else if (v === null || v === undefined) delete next[k];
+          else if (v === null || v === undefined) Reflect.deleteProperty(next, k);
           else next[k] = structuredClone(v);
         }
         if (op.config !== undefined) {
           const config: Rec = isObj(next.config) ? next.config : {};
           for (const [k, v] of Object.entries(op.config)) {
-            if (v === null || v === undefined) delete config[k];
+            if (v === null || v === undefined) Reflect.deleteProperty(config, k);
             else config[k] = structuredClone(v);
           }
           if (Object.keys(config).length === 0 && !isObj(node.config)) delete next.config;
@@ -129,7 +129,7 @@ export function applyWorkflowPatch(
       }
       case 'add_node':
         if (indexOf(op.node.id) >= 0) issues.push({ path, code: `duplicate_node:${op.node.id}` });
-        else nodes.push(structuredClone(op.node) as Rec);
+        else nodes.push(structuredClone(op.node));
         return;
       case 'remove_node': {
         const at = indexOf(op.id);
@@ -140,7 +140,7 @@ export function applyWorkflowPatch(
         nodes.splice(at, 1);
         edges = edges.filter((e) => e.from !== op.id && e.to !== op.id);
         const positions = isObj(out.layout) && isObj(out.layout.positions) ? out.layout.positions : null;
-        if (positions !== null) delete positions[op.id];
+        if (positions !== null) Reflect.deleteProperty(positions, op.id);
         return;
       }
       case 'add_edge': {
@@ -157,7 +157,7 @@ export function applyWorkflowPatch(
         return;
       }
       case 'set':
-        if (op.value === null || op.value === undefined) delete out[op.field];
+        if (op.value === null || op.value === undefined) Reflect.deleteProperty(out, op.field);
         else out[op.field] = structuredClone(op.value);
         return;
     }

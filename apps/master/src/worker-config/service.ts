@@ -730,7 +730,7 @@ export class WorkerConfigService {
           'This worker build does not know the unconfined profile; update the worker first.',
         );
       }
-      if (input.allow !== true && input.parallel === true) {
+      if (!input.allow && input.parallel === true) {
         throw new WorkerConfigInvalidError([
           { path: 'unconfinedParallel', code: 'unconfined_parallel_needs_allow' },
         ]);

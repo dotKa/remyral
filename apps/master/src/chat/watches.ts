@@ -2114,5 +2114,6 @@ async function wallClock(db: Queryable, userId: string, iso: string): Promise<st
       .formatToParts(d)
       .map((x) => [x.type, x.value]),
   );
-  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}${zone === 'UTC' ? ' UTC' : ''}`;
+  const part = (t: string): string => p[t] ?? '';
+  return `${part('year')}-${part('month')}-${part('day')} ${part('hour')}:${part('minute')}${zone === 'UTC' ? ' UTC' : ''}`;
 }

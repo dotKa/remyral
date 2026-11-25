@@ -1,5 +1,5 @@
 import type { FastifyBaseLogger } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 import { ApprovalService } from '../../src/approvals/service.js';
 import { AuditLog } from '../../src/audit/audit.js';
 import { loadSubject } from '../../src/authz/authorizer.js';
@@ -243,7 +243,7 @@ describeIntegration('conflict resolution jobs (integration)', { timeout: 120_000
     expect(await state(src)).toBe('AWAITING_APPROVAL');
     expect(await svc.view(src)).toMatchObject({
       state: 'failed',
-      reason: expect.stringContaining('CANCELLED'),
+      reason: expect.stringContaining('CANCELLED') as unknown,
     });
     const again = await svc.resolve(src, { subject });
     expect(again.jobId).not.toBe(out.jobId);

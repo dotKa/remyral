@@ -207,7 +207,7 @@ export class ChatSiteCoolify {
         'invalid',
         `A GitHub repository named ${name} exists already; choose another name (name: …) — an existing repository is never overwritten.`,
       );
-    const owner = String(repoCheck.describe.owner ?? '');
+    const owner = typeof repoCheck.describe.owner === 'string' ? repoCheck.describe.owner : '';
     const proxied = i.proxied !== false;
     const facts = up.facts;
     return {
@@ -271,7 +271,7 @@ export class ChatSiteCoolify {
       kind: DraftRecord['kind'],
       payload: Record<string, unknown>,
       proj: string | null,
-    ): DraftRecord => ({ ...d, kind, payload, project: proj }) as DraftRecord;
+    ): DraftRecord => ({ ...d, kind, payload, project: proj });
     const finish = (
       stoppedAt: Step['step'] | null,
       error: string | null,
@@ -434,7 +434,7 @@ export class ChatSiteCoolify {
     }
 
     // 5. The application with the domain, linked to the project's production target, and its first deploy.
-    let deployActionId: string | null = null;
+    let deployActionId: string | null;
     try {
       const plan = await coolify.plan(
         ctx.subject,
@@ -450,13 +450,13 @@ export class ChatSiteCoolify {
           domains: [`https://${domain}`],
           deploy: true,
         },
-        { threadId: d.threadId ?? null, turnId: null } as never,
+        { threadId: d.threadId, turnId: null } as never,
       );
       if (!plan.ok) return finish('application', plan.message);
       const out = await coolify.run(ctx, sub('coolify_change', plan.payload, project));
       const result = (out.result ?? {}) as Record<string, unknown>;
       deployActionId = typeof result.deployActionId === 'string' ? result.deployActionId : null;
-      if (out.error !== null && out.error !== undefined) return finish('application', String(out.error));
+      if (typeof out.error === 'string') return finish('application', out.error);
       done('application', {
         appUuid: out.appUuid,
         name: out.name,
@@ -477,7 +477,7 @@ export class ChatSiteCoolify {
         'The Coolify server has no public IPv4 address in Coolify; point the DNS with draft_dns_change (A record to the server address).',
         { deployActionId },
       );
-    let dnsActionId: string | null = null;
+    let dnsActionId: string;
     try {
       const params = {
         zone: zone.name,
@@ -520,7 +520,7 @@ export class ChatSiteCoolify {
 
     // 7. A watch on the deploy: when it ends, the assistant checks the site and tells the user.
     const watches = this.deps.watches();
-    if (watches !== null && deployActionId !== null && d.threadId !== null) {
+    if (watches !== null && deployActionId !== null) {
       try {
         const w = await watches.create(
           {

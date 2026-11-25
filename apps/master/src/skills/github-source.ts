@@ -280,16 +280,7 @@ export class GitHubSkillSource {
       total += size;
       if (total > MAX_IMPORT_RAW_BYTES)
         throw new GitHubSourceError('github_too_large', 'The folder is too large.');
-      const bytes = await this.#blob(
-        api,
-        base,
-        loc,
-        commit.sha,
-        prefixOf(path) + e.path,
-        e,
-        auth.token,
-        budget,
-      );
+      const bytes = await this.#blob(api, base, loc, commit.sha, prefixOf(path) + e.path, e, auth.token);
       files.push({ path: e.path, bytes });
     }
     return {
@@ -367,7 +358,6 @@ export class GitHubSkillSource {
           prefixOf(input.path) + d.md.path,
           d.md,
           null,
-          budget,
         );
         skillMd = bytes.toString('utf8');
       }
@@ -444,7 +434,6 @@ export class GitHubSkillSource {
     fullPath: string,
     e: TreeEntry,
     token: string | null,
-    budget: { left: number },
   ): Promise<Buffer> {
     if (token === null) {
       // Not counted in the API budget: the number of files is already capped (MAX_IMPORT_RAW_FILES).

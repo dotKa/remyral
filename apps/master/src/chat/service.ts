@@ -4432,7 +4432,7 @@ export class ChatService {
               (await nextStepConsent(this.deps.pool, t.followUp ?? '', t.userId, this.#now()).catch(
                 () => null,
               )) !== null) ||
-            (lateTurn && consentHolds(t.lateResult?.consentAt ?? null, this.#now())),
+            (lateTurn && consentHolds(t.lateResult.consentAt, this.#now())),
           ...(goal.state === 'off' ? {} : { goal: goal.state }),
           // p22-timeout-continuity: a follow-up may extend a job's time at once when the policy says so.
           autoExtendTime:

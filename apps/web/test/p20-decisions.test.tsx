@@ -120,29 +120,28 @@ describe('replaced and closed decision cards fold (p20-decisions)', () => {
       planId,
       planVersion: v,
     });
-  const question = (id: string, over: Partial<QuestionSet>): QuestionSet =>
-    ({
-      id,
-      source: 'assistant',
-      jobId: null,
-      threadId: THREAD,
-      project: null,
-      title: null,
-      questions: [
-        { id: 'q1', prompt: 'Dil?', kind: 'single', options: [{ label: 'Türkçe' }, { label: 'English' }] },
-      ],
-      state: 'pending',
-      createdAt: iso(20 * MIN),
-      deadlineAt: null,
-      closedAt: null,
-      closeReason: null,
-      answers: null,
-      answeredBy: null,
-      answeredAt: null,
-      planId: PLAN,
-      planItemKey: 'a',
-      ...over,
-    }) as QuestionSet;
+  const question = (id: string, over: Partial<QuestionSet>): QuestionSet => ({
+    id,
+    source: 'assistant',
+    jobId: null,
+    threadId: THREAD,
+    project: null,
+    title: null,
+    questions: [
+      { id: 'q1', prompt: 'Dil?', kind: 'single', options: [{ label: 'Türkçe' }, { label: 'English' }] },
+    ],
+    state: 'pending',
+    createdAt: iso(20 * MIN),
+    deadlineAt: null,
+    closedAt: null,
+    closeReason: null,
+    answers: null,
+    answeredBy: null,
+    answeredAt: null,
+    planId: PLAN,
+    planItemKey: 'a',
+    ...over,
+  });
   const detail = (messages: unknown[], questions: QuestionSet[] = []): ThreadDetail =>
     ({
       thread: { id: THREAD, title: 'Plan', archived: false, createdAt: iso(60 * MIN), updatedAt: iso(MIN) },

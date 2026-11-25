@@ -224,7 +224,7 @@ describe('answer notes (p19-plan-decide)', () => {
       allowOther: true,
     }),
     UserQuestionInput.parse({ prompt: 'Dil?', kind: 'text' }),
-  ]) as UserQuestion[];
+  ]);
   it('keeps a trimmed note; the agent text carries it', () => {
     const r = validateAnswers(qs, [
       { id: 'q1', other: 'yeni tasarım', note: '  ikinci turdaki  ' },

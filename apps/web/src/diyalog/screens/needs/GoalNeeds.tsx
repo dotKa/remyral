@@ -49,7 +49,7 @@ export function useGoalNeeds(): {
 }
 
 /** The reason code's family (`plan_stalled:budget` → `plan_stalled`), for the texts. */
-function family<T extends Record<string, string>>(table: T, code: string | null): string {
+function family(table: Readonly<Record<string, string>>, code: string | null): string {
   const key = (code ?? '').split(':')[0] ?? '';
   return key in table ? (table[key] ?? '') : (table.other ?? '');
 }
@@ -217,7 +217,9 @@ export function GoalNeeds(props: {
   const loaded = props.goals !== null;
   useEffect(() => {
     if (!loaded || !hash.startsWith('#hedef=')) return;
-    document.getElementById(`hedef-${hash.slice('#hedef='.length)}`)?.scrollIntoView?.({ block: 'center' });
+    const card = document.getElementById(`hedef-${hash.slice('#hedef='.length)}`);
+    // jsdom (the tests) has no scrollIntoView.
+    if (card !== null && typeof card.scrollIntoView === 'function') card.scrollIntoView({ block: 'center' });
   }, [hash, loaded]);
   const arrived = useArrivals(
     goals.map((g) => g.id),

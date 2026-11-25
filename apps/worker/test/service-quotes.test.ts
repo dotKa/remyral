@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_LIMITS } from '../src/sandbox/types.js';
 import { jobRunnerSpec, windowsCommandLine } from '../src/sandbox/host/windows-jobrun.js';
@@ -19,7 +20,7 @@ function parseMsvcrt(line: string): string[] {
     let arg = '';
     let quoted = false;
     for (; i < line.length; i++) {
-      const ch = line[i];
+      const ch = line.charAt(i);
       if (!quoted && (ch === ' ' || ch === '\t')) break;
       if (ch === '\\') {
         let n = 0;
@@ -97,12 +98,7 @@ describe('service command quoting (p19-service-quotes)', () => {
   it.skipIf(process.platform === 'win32')('Linux / macOS: the shell hands node the exact code', async () => {
     const line = `node -e "process.stdout.write(process.argv[1] + ':' + 'it\\'s ok')" "a b"`;
     const { command, args } = serviceCommand(process.platform, line, null);
-    const out = await new Promise<string>((resolve, reject) => {
-      execFile(command, args, (err, stdout) => {
-        if (err) reject(err);
-        else resolve(stdout);
-      });
-    });
+    const { stdout: out } = await promisify(execFile)(command, args);
     expect(out).toBe("a b:it's ok");
   });
 });

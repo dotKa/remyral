@@ -1633,8 +1633,7 @@ export class ChatTools {
     const svc = this.deps.goals?.() ?? null;
     if (svc === null) return { ok: false, code: 'unavailable', message: 'Goals are not available.' };
     try {
-      if (tool === 'list_goals')
-        return { ok: true, data: await svc.toolList(c, i as { all?: boolean; includeClosed?: boolean }) };
+      if (tool === 'list_goals') return { ok: true, data: await svc.toolList(c, i) };
       return {
         ok: true,
         data: await svc.toolUpdate(c, i as unknown as Parameters<GoalLedger['toolUpdate']>[1]),

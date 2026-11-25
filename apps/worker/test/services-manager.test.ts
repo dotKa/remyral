@@ -443,19 +443,24 @@ describePosix('ServiceManager', { timeout: 30_000 }, () => {
     await m.load();
     const hosts = (n: SandboxLaunchRequest['network']): string[] =>
       n.mode === 'none' ? [] : n.targets.map((t) => t.host);
+    const lastSeen = (): SandboxLaunchRequest['network'] => {
+      const n = seen.at(-1);
+      if (n === undefined) throw new Error('no sandbox launch recorded');
+      return n;
+    };
     // Without spec.network (an older master): model APIs only, and the refusal says why.
     const old = spec({ name: 'old', health: { kind: 'none' } });
     await m.onMessage(startMsg(old));
     await waitFor(() => last(old.serviceId)?.state === 'running');
     expect(seen.at(-1)).toMatchObject({ mode: 'allowlist' });
-    expect(hosts(seen.at(-1)!)).toEqual(['api.anthropic.com']);
-    expect(seen.at(-1)).toMatchObject({ refusalHint: expect.stringContaining('did not send') });
+    expect(hosts(lastSeen())).toEqual(['api.anthropic.com']);
+    expect(seen.at(-1)).toMatchObject({ refusalHint: expect.stringContaining('did not send') as unknown });
     // allowlist with the npm preset: the registry is reachable from the service.
     const npm = { mode: 'allowlist' as const, hosts: ['registry.npmjs.org', 'registry.yarnpkg.com'] };
     const s = spec({ name: 'web', health: { kind: 'none' }, network: npm });
     await m.onMessage(startMsg(s));
     await waitFor(() => last(s.serviceId)?.state === 'running');
-    const first = seen.at(-1)!;
+    const first = lastSeen();
     expect(first.mode).toBe('allowlist');
     expect(hosts(first)).toEqual(['api.anthropic.com', 'registry.npmjs.org', 'registry.yarnpkg.com']);
     const pid = last(s.serviceId)?.pid;
