@@ -1,3 +1,16 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/remyral/assets/png/mono-white-1024.png">
+    <img src="brand/remyral/assets/png/primary-1024.png" alt="Remyral" width="360">
+  </picture>
+</p>
+
+<p align="center">
+  <b>Self-hosted control plane for coding agents.</b><br>
+  <a href="LICENSE">Apache-2.0</a> · <a href="docs/ops/selfhost-install.md">Self-hosting</a> ·
+  <a href="https://remyral.com">remyral.com</a>
+</p>
+
 # Remyral
 
 Remyral is a self-hosted control plane for coding agents. You run one server with the web console and API; your own
@@ -7,6 +20,20 @@ a person for approval before sensitive actions, and opens pull requests, deploys
 
 Product site: [remyral.com](https://remyral.com) · contact: info@remyral.com. The project was previously called Remana /
 Remana Agent Cluster; some internal identifiers still carry that name.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/images/console-home.jpg" alt="Home: what needs you, running jobs, today's cost and runtime limits" width="100%">
+</p>
+
+| Chat turns a request into a job draft | Plans with phases, decisions and progress |
+| --- | --- |
+| ![Chat with a job draft card](docs/images/console-chat.jpg) | ![A plan with a pending decision](docs/images/console-plan.jpg) |
+| **Approval before a merge, with the live activity log** | **Workflows as a graph of agent steps and approvals** |
+| ![A job waiting for merge approval](docs/images/console-merge.jpg) | ![The workflow editor](docs/images/console-workflow.jpg) |
+
+The screenshots show demo data.
 
 ## Architecture
 
@@ -99,3 +126,9 @@ Licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attri
 repository, [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the licences of dependencies and container images
 (one dependency, `@anthropic-ai/claude-agent-sdk`, is proprietary and is not bundled with the worker), and
 [TRADEMARKS.md](TRADEMARKS.md): the names "Remyral" and "Remana" and their logos are not covered by the licence.
+
+---
+
+<p align="center">
+  Built by <a href="https://www.remana.tech">Remana</a> · <i>We are redefining technology.</i>
+</p>
