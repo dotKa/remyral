@@ -128,9 +128,11 @@ describe('credential vault in the running daemon (p5-credentials-models)', { tim
     });
     const status = transport.sent.find((m) => m.type === 'CREDENTIAL_STATUS');
     expect(status?.payload).toEqual({ credentialId: 'openrouter', version: 1, outcome: 'applied' });
-    expect(caps().at(-1)?.payload.credentialVault?.credentials).toEqual([
-      expect.objectContaining({ id: 'openrouter', version: 1, env: 'OPENROUTER_API_KEY' }),
-    ]);
+    await vi.waitFor(() => {
+      expect(caps().at(-1)?.payload.credentialVault?.credentials).toEqual([
+        expect.objectContaining({ id: 'openrouter', version: 1, env: 'OPENROUTER_API_KEY' }),
+      ]);
+    });
     const store = new FileSecretStore(nodeOps(), join(dir, 'data'));
     expect((await store.get('vault-openrouter'))?.reveal()).toBe(VALUE);
 
@@ -164,15 +166,18 @@ describe('credential vault in the running daemon (p5-credentials-models)', { tim
       const st = transport.sent.find((m) => m.type === 'WORKER_CONFIG_STATUS');
       expect(st?.payload).toMatchObject({ outcome: 'applied' });
     });
-    expect(caps().at(-1)?.payload.workerConfig?.effective.runtimes?.pi).toMatchObject({
-      auth: {
-        mode: 'secret-ref',
-        source: 'vault',
-        credential: 'openrouter',
-        present: true,
-        env: 'OPENROUTER_API_KEY',
-      },
-      provider: 'openrouter',
+    // The CAPABILITIES with the applied config follows the status: wait for it.
+    await vi.waitFor(() => {
+      expect(caps().at(-1)?.payload.workerConfig?.effective.runtimes?.pi).toMatchObject({
+        auth: {
+          mode: 'secret-ref',
+          source: 'vault',
+          credential: 'openrouter',
+          present: true,
+          env: 'OPENROUTER_API_KEY',
+        },
+        provider: 'openrouter',
+      });
     });
 
     // Revocation deletes it; rotation announces a new key with the old one as previous.

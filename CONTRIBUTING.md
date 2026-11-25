@@ -42,6 +42,9 @@ pnpm --filter @remyral/web exec vitest run src/some/area        # one package, o
   throw-away database and uses its own Redis key prefix, so your development data is never touched. Without the stack
   they fail loudly; set `REMYRAL_INTEGRATION=skip` to skip them explicitly (they are then reported as skipped — CI runs
   them on Linux).
+- **Real container engine:** the worker's container-profile escape suite (`apps/worker/test/sandbox-escape/`) and the
+  code-node image tests build and run the pinned images against a real Docker engine; they run only with
+  `REMYRAL_TEST_DOCKER=1` (CI does not set it: a hosted runner's engine and user ids do not match a worker host).
 - **End-to-end suites** need Docker: `pnpm e2e:fleet`, `pnpm e2e:compose`, `pnpm e2e:backup`, and the console's
   Playwright suite (`pnpm --filter @remyral/web e2e`).
 - Before you open a pull request run `pnpm verify` (format, lint, typecheck, tests, docs and i18n checks, dependency pin

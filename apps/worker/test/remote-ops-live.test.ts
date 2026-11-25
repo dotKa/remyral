@@ -146,13 +146,16 @@ describe.skipIf(isWindows)('remote ops in the running daemon (p5-remote-ops)', {
     expect(installUpdates[0]?.state).toBe('accepted');
     expect(installUpdates.some((u) => u.progress?.step === 'download')).toBe(true);
     expect(installUpdates.at(-1)?.runtime?.active).toBe('9.1.0');
-    const latest = caps().at(-1)?.payload;
-    expect(latest?.remoteOps?.runtimes[0]).toMatchObject({ active: '9.1.0' });
-    expect(latest?.runtimes[0]).toMatchObject({
-      runtime: 'codex',
-      installed: true,
-      version: '9.1.0',
-      pinStatus: 'match',
+    // Another CAPABILITIES may come first: wait for the one that reports the installed version.
+    await vi.waitFor(() => {
+      const latest = caps().at(-1)?.payload;
+      expect(latest?.remoteOps?.runtimes[0]).toMatchObject({ active: '9.1.0' });
+      expect(latest?.runtimes[0]).toMatchObject({
+        runtime: 'codex',
+        installed: true,
+        version: '9.1.0',
+        pinStatus: 'match',
+      });
     });
 
     // Logs: chunks of redacted lines from the worker's own log file.

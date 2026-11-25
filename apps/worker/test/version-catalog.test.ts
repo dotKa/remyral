@@ -386,7 +386,9 @@ describe('APPLY_VERSION_CATALOG in the running daemon', { timeout: 60_000 }, () 
       sequence: 7,
       outcome: 'accepted',
     });
-    expect(caps().at(-1)?.payload.versionCatalog).toMatchObject({ sequence: 7 });
+    await vi.waitFor(() => {
+      expect(caps().at(-1)?.payload.versionCatalog).toMatchObject({ sequence: 7 });
+    });
     signals.trigger();
     await running;
   });

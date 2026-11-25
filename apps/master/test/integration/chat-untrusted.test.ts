@@ -91,7 +91,8 @@ describeIntegration('untrusted content in a chat turn (integration, oss-sec3)', 
         actor,
         submit: true,
         spec: {
-          // A runtime the test machine does not have: the job stays queued (nothing but a cancel moves it).
+          // A runtime the test machine does not have, on a drained machine (see the setup test): the job stays
+          // queued — nothing but a cancel moves it.
           runtime: 'pi',
           prompt: 'Summarise the README',
           repository: {
@@ -211,6 +212,12 @@ describeIntegration('untrusted content in a chat turn (integration, oss-sec3)', 
         timeout: 20_000,
       })
       .toBe(true);
+    // Drained: the jobs below wait (a transient reason). On a machine that takes jobs a job it can never run
+    // (the pi runtime) fails as infeasible as soon as the scheduler sees it, and the tests need it still queued.
+    await stepUp();
+    const drained = await owner.req('POST', `/workers/${workerId}/drain`, {});
+    expect(drained.statusCode, drained.body).toBe(200);
+    expect((await owner.req('GET', '/chat/status')).json<{ available: boolean }>().available).toBe(true);
   });
 
   it('without untrusted content the same draft still runs at once under the policy', async () => {

@@ -141,7 +141,7 @@ BACKUP_REASON='manual'
 BACKUP_ARG=''
 CHANGE_ACTION=''
 
-need_arg() { [ "$#" -ge 2 ] && [ -n "$2" ] || die "$1 needs a value"; }
+need_arg() { if [ "$#" -lt 2 ] || [ -z "$2" ]; then die "$1 needs a value"; fi; }
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --dry-run) DRY=1 ;;
@@ -186,7 +186,7 @@ case "$DATA_DIR" in
   *) die "--data-dir must be an absolute path" ;;
 esac
 DATA_DIR="${DATA_DIR%/}"
-[ -n "$DATA_DIR" ] && [ "$DATA_DIR" != / ] || die "--data-dir must not be /"
+if [ -z "$DATA_DIR" ] || [ "$DATA_DIR" = / ]; then die "--data-dir must not be /"; fi
 
 STACK_ENV="$DATA_DIR/stack.env"
 RELEASE_ENV="$DATA_DIR/release.env"
@@ -610,7 +610,7 @@ health_gate() { # health_gate MASTER_REF WEB_REF
 
 # ---------------------------------------------------------------- state
 
-current_version() { [ -f "$STATE_DIR/current" ] && cat "$STATE_DIR/current" || true; }
+current_version() { if [ -f "$STATE_DIR/current" ]; then cat "$STATE_DIR/current" || true; fi; }
 record() { # record VERSION STATUS MIGRATIONS BACKUP
   [ "$DRY" = 1 ] && return 0
   mkdir -p "$STATE_DIR"
@@ -847,7 +847,7 @@ validate_install_flags() {
     *) die "--tls must be letsencrypt, cloudflare or proxy" ;;
   esac
   if [ -n "$TLS_CERT$TLS_KEY" ]; then
-    [ -f "$TLS_CERT" ] && [ -f "$TLS_KEY" ] || die "--tls-cert and --tls-key must both name existing files"
+    if [ ! -f "$TLS_CERT" ] || [ ! -f "$TLS_KEY" ]; then die "--tls-cert and --tls-key must both name existing files"; fi
     [ "$TLS_MODE" != letsencrypt ] || die "--tls-cert is for the cloudflare / proxy modes (Let's Encrypt issues its own)"
   fi
   local p
@@ -1040,8 +1040,10 @@ write_channel_cache() {
       done
     fi
   fi
-  cache_copy "$base/catalog/catalog.json" "$DATA_DIR/update/catalog/catalog.json" 393216 &&
+  # Best effort: the signature is copied only next to a copied catalog.
+  if cache_copy "$base/catalog/catalog.json" "$DATA_DIR/update/catalog/catalog.json" 393216; then
     cache_copy "$base/catalog/catalog.sig.json" "$DATA_DIR/update/catalog/catalog.sig.json" 4096 || true
+  fi
 }
 pre_upgrade_backup() { # sets BACKUP_ID
   BACKUP_ID=''
