@@ -635,7 +635,23 @@ describeIntegration(
           },
         )
         .toBe(2);
-      await expect.poll(() => stateTrail(id), { timeout: 20_000 }).toMatch(/^RUNNING /);
+      try {
+        await expect.poll(() => stateTrail(id), { timeout: 20_000 }).toMatch(/^RUNNING /);
+      } catch (err) {
+        // Diagnostics for the resume-vs-retry path: the reconciler's reasons and what the worker logged about leases.
+        const reasons = (await admin.req('GET', `/jobs/${id}`))
+          .json<{ transitions: { trigger: string; reason: string | null }[] }>()
+          .transitions.slice(-6)
+          .map((t) => `${t.trigger}: ${t.reason ?? ''}`);
+        const leaseLines = w.lines
+          .filter((l) => /lease|fenc|stale|renew|session/i.test(String(l.msg)))
+          .slice(-20)
+          .map((l) => JSON.stringify(l).slice(0, 300));
+        throw new Error(
+          `${err instanceof Error ? err.message : String(err)}\ntransitions:\n${reasons.join('\n')}\nworker:\n${leaseLines.join('\n')}`,
+          { cause: err },
+        );
+      }
       // The worker adopted the new epoch (RENEW_LEASE) before the run ends.
       await expect.poll(() => w.runner.runningJobs()[0]?.epoch, { timeout: 20_000 }).toBe(2);
       // Hold verification, let the run finish and push (trailer …/2).
