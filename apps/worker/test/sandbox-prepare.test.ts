@@ -402,6 +402,8 @@ describe('worker-side prepare', () => {
       },
       namespaces: { usable: false, detail: 'refused' },
       jobRunner: { verified: false, code: 'job_runner_missing' },
+      // Hermetic on Windows (the job runner refresh runs its self-test through this).
+      runFile: () => Promise.resolve({ code: 0, stdout: 'remyral-jobrun ok 1', stderr: '' }),
     });
     const updates: Omit<OpsUpdatePayload, 'commandId' | 'seq' | 'kind'>[] = [];
     const prep = new SandboxPreparer({
@@ -606,6 +608,8 @@ describe('privileged prepare restarts the Windows service for new privileges (p9
       },
       namespaces: { usable: true, detail: 'ok' },
       jobRunner: { verified: true, script: 'x', source: 'data' },
+      // Hermetic on Windows (the job runner refresh runs its self-test through this).
+      runFile: () => Promise.resolve({ code: 0, stdout: 'remyral-jobrun ok 1', stderr: '' }),
     });
     const cmd = command('wrk_1', k.privateKey);
     // A fake helper: answers the request with a final result that carries serviceRestart.
