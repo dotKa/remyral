@@ -91,11 +91,11 @@ whole pairing / reconnect / revoke cycle automatically.
 
 ## Self-hosting
 
-The control plane installs on one Linux server with Docker (current release **1.0.0**, release key
-`9439dfaca133e249`):
+The control plane installs on one Linux server with Docker (current release **0.9.0**, the first public release,
+before 1.0; release key `9439dfaca133e249`):
 
 ```sh
-curl -fsSLO https://releases.remyral.com/control-plane/1.0.0/install.sh
+curl -fsSLO https://releases.remyral.com/control-plane/0.9.0/install.sh
 sudo bash install.sh --domain remyral.example.com --tls letsencrypt --email ops@example.com
 ```
 
