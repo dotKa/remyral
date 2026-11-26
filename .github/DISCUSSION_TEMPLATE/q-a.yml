@@ -1,0 +1,44 @@
+title: '[Q] '
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask anything about installing, configuring or using Remyral. If something is clearly broken, open a bug
+        report instead; report security problems privately (SECURITY.md). Redact host names, IP addresses, tokens,
+        e-mail addresses and other personal data from everything you paste.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do, and what have you tried so far?
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      multiple: true
+      options:
+        - Control plane (master)
+        - Web console
+        - Worker
+        - Installer / self-host bundle
+        - Documentation
+        - Not sure
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Bundled installer (remyral-ctl)
+        - Coolify
+        - Local development (pnpm dev)
+        - Not installed yet
+        - Other
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Remyral version, worker version and OS, AI runtime and version, where relevant.
+      placeholder: e.g. Remyral 1.2.0, worker 1.2.0 on Windows 11 x64, Claude Code 2.x

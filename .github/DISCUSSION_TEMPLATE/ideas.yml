@@ -1,0 +1,32 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share an idea for Remyral. Once the problem and the expected behaviour are clear, a maintainer may turn it
+        into a feature request. Check the [roadmap](https://github.com/dotKa/remyral/blob/main/ROADMAP.md) first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What would you like to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: How could it work? Rough sketches are welcome.
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      multiple: true
+      options:
+        - Control plane (master)
+        - Web console
+        - Worker
+        - Installer / self-host bundle
+        - Documentation
+        - Not sure

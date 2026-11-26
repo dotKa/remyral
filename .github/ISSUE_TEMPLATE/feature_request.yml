@@ -1,7 +1,12 @@
 name: Feature request
 description: Suggest a new capability or an improvement.
-labels: [enhancement]
+labels: [enhancement, needs-triage]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        For an early or open-ended idea, start a thread in Discussions (Ideas) first; open a feature request once
+        the problem and the expected behaviour are clear.
   - type: textarea
     id: problem
     attributes:
@@ -13,9 +18,35 @@ body:
     id: proposal
     attributes:
       label: Proposed solution
-      description: How should it work? Mention the component (control plane, console, worker, installer).
+      description: How should it work?
     validations:
       required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      multiple: true
+      options:
+        - Control plane (master)
+        - Web console
+        - Worker
+        - Installer / self-host bundle
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: AI runtime
+      description: The agent runtimes the request concerns, if any.
+      multiple: true
+      options:
+        - Not runtime-specific
+        - Claude Code
+        - Codex
+        - Pi
+        - OpenCode
   - type: textarea
     id: alternatives
     attributes:
