@@ -18,9 +18,9 @@ jobs:
       matrix:
         os: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
-    # A run takes 29-37 min (tests ~20-27 min of it): 60 min is well above that, and a hung step cannot hold a
-    # runner for the 6 h default.
-    timeout-minutes: 60
+    # A run takes 29-37 min (tests ~20-27 min of it; ~8 min more with two master files at once, below): 75 min is well
+    # above that, and a hung step cannot hold a runner for the 6 h default.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -45,8 +45,8 @@ jobs:
       - run: pnpm verify
         env:
           REMYRAL_INTEGRATION: run
-          # Two master test files at once (the 4-vCPU runner ran ~3: load-dependent timing failures). Costs a few
-          # minutes of the test step; the other projects keep running next to them.
+          # Two master test files at once, after the other projects (the 4-vCPU runner ran ~3 next to the rest:
+          # load-dependent timing failures). The master files are ~57 min of file time: the test step grows by ~8 min.
           REMYRAL_MASTER_TEST_WORKERS: '2'
       - run: pnpm build
       # The built master refuses to start on a database with pending migrations (the dev stack starts empty).
