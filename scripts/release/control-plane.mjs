@@ -2,9 +2,11 @@
 // Control-plane releases for self-hosted installs (p16-selfhost-onboarding, ADR-0063, docs/ops/selfhost-release.md).
 //
 //   node scripts/release/control-plane.mjs images  --version 1.2.0 --registry ghcr.io/<org> [--platform linux/amd64,linux/arm64]
-//                                                  [--out dist/control-plane] [--dry-run]
+//                                                  [--source https://github.com/<org>/<repo>] [--out dist/control-plane]
+//                                                  [--dry-run]
 //       Builds master, web and backup with buildx and PUSHES them to the registry (only when not --dry-run), then
-//       writes <out>/<version>/digests.json from the build metadata (the registry manifest digests).
+//       writes <out>/<version>/digests.json from the build metadata (the registry manifest digests). --source labels
+//       and annotates the images with their source repository (GHCR links the packages to it).
 //   node scripts/release/control-plane.mjs bundle  --version 1.2.0 --registry ghcr.io/<org> --key <release-key.pem>
 //                                                  (--digests <digests.json> | --master sha256:… --web sha256:… --backup sha256:…)
 //                                                  --min-worker 1.0.75 --release-url https://releases.example.com/remyral
@@ -83,6 +85,7 @@ try {
       dir: { type: 'string' },
       'public-key': { type: 'string' },
       platform: { type: 'string', default: 'linux/amd64,linux/arm64' },
+      source: { type: 'string' },
       commit: { type: 'string' },
       'created-at': { type: 'string' },
       'allow-dirty': { type: 'boolean', default: false },
@@ -127,6 +130,18 @@ function cmdImages() {
     backup: 'infra/backup/Dockerfile',
   };
   const commit = values.commit ?? git('rev-parse', 'HEAD');
+  const source = values.source;
+  if (source !== undefined && !/^https:\/\/[A-Za-z0-9.-]+(\/[A-Za-z0-9._-]+)+$/.test(source))
+    die('--source must be an https repository URL');
+  const sourceArgs =
+    source === undefined
+      ? []
+      : [
+          '--label',
+          `org.opencontainers.image.source=${source}`,
+          '--annotation',
+          `index:org.opencontainers.image.source=${source}`,
+        ];
   const digests = {};
   if (!values['dry-run']) mkdirSync(dir, { recursive: true });
   for (const [k, name] of Object.entries(IMAGE_NAMES)) {
@@ -142,6 +157,7 @@ function cmdImages() {
       `org.opencontainers.image.revision=${commit}`,
       '--label',
       `org.opencontainers.image.version=${version}`,
+      ...sourceArgs,
       '-f',
       dockerfiles[k],
       '-t',

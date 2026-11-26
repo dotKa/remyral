@@ -1,0 +1,109 @@
+# Control-plane release images (docs/ops/selfhost-release.md §2, ADR-0063): builds remyral-master, remyral-web and
+# remyral-backup for linux/amd64 + linux/arm64 with `scripts/release/control-plane.mjs images`, pushes them to GHCR by
+# digest with buildx provenance + SBOM, adds a GitHub build-provenance attestation per image and uploads digests.json.
+#
+# Started by hand from main (workflow_dispatch). The images alone publish nothing a customer installs: an
+# installation only runs images named by digest in a manifest signed with the offline release key, which happens
+# afterwards on the vendor's machine (`control-plane.mjs bundle --digests <the artifact>`). Only GITHUB_TOKEN is used;
+# no release key, no other secret.
+name: release-images
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Control-plane version (semantic version, e.g. 1.0.0); must not exist in the registry yet
+        required: true
+        type: string
+
+# Nothing by default; the job below names what it needs.
+permissions:
+  contents: read # read the repository
+
+concurrency:
+  group: release-images
+  cancel-in-progress: false
+
+jobs:
+  images:
+    name: Build and push the control-plane images
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read # checkout
+      packages: write # push the images and their attestations to ghcr.io/<owner>
+      id-token: write # attest-build-provenance: OIDC token for the Sigstore signature
+      attestations: write # attest-build-provenance: the repository's attestation store
+    env:
+      VERSION: ${{ inputs.version }}
+      SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # No later step pushes with git: keep the token out of .git/config.
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Registry prefix (GHCR needs a lower-case owner)
+        run: |
+          printf 'REGISTRY=ghcr.io/%s\n' "${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+      - name: Check the version
+        run: |
+          printf '%s' "$VERSION" | grep -Eq '^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$' \
+            || { echo "::error::version must be a semantic version"; exit 1; }
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          image: docker.io/tonistiigi/binfmt:qemu-v10.2.3@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+          platforms: arm64
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: image=moby/buildkit:v0.34.2@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Refuse a version that is already in the registry
+        run: |
+          for name in remyral-master remyral-web remyral-backup; do
+            if docker buildx imagetools inspect "$REGISTRY/$name:$VERSION" >/dev/null 2>&1; then
+              echo "::error::$REGISTRY/$name:$VERSION exists already; a version is published once"
+              exit 1
+            fi
+          done
+      - name: Build and push (multi-arch, provenance, SBOM)
+        run: node scripts/release/control-plane.mjs images --version "$VERSION" --registry "$REGISTRY" --source "$SOURCE_URL"
+      - name: Digests for the attestations
+        id: digests
+        run: |
+          f="dist/control-plane/$VERSION/digests.json"
+          for k in master web backup; do
+            d="$(node -e 'const d=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))[process.argv[2]];if(!/^sha256:[0-9a-f]{64}$/.test(d??""))process.exit(1);process.stdout.write(d)' "$f" "$k")"
+            printf '%s=%s\n' "$k" "$d" >> "$GITHUB_OUTPUT"
+          done
+          cat "$f"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/remyral-master
+          subject-digest: ${{ steps.digests.outputs.master }}
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/remyral-web
+          subject-digest: ${{ steps.digests.outputs.web }}
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/remyral-backup
+          subject-digest: ${{ steps.digests.outputs.backup }}
+          push-to-registry: true
+      - name: Upload digests.json
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: control-plane-digests-${{ inputs.version }}
+          path: dist/control-plane/${{ inputs.version }}/digests.json
+          if-no-files-found: error
+          retention-days: 90

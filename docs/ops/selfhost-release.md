@@ -32,6 +32,17 @@ node scripts/release/control-plane.mjs images --version 1.2.0 --registry ghcr.io
 `docker buildx build --platform linux/amd64,linux/arm64 --provenance=mode=max --sbom=true --push --metadata-file …`
 per image; `dist/control-plane/1.2.0/digests.json` gets the registry manifest digests.
 
+**On GitHub Actions instead (the official releases):** Actions → `release-images` → Run workflow on `main` with the
+version (`gh workflow run release-images.yml --ref main -f version=1.2.0`). The workflow runs the same `images`
+command against `ghcr.io/<owner>` with the built-in `GITHUB_TOKEN` (no other secret; the release key is never in CI),
+refuses a version that is already in the registry, labels the images with their source repository, adds a GitHub
+build-provenance attestation per image (`gh attestation verify oci://ghcr.io/<owner>/remyral-master@sha256:… -R
+<owner>/<repo>`) and uploads `digests.json` as the artifact `control-plane-digests-<version>`. Fetch it with
+`gh run download <run id> -n control-plane-digests-1.2.0 -D dist/control-plane/1.2.0` and continue with §3 on the
+commit the run built (`bundle --commit <its head SHA>`, from a clean checkout of that commit). New GHCR packages are
+private: make `remyral-master`, `remyral-web` and `remyral-backup` public once (package settings → Change
+visibility) so installations pull them anonymously.
+
 ## 3. Bundle, sign, feed
 
 ```sh
