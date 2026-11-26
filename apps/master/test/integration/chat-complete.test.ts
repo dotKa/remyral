@@ -106,11 +106,21 @@ describeIntegration(
     ): Promise<Message> {
       const res = await c.req('POST', `/chat/threads/${t}/messages`, { text, ...body });
       expect(res.statusCode, res.body).toBe(202);
-      await idle(c, t);
-      const last = current(await detail(c, t))
-        .filter((m) => m.role === 'assistant' || m.role === 'error')
-        .at(-1);
-      expect(last).toBeDefined();
+      const userSeq = res.json<{ message: { seq: number } }>().message.seq;
+      // The turn may not have started yet right after the 202: wait for its answer, not only for "no turn".
+      let last: Message | undefined;
+      await expect
+        .poll(
+          async () => {
+            const d = await detail(c, t);
+            last = current(d)
+              .filter((m) => m.seq > userSeq && (m.role === 'assistant' || m.role === 'error'))
+              .at(-1);
+            return d.turn === null && last !== undefined;
+          },
+          { timeout: 30_000 },
+        )
+        .toBe(true);
       return last as Message;
     }
 
