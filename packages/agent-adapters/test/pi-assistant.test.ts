@@ -83,7 +83,7 @@ function sink() {
 describe('PiAssistantEngine (fixture process)', () => {
   it('is ready only with the pinned version unless unpinned versions are allowed', async () => {
     expect(await engine().ready()).toEqual({ ready: true });
-    expect((await engine({}, { FAKE_PI_VERSION: '1.2.0' }).ready()).reason).toContain('not the pinned 1.4.0');
+    expect((await engine({}, { FAKE_PI_VERSION: '1.2.0' }).ready()).reason).toContain('not the pinned 1.6.0');
     expect(await engine({ allowUnpinned: () => true }, { FAKE_PI_VERSION: '1.2.0' }).ready()).toEqual({
       ready: true,
     });

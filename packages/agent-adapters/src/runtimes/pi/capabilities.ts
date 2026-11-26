@@ -9,7 +9,7 @@ import {
 } from '../../capabilities.js';
 import { platformKey } from '../common/platform.js';
 
-export const PI_PINNED_VERSION = '1.4.0';
+export const PI_PINNED_VERSION = '1.6.0';
 
 /**
  * (os-arch) tuples on which the contract kit passed against the pinned Pi
@@ -18,7 +18,7 @@ export const PI_PINNED_VERSION = '1.4.0';
  * `unverified` until the suite has run there.
  */
 export const PI_CONTRACT_TESTED: Readonly<Partial<Record<`${OsFamilyT}-${ArchT}`, string>>> = {
-  'darwin-arm64': '2026-10-26',
+  'darwin-arm64': '2026-11-26',
 };
 
 const ARTIFACTS: CapabilityEntry = {
@@ -26,7 +26,7 @@ const ARTIFACTS: CapabilityEntry = {
   reason: 'Pi has no artifact API; the worker collects the workspace git diff itself',
 };
 
-/** Capability decisions for Pi 1.4.0 (docs/design/p3-adapter-pi-opencode.md §4). */
+/** Capability decisions for Pi 1.6.0 (docs/design/p3-adapter-pi-opencode.md §4). */
 export const PI_TESTED_CAPABILITIES: Readonly<Record<AdapterCapability, CapabilityEntry>> = {
   streaming: {
     status: 'supported',

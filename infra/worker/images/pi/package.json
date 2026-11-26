@@ -5,6 +5,6 @@
   "license": "Apache-2.0",
   "description": "Locked install of the pi runtime pin for the container image (p7-supply-chain). Regenerate: docs/security/dependency-policy.md §4.",
   "dependencies": {
-    "@earendil-works/pi-coding-agent": "1.4.0"
+    "@earendil-works/pi-coding-agent": "1.6.0"
   }
 }

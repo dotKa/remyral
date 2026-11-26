@@ -321,7 +321,7 @@ describe('declared tables (the ceiling evidence may lift to)', () => {
     const statics = {
       'claude-code': claudeCodeCapabilities({ runtime: 'claude-code', version: '2.1.310', ...key }),
       codex: codexCapabilities({ runtime: 'codex', version: '0.164.0', ...key }),
-      pi: piCapabilities('1.4.0', key.os, key.arch),
+      pi: piCapabilities('1.6.0', key.os, key.arch),
       opencode: opencodeCapabilities('1.19.4', key.os, key.arch),
     };
     for (const runtime of ['claude-code', 'codex', 'pi', 'opencode'] as const) {
@@ -337,7 +337,7 @@ describe('declared tables (the ceiling evidence may lift to)', () => {
 
 describe('verified overlay (an attempt admitted on master-side evidence)', () => {
   const overlay = {
-    runtimeVersion: '1.4.0',
+    runtimeVersion: '1.6.0',
     os: 'win32',
     arch: 'x64',
     adapterVersion: adapterRevision('pi'),
