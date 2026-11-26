@@ -166,10 +166,14 @@ describeIntegration('output delivery and bulk merge approval (integration)', { t
       job: { state: string };
       transitions: { trigger: string; reason: string | null }[];
     }>();
+    const mr = await h.db.pool.query<{ status: string; result_reason: string | null; attempts: number }>(
+      'SELECT status, result_reason, attempts FROM git_merge_requests WHERE job_id = $1 ORDER BY created_at',
+      [id],
+    );
     return `${d.job.state} [${d.transitions
       .slice(-4)
       .map((t) => `${t.trigger}: ${t.reason ?? ''}`)
-      .join(' | ')}]`;
+      .join(' | ')}] merge requests: ${JSON.stringify(mr.rows)}`;
   }
   async function lastTransition(id: string): Promise<{ trigger: string; reason: string | null }> {
     const d = (await admin.req('GET', `/jobs/${id}`)).json<{
