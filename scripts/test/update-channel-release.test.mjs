@@ -224,8 +224,7 @@ describe('sign.mjs feed (the worker release feed)', () => {
       join(work, 'feedsite'),
       '--key',
       pem,
-      '--catalog-key',
-      catalogPub,
+      `--catalog-key=${catalogPub}`,
     ]);
     expect(r.stderr).toBe('');
     const bytes = readFileSync(join(work, 'feedsite', 'workers', 'feed.json'));

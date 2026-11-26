@@ -35,6 +35,10 @@ import { readUntrustedFile, UnsafeFileError } from '../files.js';
 import type { ManageResult } from '../manage-shared.js';
 import type { ManageHelper } from './manage.js';
 
+/** Windows: tries of the result file's rename while the worker may hold it open for reading (see #writeResult). */
+const RESULT_WRITE_ATTEMPTS = 5;
+const RESULT_WRITE_RETRY_MS = 200;
+
 /**
  * Privileged sandbox preparation (p5-sandbox-ops, ADR-0019) — part of the root/SYSTEM helper of
  * p2-signed-updates (`remyral-worker-updater.mjs`), never of the worker.
@@ -188,13 +192,28 @@ export class PrivilegedPreparer {
     return prepareResultPath(this.#d.platform, this.#d.installDir);
   }
 
+  /**
+   * Windows: the worker polls the result file while the helper replaces it, and a rename over a file another process
+   * has open fails with EPERM / EBUSY / EACCES (seen on a CI runner) — retried a few times, like the update agent's
+   * health file.
+   */
   async #writeResult(r: PrepareResult): Promise<void> {
     const path = this.#resultPath;
     await mkdir(this.#p.dirname(path), { recursive: true });
     const tmp = `${path}.tmp`;
     await writeFile(tmp, `${JSON.stringify(r)}\n`, { mode: 0o644 });
     if (this.#d.platform !== 'win32') await chmod(tmp, 0o644);
-    await rename(tmp, path);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await rename(tmp, path);
+        return;
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        const busy = code === 'EPERM' || code === 'EBUSY' || code === 'EACCES';
+        if (!busy || attempt >= RESULT_WRITE_ATTEMPTS) throw error;
+        await new Promise((resolve) => setTimeout(resolve, RESULT_WRITE_RETRY_MS));
+      }
+    }
   }
 
   async #seen(): Promise<Record<string, number>> {
