@@ -1,5 +1,5 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createLogger } from '@remyral/observability';
 import {
@@ -12,7 +12,7 @@ import {
   signCredentialDelivery,
   verifyVaultKey,
 } from '@remyral/protocol';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FileSecretStore } from '../src/secrets/store.js';
 import { CredentialVault, trackVaultUse, VAULT_INDEX_FILE, VAULT_KEY_FILE } from '../src/vault/index.js';
 import { captureLines, isWindows, nodeOps, tempDir } from './helpers.js';
@@ -374,5 +374,9 @@ describe('APPLY_CREDENTIAL / REVOKE_CREDENTIAL', () => {
     expect(vault.report(WORKER, () => 'A'.repeat(86)).credentials[0]?.lastUsedAt).toBe(
       '2026-10-14T10:00:05.000Z',
     );
+    // The last-use time is persisted in the background: wait for it (the temp dir is removed after the test).
+    await vi.waitFor(async () => {
+      expect(await readFile(join(dataDir, VAULT_INDEX_FILE), 'utf8')).toContain('2026-10-14T10:00:05.000Z');
+    });
   });
 });
