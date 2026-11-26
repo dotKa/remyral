@@ -1,0 +1,13 @@
+# Code owners are requested for review automatically when a pull request touches their paths. This does not block
+# merging by itself: a review is only required if a branch ruleset enables "Require review from Code Owners".
+# The last matching pattern wins, so the general rule comes first.
+
+*                         15361459+dotKa@users.noreply.github.com
+
+# Security-sensitive areas: listed separately so they keep an explicit owner if the general rule changes.
+/SECURITY.md              15361459+dotKa@users.noreply.github.com
+/.github/                 15361459+dotKa@users.noreply.github.com
+/scripts/security/        15361459+dotKa@users.noreply.github.com
+/scripts/release/         15361459+dotKa@users.noreply.github.com
+/docs/security/           15361459+dotKa@users.noreply.github.com
+/infra/                   15361459+dotKa@users.noreply.github.com

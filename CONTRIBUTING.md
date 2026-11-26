@@ -96,7 +96,8 @@ Use your real name (or the name you are publicly known by) and an address you ca
 
 ## Where to ask
 
-- Questions and ideas: open an issue in this repository's GitHub project.
+- Questions and ideas: [GitHub Discussions](https://github.com/dotKa/remyral/discussions) (Q&A and Ideas); see
+  [SUPPORT.md](SUPPORT.md).
 - Bugs: open an issue with the steps, the expected and the actual behaviour, and the versions of the control plane and the worker
   (`remyral-worker doctor` prints the worker's). Redact hostnames, addresses and paths from logs and probe output before you attach them.
 - Security problems: **do not open a public issue**; follow [SECURITY.md](SECURITY.md).

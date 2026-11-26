@@ -120,6 +120,10 @@ Origin sign-off. Rules for AI coding agents (and binding engineering rules for e
 report security issues privately as described in [SECURITY.md](SECURITY.md). Participation is governed by the
 [Code of Conduct](CODE_OF_CONDUCT.md).
 
+Community: questions and ideas in [Discussions](https://github.com/dotKa/remyral/discussions), bugs in
+[issues](https://github.com/dotKa/remyral/issues), vulnerabilities privately via [SECURITY.md](SECURITY.md); see
+[SUPPORT.md](SUPPORT.md).
+
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attributions of third-party material in this

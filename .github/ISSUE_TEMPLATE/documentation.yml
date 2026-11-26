@@ -1,0 +1,44 @@
+name: Documentation
+description: Something in the documentation is wrong, missing or unclear.
+labels: [documentation, 'area: docs', needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Redact host names, IP addresses, tokens, e-mail addresses and other personal data from anything you paste.
+  - type: input
+    id: location
+    attributes:
+      label: Page or file
+      description: Path or link of the document, and the section if possible.
+      placeholder: e.g. docs/ops/worker-install.md, "Windows"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of problem
+      options:
+        - Incorrect or outdated
+        - Missing information
+        - Unclear or hard to follow
+        - Broken link or formatting
+        - Translation (Turkish / English)
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong
+      description: Quote the passage if it helps, and say what you expected to find.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+  - type: input
+    id: version
+    attributes:
+      label: Remyral version or commit
+      description: If the documentation disagrees with a specific release.

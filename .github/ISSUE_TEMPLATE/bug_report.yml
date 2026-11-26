@@ -1,13 +1,14 @@
 name: Bug report
 description: Something does not work as documented.
-labels: [bug]
+labels: [bug, needs-triage]
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for the report. Security vulnerabilities do not belong here: use the repository's Security tab
-        (private vulnerability reporting, see SECURITY.md). Redact host names, IP addresses, tokens, e-mail
-        addresses and other personal data from everything you paste below.
+        (private vulnerability reporting, see SECURITY.md). Questions go to Discussions (Q&A), see SUPPORT.md.
+        Redact host names, IP addresses, tokens, e-mail addresses and other personal data from everything you
+        paste below.
   - type: textarea
     id: what-happened
     attributes:
@@ -37,18 +38,71 @@ body:
         - Other
     validations:
       required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      description: How the control plane is run.
+      options:
+        - Bundled installer (remyral-ctl)
+        - Coolify
+        - Local development (pnpm dev)
+        - Other
+    validations:
+      required: true
   - type: input
     id: version
     attributes:
-      label: Version or commit
+      label: Remyral version or commit
+      description: The control plane version (console → System status, or `sudo remyral-ctl status`), or the commit SHA.
       placeholder: e.g. 1.2.0 or the commit SHA
     validations:
       required: true
   - type: input
+    id: worker-version
+    attributes:
+      label: Worker version
+      description: Printed by `remyral-worker doctor`; also listed under Machines in the console. Leave empty if no worker is involved.
+      placeholder: e.g. 1.2.0
+  - type: dropdown
+    id: worker-os
+    attributes:
+      label: Worker operating system
+      description: Of the machine that runs the affected worker, if any.
+      options:
+        - Not applicable
+        - Linux
+        - macOS
+        - Windows
+  - type: dropdown
+    id: worker-arch
+    attributes:
+      label: Worker architecture
+      options:
+        - Not applicable
+        - x64
+        - arm64
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: AI runtime
+      description: The agent runtime the job ran on, if relevant.
+      options:
+        - Not applicable
+        - Claude Code
+        - Codex
+        - Pi
+        - OpenCode
+  - type: input
+    id: runtime-version
+    attributes:
+      label: Runtime version
+      placeholder: e.g. the output of `claude --version` or `codex --version`
+  - type: input
     id: environment
     attributes:
-      label: Environment
-      description: Operating system and architecture of the affected machine, Node version, agent runtime if relevant.
+      label: Other environment details
+      description: OS distribution and version, Node version, browser for console issues, anything else relevant.
   - type: textarea
     id: logs
     attributes:
