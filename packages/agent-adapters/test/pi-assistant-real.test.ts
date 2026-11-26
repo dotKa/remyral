@@ -1,11 +1,11 @@
 /**
- * The Pi ops chat assistant engine against the REAL pinned Pi 1.4.0 (no credentials, no network, no model):
+ * The Pi ops chat assistant engine against the REAL pinned Pi 1.6.0 (no credentials, no network, no model):
  * a scripted faux provider (fixtures/pi/faux-assistant-provider.mjs, loaded as an operator extension) plays the
  * model, so tool declaration, the bridge extension, the extension-UI relay, streaming, follow-up turns and abort
  * are the real runtime's.
  *
  * Opt-in: set REMYRAL_PI_BIN to the pinned executable (e.g. the `pi` launcher of
- * `npm install --prefix <dir> --ignore-scripts @earendil-works/pi-coding-agent@1.4.0`).
+ * `npm install --prefix <dir> --ignore-scripts @earendil-works/pi-coding-agent@1.6.0`).
  */
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -68,7 +68,7 @@ const run = (s: Awaited<ReturnType<PiAssistantEngine['start']>>, message: string
     .then((r) => ({ ...r, streamed: deltas.join('') }));
 };
 
-describe.skipIf(!enabled)('pi 1.4.0 real binary: ops chat assistant engine', { timeout: 180_000 }, () => {
+describe.skipIf(!enabled)('pi 1.6.0 real binary: ops chat assistant engine', { timeout: 180_000 }, () => {
   it('is ready with the pinned binary', async () => {
     expect(await engine().ready()).toEqual({ ready: true });
   });
@@ -87,7 +87,9 @@ describe.skipIf(!enabled)('pi 1.4.0 real binary: ops chat assistant engine', { t
       expect(relayed.outcome).toBe('done');
       expect(calls).toEqual([{ tool: 'list_workers', input: { state: 'online' } }]);
       expect(relayed.text).toBe('result={"workers":[{"name":"mac-1","state":"online"}]}|false');
-      expect(relayed.usage.inputTokens).toBeGreaterThan(0);
+      // pi-ai's faux provider (1.6.0) books the prompt as simulated cache reads/writes (`input: 0`).
+      const u = relayed.usage;
+      expect((u.inputTokens ?? 0) + (u.cacheReadTokens ?? 0) + (u.cacheWriteTokens ?? 0)).toBeGreaterThan(0);
       expect(relayed.usage.model).toBe('scripted');
 
       // Pi validates the input against the declared JSON Schema before the bridge runs: nothing is relayed.

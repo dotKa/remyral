@@ -1,12 +1,12 @@
 /**
  * Real-binary tests for the Pi adapter (no credentials, no network, no model):
- * the pinned `pi` 1.4.0 runs with a scripted provider extension
+ * the pinned `pi` 1.6.0 runs with a scripted provider extension
  * (fixtures/pi/faux-provider.mjs, built on Pi's own `fauxProvider`), so every
  * event shape, the RPC handshake, the permission gate, abort and the process
  * tree are the real runtime's.
  *
  * Opt-in: set REMYRAL_PI_BIN to the pinned executable (e.g. the `pi` launcher
- * of `npm install --prefix <dir> --ignore-scripts @earendil-works/pi-coding-agent@1.4.0`).
+ * of `npm install --prefix <dir> --ignore-scripts @earendil-works/pi-coding-agent@1.6.0`).
  * The contract run here is what justifies the `supported`/`degraded` entries of
  * PI_CONTRACT_TESTED for this OS/arch (ADR-0008).
  */
@@ -54,7 +54,7 @@ function workspace(): string {
 }
 
 if (enabled) {
-  defineAdapterContractSuite('pi 1.4.0 (real binary, scripted provider)', () => adapter(), {
+  defineAdapterContractSuite('pi 1.6.0 (real binary, scripted provider)', () => adapter(), {
     prompts: { basic: 'faux:basic contract', 'long-running': 'faux:long', approval: 'faux:approval' },
     timeouts: SLOW_TIMEOUTS,
     sessionTimeoutMs: 60_000,
@@ -62,7 +62,7 @@ if (enabled) {
   });
 }
 
-describe.skipIf(!enabled)('pi 1.4.0 real binary: smoke', { timeout: 120_000 }, () => {
+describe.skipIf(!enabled)('pi 1.6.0 real binary: smoke', { timeout: 120_000 }, () => {
   it('probe reports the pinned version and a non-unverified set on this platform', async () => {
     const probe = await adapter().probe();
     expect(probe.installed).toBe(true);
@@ -224,11 +224,20 @@ describe.skipIf(!enabled)('pi 1.4.0 real binary: smoke', { timeout: 120_000 }, (
       model: 'scripted',
       authMode: 'secret-ref',
     });
-    expect(usage[0]?.kind === 'usage' && (usage[0].inputTokens ?? 0) > 0).toBe(true);
+    // pi-ai's faux provider (1.6.0) books every prompt token as a simulated cache read or write and reports
+    // `input: 0`; the prompt still has to reach the usage event through one of the three counters.
+    const prompt = (u: {
+      inputTokens?: number | undefined;
+      cacheReadTokens?: number | undefined;
+      cacheWriteTokens?: number | undefined;
+    }) => (u.inputTokens ?? 0) + (u.cacheReadTokens ?? 0) + (u.cacheWriteTokens ?? 0);
+    expect(usage[0]?.kind === 'usage' && prompt(usage[0]) > 0).toBe(true);
     expect(usage[0]?.kind === 'usage' && usage[0].cacheWriteTokens !== undefined).toBe(true);
     const cost = await a.getCost(ref);
     expect(cost.provenance).toBe('reported-by-runtime');
-    expect(cost.inputTokens).toBeGreaterThan(0);
+    // CostReport carries input/output only: the faux prompt is all cache, so input is 0 here, output is not.
+    expect(cost.inputTokens).toBeDefined();
+    expect(cost.outputTokens).toBeGreaterThan(0);
     await a.cleanup(ref);
   });
 

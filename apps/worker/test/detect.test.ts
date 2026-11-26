@@ -90,7 +90,7 @@ describe('CLI runtime detection', () => {
       arch: 'x64',
       env: { PATH: 'C:\\npm' },
       files: { 'C:\\npm\\pi.cmd': '' },
-      exec: () => ok('1.4.0'),
+      exec: () => ok(RUNTIME_PINS.pi.version),
     });
     const { report } = buildRuntimeReport(sys, await detectRuntime(sys, 'pi'));
     expect(report.pinStatus).toBe('match');

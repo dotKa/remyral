@@ -22,7 +22,7 @@ import { pathToFileURL } from 'node:url';
 
 const argv = process.argv.slice(2);
 if (argv.includes('--version')) {
-  process.stdout.write(`${process.env.FAKE_PI_VERSION ?? '1.4.0'}\n`);
+  process.stdout.write(`${process.env.FAKE_PI_VERSION ?? '1.6.0'}\n`);
   process.exit(0);
 }
 if (process.env.FAKE_PI_ARGV_FILE) {

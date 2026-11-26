@@ -47,12 +47,12 @@ export const RUNTIME_PINS: Readonly<Record<RuntimeKind, RuntimePin>> = {
     packageVersion: '0.164.0',
   },
   pi: {
-    version: '1.4.0',
-    install: 'npm: @earendil-works/pi-coding-agent@1.4.0',
+    version: '1.6.0',
+    install: 'npm: @earendil-works/pi-coding-agent@1.6.0',
     binary: 'pi',
     versionCommand: 'pi --version',
     package: '@earendil-works/pi-coding-agent',
-    packageVersion: '1.4.0',
+    packageVersion: '1.6.0',
   },
   opencode: {
     version: '1.19.4',
@@ -72,7 +72,7 @@ export const RUNTIME_PINS: Readonly<Record<RuntimeKind, RuntimePin>> = {
 export const RELEASE_PIN_HISTORY: Readonly<Record<RuntimeKind, readonly string[]>> = {
   'claude-code': ['2.1.296', '2.1.310'],
   codex: ['0.162.1', '0.164.0'],
-  pi: ['1.1.0', '1.4.0'],
+  pi: ['1.1.0', '1.4.0', '1.6.0'],
   opencode: ['1.19.0', '1.19.4'],
 };
 

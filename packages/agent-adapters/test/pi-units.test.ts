@@ -404,7 +404,7 @@ describe('Pi permission gate extension (generated source)', () => {
 
 describe('Pi capabilities (ADR-0008)', () => {
   it('contract-tested platform: decisions from the compat matrix, artifacts unsupported', () => {
-    const set = piCapabilities('1.4.0', 'darwin', 'arm64').capabilities;
+    const set = piCapabilities('1.6.0', 'darwin', 'arm64').capabilities;
     expect(set.streaming.status).toBe('supported');
     expect(set.cancel.status).toBe('supported');
     expect(set.approval.status).toBe('degraded');
@@ -413,7 +413,7 @@ describe('Pi capabilities (ADR-0008)', () => {
   });
 
   it('other platforms are unverified; a version off the pin is never offered', () => {
-    const linux = piCapabilities('1.4.0', 'linux', 'x64').capabilities;
+    const linux = piCapabilities('1.6.0', 'linux', 'x64').capabilities;
     expect(linux.cancel.status).toBe('unverified');
     expect(linux.cancel.reason).toContain('linux-x64');
     const drift = piCapabilities('1.1.1', 'darwin', 'arm64').capabilities;

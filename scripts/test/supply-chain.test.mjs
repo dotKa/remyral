@@ -410,7 +410,7 @@ describe('runtime pins', async () => {
         RUNTIME_PINS,
       ),
     ).toEqual([
-      'policy pins pi@1.2.0, compiled-in pin is 1.4.0 (staged upgrade? see p3-runtime-policy.md §7)',
+      `policy pins pi@1.2.0, compiled-in pin is ${RUNTIME_PINS.pi.version} (staged upgrade? see p3-runtime-policy.md §7)`,
     ]);
   });
 });

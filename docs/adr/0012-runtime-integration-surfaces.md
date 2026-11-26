@@ -14,7 +14,7 @@ ROADMAP suggested: OpenHands API/SDK; Claude Code and Codex via pinned ACP adapt
 | OpenHands | Agent Server REST + WebSocket; one server per job bound to 127.0.0.1 with a random session key; Docker sandbox per job on Linux | ==1.54.0 |
 | Claude Code | Claude Agent SDK `query()` in-process (streaming input, `canUseTool`, `interrupt()`), always with explicit `permissionMode`, `settingSources: []`, bypass disabled | `@anthropic-ai/claude-agent-sdk@0.3.310` |
 | Codex | `codex app-server` over stdio (JSON-RPC), protocol types generated from the pinned binary; `codex exec --json` only for pre-authorised no-approval jobs | `@openai/codex@0.164.0` |
-| Pi | `pi --mode rpc` over stdio + our permission-gate extension (deny on timeout/error), `--no-context-files` for untrusted repos | `@earendil-works/pi-coding-agent@1.4.0` |
+| Pi | `pi --mode rpc` over stdio + our permission-gate extension (deny on timeout/error), `--no-context-files` for untrusted repos | `@earendil-works/pi-coding-agent@1.6.0` |
 | OpenCode | `opencode serve --hostname 127.0.0.1` with per-job `OPENCODE_SERVER_PASSWORD`, `OPENCODE_DISABLE_PROJECT_CONFIG=1` and a complete `OPENCODE_PERMISSION`; SDK client | `opencode-ai@1.19.4` |
 
 Common rules for every adapter:
@@ -78,6 +78,15 @@ under `infra/worker/runtimes/<rt>/previous/` as the one allowed downgrade):
 
 Capabilities stay as before: `supported` / `degraded` only where the contract kit ran on the pin (Pi and OpenCode on
 darwin-arm64), `unverified` elsewhere; Claude Code and Codex still wait for the credentialed live run.
+
+## Amendment 2026-11-26: Pi pin moved to 1.6.0
+
+Pi `1.4.0` → `1.6.0` through `scripts/release/promote-runtime-pin.mjs` (lock generated with
+`npm install --package-lock-only --ignore-scripts`, every package older than 24 h): clears the undici and minimatch
+advisories of the 1.4.0 tree. RPC types unchanged; `pi-real`, `pi-assistant-real` and `pi-subtasks-real` passed on
+darwin-arm64 (scripted provider). Capabilities as before: `supported` / `degraded` on darwin-arm64 only, `unverified`
+elsewhere. Details: docs/compat/pi.md §2. The Claude Code image lock was refreshed in the same change within its
+declared ranges (`hono` 4.13.22, `@hono/node-server` 2.1.11); the SDK 0.3.310 / CLI 2.1.310 pin is unchanged.
 
 ## Amendment 2026-10-27: master-side capability evidence from the panel (p17-runtime-verify)
 

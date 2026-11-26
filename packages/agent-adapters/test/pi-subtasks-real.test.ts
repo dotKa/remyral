@@ -1,11 +1,11 @@
 /**
- * p8-subtasks-pi (ADR-0031): the Pi JOB adapter's sub-job tools against the REAL pinned Pi 1.4.0 (no credentials, no
+ * p8-subtasks-pi (ADR-0031): the Pi JOB adapter's sub-job tools against the REAL pinned Pi 1.6.0 (no credentials, no
  * network, no model): the scripted faux provider (fixtures/pi/faux-provider.mjs, `faux:tool:<name>:<json>`) calls a
  * tool and answers with the tool's text, so tool registration, the permission gate, the extension-UI relay, abort and
  * the tool events are the real runtime's.
  *
  * Opt-in: set REMYRAL_PI_BIN to the pinned executable (e.g. the `pi` launcher of
- * `npm install --prefix <dir> --ignore-scripts @earendil-works/pi-coding-agent@1.4.0`).
+ * `npm install --prefix <dir> --ignore-scripts @earendil-works/pi-coding-agent@1.6.0`).
  */
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -76,7 +76,7 @@ function recordingHost(opts: { blockWait?: boolean } = {}) {
 const SUB_ID = '00000000-0000-4000-8000-0000000000e2';
 
 describe.skipIf(!enabled)(
-  'pi 1.4.0 real binary: sub-job tools (p8-subtasks-pi)',
+  'pi 1.6.0 real binary: sub-job tools (p8-subtasks-pi)',
   { timeout: 120_000 },
   () => {
     it('ask-all job: a request_subtask call needs no approval, reaches the host and its text reaches the model', async () => {

@@ -23,6 +23,22 @@ Status legend used in this file:
 
 ## 2. Pinned versions
 
+**Pin moved 2026-11-26: `@earendil-works/pi-coding-agent@1.6.0`** (released 2026-11-20; 1.6.1 of 2026-11-25 was
+younger than the 24 h minimum release age, docs/security/dependency-policy.md §1, and is left for the next bump).
+Reason: 1.4.0 depends on `undici` 8.10.2 and `minimatch` 10.2.6 exactly (8 undici advisories, 4 high, and the minimatch
+glob DoS); 1.5.0 moved to undici 8.12.3 and 1.6.0 to undici 8.12.4 + minimatch 11.0.3, so the runtime image has no
+open advisory. CHANGELOG 1.5.0–1.6.0 read: the breaking changes (tool argument validation on `pi-schema` instead of
+TypeBox-only features, extension component `render()` returning a cached `readonly string[]`, custom
+`GrepOperations.readFile` no longer used for context lines, OpenAI-compatible requests omitting an empty `tools`)
+touch no API the adapter uses: our extensions register tools with plain JSON Schema parameters, render nothing and use
+only `tool_call`, `registerTool` and `ctx.ui.select/input`. `dist/modes/rpc/rpc-types.d.ts` is byte-identical to 1.4.0
+(and to 1.6.1). Relevant fixes: RPC `new_session`/`switch_session`/`fork`/`clone` no longer run `session_start` twice,
+RPC shutdown is no longer cut off when stdin EOF and SIGTERM arrive together, idle `ctx.shutdown()` is honoured.
+`pi-real` (contract kit + smoke, scripted provider), `pi-assistant-real` and `pi-subtasks-real` passed on darwin-arm64
+(31 tests). Test-only change: pi-ai's `fauxProvider` now reports every prompt token as simulated cache read/write
+(`input: 0`), so the usage assertions check input + cacheRead + cacheWrite. The 1.4.0 lock is kept under
+`infra/worker/runtimes/pi/previous/` as the one allowed downgrade.
+
 **Pin moved 2026-10-26 (p17-pin-bump): `@earendil-works/pi-coding-agent@1.4.0`.** CHANGELOG 1.2.0–1.4.0 read: the
 breaking changes (`before_agent_start` event union, busy-while-starting, `pi mcp list --json`, theme schema) touch no
 API the adapter uses (gate / assistant / sub-job extensions use `tool_call`, `registerTool`, `ctx.ui.select/input`);

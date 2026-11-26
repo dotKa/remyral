@@ -17,7 +17,7 @@ lease with a typed reason that is shown on the job (`GET /jobs/:id` → transiti
 
 | Runtime | Pin (ADR-0012) | Adapter status in this build | Contract-tested (ADR-0008) |
 | --- | --- | --- | --- |
-| Pi | `@earendil-works/pi-coding-agent@1.4.0` | real adapter | macOS arm64 (scripted provider) |
+| Pi | `@earendil-works/pi-coding-agent@1.6.0` | real adapter | macOS arm64 (scripted provider) |
 | OpenCode | `opencode-ai@1.19.4` | real adapter | macOS arm64 (scripted provider) |
 | Claude Code | `@anthropic-ai/claude-agent-sdk@0.3.310` (bundles CLI 2.1.310) | real adapter | **none yet**: every core capability is `unverified` until the live run with credentials |
 | Codex | `@openai/codex@0.164.0` | real adapter | **none yet**: every core capability is `unverified` until the live run with credentials |
@@ -44,7 +44,7 @@ the executable:
 
 ```sh
 P=$HOME/.remyral-runtimes          # any directory owned by the worker user
-npm install --prefix $P --ignore-scripts --save-exact @earendil-works/pi-coding-agent@1.4.0
+npm install --prefix $P --ignore-scripts --save-exact @earendil-works/pi-coding-agent@1.6.0
 npm install --prefix $P --ignore-scripts --save-exact opencode-ai@1.19.4
 npm install --prefix $P --ignore-scripts --save-exact @openai/codex@0.164.0
 # Claude Code: the worker does not bundle the Claude Agent SDK; it loads it at run time from the Claude Code

@@ -31,8 +31,8 @@ import { tempDir } from './helpers.js';
 
 const logger = createLogger({ level: 'error', redactor: new Redactor(), sink: () => undefined });
 
-function piFake(capabilities: Partial<Record<AdapterCapability, CapabilityEntry>> = {}, version = '1.4.0') {
-  return new FakeRuntimeAdapter({ runtime: 'pi', version, pinnedVersion: '1.4.0', capabilities });
+function piFake(capabilities: Partial<Record<AdapterCapability, CapabilityEntry>> = {}, version = '1.6.0') {
+  return new FakeRuntimeAdapter({ runtime: 'pi', version, pinnedVersion: '1.6.0', capabilities });
 }
 
 async function registry(
@@ -58,7 +58,7 @@ async function registry(
 
 function rule(over: Partial<RuntimePolicyRule> = {}): RuntimePolicyRule {
   return {
-    version: '1.4.0',
+    version: '1.6.0',
     authModes: ['secret-ref', 'local-login'],
     allowUnpinned: false,
     modelProfiles: [],
@@ -349,11 +349,11 @@ describe('CAPABILITIES from runner self-checks and adapter capability sets', () 
     const statuses = await r.refreshAll(true);
     const base = (['pi', 'opencode'] as const).map((runtime) => ({
       runtime,
-      version: '1.4.0',
+      version: '1.6.0',
       installed: true,
       authenticated: 'unknown' as const,
       capabilities: {},
-      pinnedVersion: '1.4.0',
+      pinnedVersion: '1.6.0',
       pinStatus: 'match' as const,
     }));
     const merged = mergeRuntimeCapabilities(base, statuses);

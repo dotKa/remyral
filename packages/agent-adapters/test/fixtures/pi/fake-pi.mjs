@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const argv = process.argv.slice(2);
-const VERSION = process.env.FAKE_PI_VERSION ?? '1.4.0';
+const VERSION = process.env.FAKE_PI_VERSION ?? '1.6.0';
 
 if (argv.includes('--version')) {
   process.stdout.write(`${VERSION}\n`);

@@ -38,6 +38,9 @@ This is the first public release; the entries below describe the changes relativ
 
 - Dependencies with published advisories were updated to their patched releases: fastify, and through the lockfile
   body-parser, qs, hono, @hono/node-server, fast-uri and (test-only) undici.
+- The Pi runtime pin moved from 1.4.0 to 1.6.0, which removes the undici and minimatch advisories of the Pi runtime,
+  and the Claude Code runtime's lockfile takes the patched hono and @hono/node-server (its SDK and CLI pins are
+  unchanged). Machines keep the Pi they have until the owner installs the new pin; the previous pin stays installable.
 - Decrypting stored push-notification keys now states the expected authentication tag length explicitly.
 - Tool archives that contain symbolic links can no longer place files outside their extraction directory.
 - Requests to a self-managed GitLab and to an extension registry follow the same outbound address rules as other
