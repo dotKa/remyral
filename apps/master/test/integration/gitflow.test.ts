@@ -243,10 +243,13 @@ describeIntegration(
       await removeDirs(dirs);
     });
 
-    async function newWorker(adapter: EditingAdapter): Promise<{ id: string; w: JobWorker }> {
+    async function newWorker(
+      adapter: EditingAdapter,
+      opts: { leaseClock?: () => number } = {},
+    ): Promise<{ id: string; w: JobWorker }> {
       const dir = await tempDataDir(dirs);
       const id = await pairRealWorker(h, url, admin, secret, dir);
-      const w = await startJobWorker(url, dir, { fileUrl, adapter });
+      const w = await startJobWorker(url, dir, { fileUrl, adapter, ...opts });
       workers.push(w);
       await expect.poll(() => h.app.fleetSessions.hasReported(id), { timeout: 15_000 }).toBe(true);
       return { id, w };
@@ -619,7 +622,10 @@ describeIntegration(
       adapter.hold = new Promise<void>((r) => {
         release = r;
       });
-      const { id: workerId, w } = await newWorker(adapter);
+      // The worker's lease watch runs on the master's (test) clock: the test moves that clock 31 s past the lease,
+      // and on wall time the worker's own fence (ttl + grace, 60 s) could fire first on a slow runner — the attempt
+      // stops, the reconnected worker no longer reports it, and the master retries instead of resuming.
+      const { id: workerId, w } = await newWorker(adapter, { leaseClock: () => h.clock.now().getTime() });
       const id = await submit('edit stale.txt stale\nslow work');
       await expect.poll(() => state(id), { timeout: 30_000 }).toBe('RUNNING');
       // Partition → lease expiry → the worker comes back with the attempt → resumed under epoch 2.

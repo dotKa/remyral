@@ -10,15 +10,17 @@ permissions:
   contents: read
 
 jobs:
-  # The control plane (master, console, selfhost / deploy / release tooling) runs on Linux only (README): the full
-  # verification on both architectures it supports.
+  # The control plane (master, console, selfhost / deploy / release tooling) runs on Linux only (README). Linux x64:
+  # the full `pnpm verify` (format, lint, type check, unit and integration tests, docs, i18n, leaks, pins). Linux arm64:
+  # the unit tests, the build and the smoke start of the built master — the integration tests and the platform-
+  # independent checks run once, on x64.
   verify:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
-    # A run takes 29-37 min (tests ~20-27 min of it; ~8 min more with two master files at once, below): 75 min is well
+    # An x64 run takes ~45 min (the test step ~33 min of it, two master files at once), arm64 ~15 min: 75 min is well
     # above that, and a hung step cannot hold a runner for the 6 h default.
     timeout-minutes: 75
     steps:
@@ -42,12 +44,22 @@ jobs:
       # The scripts tests run shellcheck when it is installed; its version decides which warnings it reports.
       - name: Tool versions
         run: shellcheck --version || true
-      - run: pnpm verify
+      - name: Verify (format, lint, type check, all tests, docs, i18n, leaks, pins)
+        if: runner.arch == 'X64'
+        run: pnpm verify
         env:
           REMYRAL_INTEGRATION: run
           # Two master test files at once, after the other projects (the 4-vCPU runner ran ~3 next to the rest:
           # load-dependent timing failures). The master files are ~57 min of file time: the test step grows by ~8 min.
           REMYRAL_MASTER_TEST_WORKERS: '2'
+          # A failed master test is retried twice; the job summary lists every test that passed only on a retry
+          # (scripts/test/flaky-reporter.ts; known ones: CONTRIBUTING.md, "Flaky tests on hosted runners").
+          REMYRAL_TEST_RETRY: '2'
+      - name: Unit tests (the integration tests run on x64)
+        if: runner.arch != 'X64'
+        run: pnpm test
+        env:
+          REMYRAL_INTEGRATION: skip
       - run: pnpm build
       # The built master refuses to start on a database with pending migrations (the dev stack starts empty).
       - name: Migrate the dev database
