@@ -177,20 +177,23 @@ export class Cluster {
 
   /** Cancels every non-terminal job of the project (between tests). */
   async cancelAll(): Promise<void> {
-    const { rows } = await this.h.db.pool.query<{ id: string }>(
-      `SELECT id FROM jobs WHERE state NOT IN ('SUCCEEDED', 'FAILED', 'CANCELLED')`,
-    );
-    for (const r of rows) await this.admin.req('POST', `/jobs/${r.id}/cancel`, { reason: 'test cleanup' });
+    // Each round cancels what is still open: a job can appear (a retry, a continuation dispatched meanwhile) or be in
+    // a state that refuses the cancel for a moment; a poll that waits only after one round of cancels can never end.
+    // On a timeout the poll names the jobs left and their states.
     await expect
       .poll(
-        async () =>
-          (
-            await this.h.db.pool.query(
-              `SELECT 1 FROM jobs WHERE state NOT IN ('SUCCEEDED', 'FAILED', 'CANCELLED')`,
-            )
-          ).rowCount,
-        { timeout: 45_000 },
+        async () => {
+          const { rows } = await this.h.db.pool.query<{ id: string; state: string }>(
+            `SELECT id, state::text AS state FROM jobs WHERE state NOT IN ('SUCCEEDED', 'FAILED', 'CANCELLED')`,
+          );
+          for (const r of rows) {
+            if (r.state !== 'CANCELLING')
+              await this.admin.req('POST', `/jobs/${r.id}/cancel`, { reason: 'test cleanup' });
+          }
+          return rows.map((r) => `${r.id} ${r.state}`);
+        },
+        { timeout: 45_000, interval: 500 },
       )
-      .toBe(0);
+      .toEqual([]);
   }
 }
