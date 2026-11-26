@@ -6,7 +6,7 @@ import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
 import { createLogger } from '@remyral/observability';
 import type { WorkerToMaster } from '@remyral/protocol';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocketServer } from 'ws';
 import { DeviceKey, verifyChallenge } from '../src/identity/device-key.js';
 import type { ConnectParams, TransportEvent } from '../src/transport/port.js';
@@ -615,8 +615,13 @@ describe('WsTransport TLS', () => {
     }
   }
 
+  // The certificate is made once, before the test: an openssl start alone can take seconds on a Windows runner.
+  let material: { key: string; cert: string } | null = null;
+  beforeAll(async () => {
+    material = makeCert(await tempDir('rw-tls-'));
+  }, 60_000);
+
   it('refuses an untrusted certificate and accepts it only as an explicit trust anchor', async (ctx) => {
-    const material = makeCert(await tempDir('rw-tls-'));
     if (material === null) {
       ctx.skip(); // openssl missing on this runner
       return;

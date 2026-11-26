@@ -293,7 +293,6 @@ describe('privileged prepare (helper, p5-sandbox-ops)', () => {
 });
 
 describe('worker-side prepare', () => {
-  // The real sandbox checks of this host run (on Windows they start PowerShell / icacls).
   it('reports every step, hands the signed command to the helper and relays its steps', async () => {
     const l = await layout(process.platform);
     const k = keys();
@@ -313,6 +312,8 @@ describe('worker-side prepare', () => {
       },
       namespaces: { usable: true, detail: 'ok' },
       jobRunner: { verified: true, script: 'x', source: 'data' },
+      // Hermetic on Windows: the job runner refresh after the helper step runs its self-test through this.
+      runFile: () => Promise.resolve({ code: 0, stdout: 'remyral-jobrun ok 1', stderr: '' }),
     });
     const status = () =>
       buildSandboxStatus({
@@ -380,7 +381,7 @@ describe('worker-side prepare', () => {
       'unconfined',
     ]);
     expect(restarted).toBe(1);
-  }, 30_000);
+  });
 
   it('without a prepare-capable helper the privileged part needs the owner (one installer re-run)', async () => {
     const l = await layout(process.platform);
