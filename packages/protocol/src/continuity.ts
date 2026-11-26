@@ -169,7 +169,7 @@ function classifyShell(command: string): ToolClass {
   if (cmd === '') return 'unknown';
   if (EXTERNAL_COMMAND.some((re) => re.test(cmd))) return 'external';
   const segments = cmd
-    .split(/\s*(?:&&|\|\||;|\|)\s*/)
+    .split(/&&|\|\||;|\|/)
     .map((s) => s.trim())
     .filter((s) => s !== '');
   if (segments.length > 0 && segments.every((s) => READ_COMMAND.test(s)) && !/[>]/.test(cmd)) {

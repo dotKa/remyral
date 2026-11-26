@@ -46,6 +46,10 @@ export interface DraftSummary {
   readonly advice?: { readonly text: string; readonly differs: boolean } | undefined;
 }
 
+/** `slack.com` or a subdomain of it (`hooks.slack.com`); `notslack.com` is another site. */
+export const isSlackHost = (host: string | null): boolean =>
+  host === 'slack.com' || host?.endsWith('.slack.com') === true;
+
 export function rec(v: unknown): Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 }
@@ -420,8 +424,7 @@ export function workflowBusinessRows(p: Record<string, unknown>, t: Messages): F
     else if (n.type === 'notify.users') channels.add(w.notify);
     else if (n.type === 'github.comment' || n.type === 'github.pullRequest')
       channels.add('GitHub'); // i18n-ignore: product name
-    else if (n.type === 'http.request' && hostOf(rec(n.config).url)?.endsWith('slack.com') === true)
-      channels.add('Slack'); // i18n-ignore: product name
+    else if (n.type === 'http.request' && isSlackHost(hostOf(rec(n.config).url))) channels.add('Slack'); // i18n-ignore: product name
   }
   if (channels.size > 0) rows.push({ k: w.outputs, v: [...channels].join(', ') });
   return rows;

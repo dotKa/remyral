@@ -205,7 +205,7 @@ export async function checkOnline(checksums) {
     if (checksums[rt].optionalCli) npmPkgs.push(checksums[rt].optionalCli);
   }
   for (const p of npmPkgs) {
-    const meta = await json(`https://registry.npmjs.org/${p.name.replace('/', '%2F')}/${p.version}`);
+    const meta = await json(`https://registry.npmjs.org/${p.name.replaceAll('/', '%2F')}/${p.version}`);
     if (meta.dist?.integrity !== p.integrity)
       fail.push(`npm ${p.name}@${p.version}: registry integrity ${meta.dist?.integrity} != recorded`);
   }
@@ -221,7 +221,7 @@ export async function checkOnline(checksums) {
           const name = path.slice(path.lastIndexOf('node_modules/') + 13);
           const ver = /\/-\/[^/]+-(\d[^/]*)\.tgz$/.exec(p.resolved ?? '')?.[1] ?? p.version;
           const realName = /^https:\/\/registry\.npmjs\.org\/(.+)\/-\//.exec(p.resolved ?? '')?.[1] ?? name;
-          const meta = await json(`https://registry.npmjs.org/${realName.replace('/', '%2F')}/${ver}`);
+          const meta = await json(`https://registry.npmjs.org/${realName.replaceAll('/', '%2F')}/${ver}`);
           if (meta.dist?.integrity !== p.integrity)
             fail.push(`npm ${realName}@${ver} (${rt} lock): registry integrity differs from the lockfile`);
         }

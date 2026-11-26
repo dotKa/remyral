@@ -14,6 +14,12 @@ export const MAX_EXPRESSION_CHARS = 4096;
 export const ExprValue = z.strictObject({ $expr: z.string().min(1).max(MAX_EXPRESSION_CHARS) });
 export type ExprValue = z.infer<typeof ExprValue>;
 
+/** Whether `s` holds a `{{ … }}` template (a `{{` with a `}}` after it; an index search, linear on any input). */
+export function hasTemplate(s: string): boolean {
+  const at = s.indexOf('{{');
+  return at >= 0 && s.indexOf('}}', at + 2) >= 0;
+}
+
 /**
  * A template string (`… {{ expr }} …`): its value is only known at run time, so the literal's own constraints (an
  * address format, a number) are checked on the evaluated value then, not here.
@@ -21,7 +27,9 @@ export type ExprValue = z.infer<typeof ExprValue>;
 export const TemplateString = z
   .string()
   .max(MAX_EXPRESSION_CHARS * 4)
-  .regex(/\{\{[\s\S]*?\}\}/);
+  // "A `{{` with a `}}` after it", anchored so it runs once in linear time: the prefix stops at the first `{{`.
+  // (zod runs the pattern even on a value over the length limit, so `/\{\{[\s\S]*?\}\}/` was quadratic there.)
+  .regex(/^(?:[^{]|\{(?!\{))*\{\{[\s\S]*\}\}/);
 
 /** An expression-capable field: the literal schema, a `{{ }}` template string or `{ $expr }`. */
 export function expr<T extends z.ZodType>(
@@ -33,12 +41,10 @@ export function expr<T extends z.ZodType>(
 /** An expression-capable text (templates allowed). */
 export const ExprText = (max: number) => expr(z.string().max(max));
 
-const TEMPLATE = /\{\{[\s\S]*?\}\}/;
-
 /** Does a (static) value carry an expression anywhere (a `{{ }}` template or a `$expr` object)? */
 export function containsExpression(value: unknown, depth = 0): boolean {
   if (depth > 12) return false;
-  if (typeof value === 'string') return TEMPLATE.test(value);
+  if (typeof value === 'string') return hasTemplate(value);
   if (Array.isArray(value)) return value.some((v) => containsExpression(v, depth + 1));
   if (value !== null && typeof value === 'object') {
     if ('$expr' in value) return true;

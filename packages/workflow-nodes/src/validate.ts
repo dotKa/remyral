@@ -2,7 +2,7 @@ import { isValidTimeZone } from '@remyral/protocol';
 import { type GraphIssue, NODE_ID, templateRefs } from '@remyral/scheduler';
 import { nodeType, type PortSpec } from './catalog.js';
 import { compatible, MAX_SCHEMA_DEPTH, schemaDepth } from './data-schema.js';
-import { containsExpression, nodeReferences, stringsOf } from './fields.js';
+import { containsExpression, hasTemplate, nodeReferences, stringsOf } from './fields.js';
 import { deployIssues, layoutIssues, zodIssues } from './v1.js';
 import {
   type AiStepNode,
@@ -44,7 +44,7 @@ export function configExpressions(
 ): { path: (string | number)[]; source: string; mode: 'expr' | 'template' }[] {
   if (depth > 12 || out.length > 500) return out;
   if (typeof value === 'string') {
-    if (/\{\{[\s\S]*?\}\}/.test(value)) out.push({ path: [...path], source: value, mode: 'template' });
+    if (hasTemplate(value)) out.push({ path: [...path], source: value, mode: 'template' });
   } else if (Array.isArray(value)) {
     value.forEach((v, i) => configExpressions(v, [...path, i], out, depth + 1));
   } else if (value !== null && typeof value === 'object') {

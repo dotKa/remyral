@@ -777,7 +777,7 @@ export class McpDiscovery {
     if (version !== undefined && !EXACT_VERSION.test(version)) {
       throw unpinnable('An exact version is needed.', 'version');
     }
-    const path = name.replace('/', '%2f');
+    const path = name.replaceAll('/', '%2f');
     const manifest = rec(
       await this.#get(`https://registry.npmjs.org/${path}/${encodeURIComponent(version ?? 'latest')}`),
     );

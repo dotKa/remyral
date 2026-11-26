@@ -204,3 +204,14 @@ describe('typed bundles: precedence, budget priority, user rules, identical rend
     );
   });
 });
+
+describe('statement comparison in linear time', () => {
+  it('a long run of + . - inside a word (trimmed from both ends by a regex before)', () => {
+    const word = `a${'+'.repeat(64 * 1024)}a`;
+    const started = performance.now();
+    statementSimilarity(word, 'a');
+    contradiction(word, 'use a');
+    expect(performance.now() - started).toBeLessThan(1_000);
+    expect(statementSimilarity('use node.js+', 'use node.js')).toBe(1);
+  });
+});

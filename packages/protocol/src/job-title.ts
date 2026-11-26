@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { trimEndWhile } from './text-trim.js';
 
 /**
  * p15-job-titles (docs/design/p15-job-titles.md): a job's short title, separate from its prompt (the description).
@@ -38,20 +39,21 @@ export function titleLength(s: string): number {
   return Array.from(s).length;
 }
 
-const TRAILING = /[\s,.;:–—-]+$/u;
+const TRAILING_CHAR = /^[\s,.;:–—-]$/u;
+const trimTrailing = (s: string): string => trimEndWhile(s, (c) => TRAILING_CHAR.test(c));
 
 /**
  * Cuts `s` to at most `max` characters at a word boundary (a cut adds "…", which counts). Trailing separators are
  * removed; a word longer than half the room is cut inside.
  */
 export function clipTitle(s: string, max = JOB_TITLE_MAX): string {
-  const text = s.replace(TRAILING, '');
+  const text = trimTrailing(s);
   const chars = Array.from(text);
   if (chars.length <= max) return text;
   const head = chars.slice(0, max - 1).join('');
   const space = head.lastIndexOf(' ');
   const cut = space >= Math.floor(head.length / 2) ? head.slice(0, space) : head;
-  return `${cut.replace(TRAILING, '')}…`;
+  return `${trimTrailing(cut)}…`;
 }
 
 /** A given title made storable: one line, collapsed whitespace, ≤ 60 characters. Null when nothing is left. */

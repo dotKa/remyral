@@ -475,7 +475,7 @@ export function parseResetTime(text: string, now: Date, timeZone?: string): Date
     );
   if (m?.[1] !== undefined) return plausible(new Date(m[1]), now);
   m =
-    /\b(?:resets?|try again|available)(?: at| after| on)?\s*:?\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2}))/i.exec(
+    /\b(?:resets?|try again|available)(?: at| after| on)?\s*(?::\s*)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2}))/i.exec(
       t,
     );
   if (m?.[1] !== undefined) return plausible(new Date(m[1]), now);

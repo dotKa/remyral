@@ -257,13 +257,24 @@ export function composeRecordContent(f: RecordFields): string {
 
 // ------------------------------------------------------------------------------- conflict heuristics
 
+const EDGE_PUNCTUATION = '.+-';
+
+/** `w` without leading and trailing `.`, `+`, `-` (index scan: `/[.+-]+$/` is quadratic on a long inner run). */
+function trimEdgePunctuation(w: string): string {
+  let start = 0;
+  let end = w.length;
+  while (start < end && EDGE_PUNCTUATION.includes(w.charAt(start))) start += 1;
+  while (end > start && EDGE_PUNCTUATION.includes(w.charAt(end - 1))) end -= 1;
+  return w.slice(start, end);
+}
+
 function words(text: string): string[] {
   return text
     .normalize('NFKC')
     .toLocaleLowerCase('tr')
     .replace(/[`*_"'“”‘’()[\]{}<>]/gu, ' ')
     .split(/[^\p{L}\p{N}#.+-]+/u)
-    .map((w) => w.replace(/^[.+-]+|[.+-]+$/gu, ''))
+    .map(trimEdgePunctuation)
     .filter((w) => w.length >= 2);
 }
 
