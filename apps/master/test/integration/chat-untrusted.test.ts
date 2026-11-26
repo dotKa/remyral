@@ -91,9 +91,9 @@ describeIntegration('untrusted content in a chat turn (integration, oss-sec3)', 
         actor,
         submit: true,
         spec: {
-          // A runtime the test machine does not have, on a drained machine (see the setup test): the job stays
-          // queued — nothing but a cancel moves it.
-          runtime: 'pi',
+          // A runtime and profile the test machine has, on a drained machine (see the setup test): the job waits
+          // (draining is a transient reason) — nothing but a cancel moves it.
+          runtime: 'opencode',
           prompt: 'Summarise the README',
           repository: {
             url: 'https://example.com/acme/repo.git',
@@ -195,7 +195,8 @@ describeIntegration('untrusted content in a chat turn (integration, oss-sec3)', 
     const dataDir = await tempDataDir(dirs);
     const workerId = await pairRealWorker(h, url, owner, ownerSecret, dataDir);
     worker = await runRealWorker(url, dataDir, {
-      capabilities: CAPS,
+      // The container profile too: the waiting jobs below need a machine that could run them (see the drain).
+      capabilities: { ...CAPS, sandboxProfiles: [...CAPS.sandboxProfiles, 'container'] },
       assistant: { engine, clock: h.clock.now },
     });
     await stepUp();
@@ -212,12 +213,23 @@ describeIntegration('untrusted content in a chat turn (integration, oss-sec3)', 
         timeout: 20_000,
       })
       .toBe(true);
-    // Drained: the jobs below wait (a transient reason). On a machine that takes jobs a job it can never run
-    // (the pi runtime) fails as infeasible as soon as the scheduler sees it, and the tests need it still queued.
+    // Drained: the jobs below wait. A job the machine could never run (a runtime or profile it lacks: a permanent
+    // reason) fails as infeasible as soon as the scheduler sees it, and one it can run would start; the tests need
+    // it still queued, so the only reason may be the transient `draining`.
     await stepUp();
     const drained = await owner.req('POST', `/workers/${workerId}/drain`, {});
     expect(drained.statusCode, drained.body).toBe(200);
     expect((await owner.req('GET', '/chat/status')).json<{ available: boolean }>().available).toBe(true);
+    const probe = await queuedJob('alpha');
+    await h.app.orchestrator.tick();
+    const verdict = (await owner.req('GET', `/jobs/${probe}`)).json<{
+      job: { state: string };
+      orchestration?: { schedule?: { status: string; reasons: { code: string; permanent: boolean }[] } };
+    }>();
+    expect(verdict.job.state).toBe('QUEUED');
+    expect(verdict.orchestration?.schedule?.status).toBe('waiting');
+    expect(verdict.orchestration?.schedule?.reasons.filter((r) => r.permanent)).toEqual([]);
+    expect((await owner.req('POST', `/jobs/${probe}/cancel`, { reason: 'probe' })).statusCode).toBe(200);
   });
 
   it('without untrusted content the same draft still runs at once under the policy', async () => {
