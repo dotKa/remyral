@@ -10,15 +10,16 @@ permissions:
   contents: read
 
 jobs:
+  # The control plane (master, console, selfhost / deploy / release tooling) runs on Linux only (README): the full
+  # verification on both architectures it supports.
   verify:
     strategy:
       fail-fast: false
       matrix:
-        # Worker targets: Linux x64/arm64, macOS arm64, Windows x64 (ADR-0002).
-        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, windows-2025]
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
-    # A run takes 29-37 min (Windows fastest, Linux arm/x64 slowest; tests ~20-27 min of it): 60 min is well above
-    # that, and a hung step cannot hold a runner for the 6 h default.
+    # A run takes 29-37 min (tests ~20-27 min of it): 60 min is well above that, and a hung step cannot hold a
+    # runner for the 6 h default.
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -35,42 +36,65 @@ jobs:
           package-manager-cache: false
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      # Master integration tests need Postgres + Redis (infra/dev). Linux runners have Docker; hosted
-      # macOS/Windows runners cannot run the Linux images, so integration tests are skipped explicitly there.
+      # Master integration tests need Postgres + Redis (infra/dev).
       - name: Start dev stack
-        if: runner.os == 'Linux'
         run: pnpm dev:keygen && pnpm dev:up
-      # The selfhost tests run remyral-ctl, which needs OpenSSL >= 3; the macOS image puts an OpenSSL 1.1 first on PATH.
-      - name: OpenSSL 3 first on PATH
-        if: runner.os == 'macOS'
-        run: |
-          bin="$(brew --prefix openssl@3)/bin"
-          echo "$bin" >> "$GITHUB_PATH"
-          "$bin/openssl" version
       # The scripts tests run shellcheck when it is installed; its version decides which warnings it reports.
       - name: Tool versions
-        if: runner.os == 'Linux'
         run: shellcheck --version || true
       - run: pnpm verify
         env:
-          REMYRAL_INTEGRATION: ${{ runner.os == 'Linux' && 'run' || 'skip' }}
+          REMYRAL_INTEGRATION: run
       - run: pnpm build
       - name: Smoke-start the built master
-        if: runner.os == 'Linux'
         run: node scripts/smoke-master.mjs
       # p7-secrets-scan (A-SEC-3): working tree + every commit, then the built web bundle with canaries in
       # the build environment (secret-looking values, server env names and `process.env` must not appear).
       - name: Secret scan (repository and history)
-        if: runner.os == 'Linux' && runner.arch == 'X64'
+        if: runner.arch == 'X64'
         run: pnpm scan:secrets --history
       - name: Web bundle secret / env-leak scan with canaries
-        if: runner.os == 'Linux' && runner.arch == 'X64'
+        if: runner.arch == 'X64'
         run: |
           REMYRAL_CANARY_SECRET="canary-$(openssl rand -hex 16)"
           VITE_REMYRAL_CANARY_TOKEN="canary-$(openssl rand -hex 16)"
           export REMYRAL_CANARY_SECRET VITE_REMYRAL_CANARY_TOKEN
           pnpm --filter @remyral/web build
           pnpm scan:secrets --bundle apps/web/dist --canary-env REMYRAL_CANARY_SECRET,VITE_REMYRAL_CANARY_TOKEN
+
+  # macOS and Windows machines run only the worker (ADR-0002): its tests, the workspace packages it bundles
+  # (apps/worker/package.json: agent-adapters, observability, protocol; agent-adapters needs protocol) and its
+  # type check and build there. Lint, format, docs and the control-plane suites are platform-independent or
+  # Linux-only and run in `verify` above.
+  worker:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    # A worker run takes about 15 min; 40 min is well above that.
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Type check (worker and its packages)
+        run: pnpm --filter "@remyral/worker..." --workspace-concurrency=1 typecheck
+      - name: Tests (worker and its packages)
+        run: pnpm exec vitest run --project worker --project agent-adapters --project protocol --project observability
+      - name: Build (worker and its packages)
+        run: pnpm --filter "@remyral/worker..." --workspace-concurrency=1 build
+      # The Windows installer's plan tests (plain assertions, no Pester) under the Windows PowerShell 5.1 it targets.
+      - name: Windows installer plan tests
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell -NoProfile -File infra\worker\windows\test\Install.Tests.ps1
 
   # Public-repository leak gate: owner-specific content (scripts/security/public-denylist.json) and secrets
   # (gitleaks, .gitleaks.toml) in the tracked tree and in every commit. Node built-ins only: no install needed.

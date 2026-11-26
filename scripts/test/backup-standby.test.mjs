@@ -53,8 +53,6 @@ import {
   walObjectsForBase,
 } from '../ops/lib/standby.mjs';
 
-const describePosix = process.platform === 'win32' ? describe.skip : describe;
-
 const seg = (tl, log, s) =>
   `${tl.toString(16).toUpperCase().padStart(8, '0')}${log.toString(16).toUpperCase().padStart(8, '0')}${s.toString(16).toUpperCase().padStart(8, '0')}`;
 
@@ -142,8 +140,7 @@ describe('WAL names', () => {
   });
 });
 
-// The runner is a Linux container program: shipping drops privileges to a uid/gid (no process.getuid on Windows).
-describePosix('WAL shipping (fake age, fake S3 target)', () => {
+describe('WAL shipping (fake age, fake S3 target)', () => {
   let root;
   let cfg;
   const puts = [];

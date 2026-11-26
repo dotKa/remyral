@@ -1,4 +1,3 @@
-import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ConfigError, loadConfig } from '../../src/config.js';
 
@@ -48,7 +47,7 @@ describe('loadConfig', () => {
       ).agentmagnify,
     ).toEqual({
       apiUrl: 'https://am.example',
-      tokenFile: resolve('/cwd/secrets/am-token'),
+      tokenFile: '/cwd/secrets/am-token',
       projectName: null,
       intervalMs: 10_000,
     });
@@ -82,7 +81,7 @@ describe('loadConfig', () => {
     );
     expect(c.telemetry).toMatchObject({
       environment: 'prod',
-      otlp: { endpoint: 'http://otel-collector:4318', headersFile: resolve('/cwd/secrets/otlp-headers') },
+      otlp: { endpoint: 'http://otel-collector:4318', headersFile: '/cwd/secrets/otlp-headers' },
       metrics: null,
     });
     expect(() =>
@@ -165,7 +164,7 @@ describe('loadConfig', () => {
         .github,
     ).toEqual({
       appId: '123',
-      privateKeyFile: resolve('/srv/k/app.pem'),
+      privateKeyFile: '/srv/k/app.pem',
       apiUrl: 'https://api.github.com',
       host: 'github.com',
     });
@@ -191,7 +190,7 @@ describe('loadConfig', () => {
   it('lease signing key: optional in development, required in production (p4-leases)', () => {
     expect(loadConfig(base, '/cwd')).toMatchObject({ leaseSigningKeyFile: null, leaseTtlMs: 90_000 });
     expect(loadConfig({ ...base, LEASE_SIGNING_KEY_FILE: 'k/lease.pem' }, '/srv').leaseSigningKeyFile).toBe(
-      resolve('/srv/k/lease.pem'),
+      '/srv/k/lease.pem',
     );
     expect(() => loadConfig({ ...base, NODE_ENV: 'production' }, '/cwd')).toThrow(/LEASE_SIGNING_KEY_FILE/);
     expect(() => loadConfig({ ...base, LEASE_TTL_MS: '100' }, '/cwd')).toThrow(ConfigError);
@@ -220,7 +219,7 @@ describe('loadConfig', () => {
     expect(c.notifications.smtp).toMatchObject({
       port: 587,
       security: 'starttls',
-      passwordFile: resolve('/srv/secrets/smtp'),
+      passwordFile: '/srv/secrets/smtp',
     });
     expect(c.notifications.webhook).toEqual({
       allowlist: ['https://a.example.com/x/', 'https://b.example.com/'],
@@ -243,7 +242,7 @@ describe('loadConfig', () => {
 
   it('resolves a relative key file path against cwd', () => {
     expect(loadConfig({ ...base, TOTP_KEY_FILE: 'k/totp.key' }, '/srv/app').totpKeyFile).toBe(
-      resolve('/srv/app/k/totp.key'),
+      '/srv/app/k/totp.key',
     );
   });
 
@@ -284,9 +283,9 @@ describe('p17-update-channel configuration', () => {
     );
     expect(c.updateChannel).toEqual({
       feedUrl: 'https://releases.example.com/remyral/workers/feed.json',
-      feedFile: join('/run/remyral-update', 'workers', 'feed.json'),
+      feedFile: '/run/remyral-update/workers/feed.json',
       catalogUrl: 'https://releases.example.com/remyral/catalog/catalog.json',
-      catalogFile: join('/run/remyral-update', 'catalog', 'catalog.json'),
+      catalogFile: '/run/remyral-update/catalog/catalog.json',
       catalogKeys: [],
       catalog: true,
     });
