@@ -11,8 +11,6 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { assertRollout, currentSrcDir, envConfig, releaseImportArgs } from '../deploy/plan.mjs';
 import { keyId, verifyReleaseDocument } from '../release/verify.mjs';
 
-const describePosix = process.platform === 'win32' ? describe.skip : describe;
-
 const SCRIPT = fileURLToPath(new URL('../release/publish.mjs', import.meta.url));
 const TAG = 'aaaaaaaaaaaa';
 const SRC = `/opt/remyral-src-${TAG}`;
@@ -159,8 +157,7 @@ describe('publish.mjs plan helpers', () => {
   });
 });
 
-// The ssh stand-in is a /bin/sh script found through a POSIX PATH.
-describePosix('publish.mjs', () => {
+describe('publish.mjs', () => {
   const good = releaseDir('good', releaseDoc(k, '1.0.17'));
 
   it('--dry-run --offline verifies locally and prints the exact remote command, contacting nothing', async () => {

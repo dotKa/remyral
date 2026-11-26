@@ -1,7 +1,6 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type pg from 'pg';
-import { resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { AuditEventInput, AuditRecorder } from '../../src/audit/audit.js';
 import { ConfigError, loadConfig } from '../../src/config.js';
@@ -232,7 +231,7 @@ describe('config: SEARCH_PROVIDER', () => {
         kind: 'http',
         url: 'https://api.voyageai.com/v1/embeddings',
         model: 'voyage-4-large',
-        keyFile: resolve('/cwd/secrets/embed.key'),
+        keyFile: '/cwd/secrets/embed.key',
         dimensions: null,
       },
       intervalMs: 60_000,

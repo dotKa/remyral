@@ -145,8 +145,7 @@ describe('catalog.mjs keygen / sign / verify / publish', () => {
     const r = run(CATALOG, ['keygen', '--out', keyDir]);
     expect(r.status).toBe(0);
     pub = readFileSync(join(keyDir, 'catalog-key.pub'), 'utf8').trim();
-    if (process.platform !== 'win32')
-      expect(statSync(join(keyDir, 'catalog-key.pem')).mode & 0o777).toBe(0o600);
+    expect(statSync(join(keyDir, 'catalog-key.pem')).mode & 0o777).toBe(0o600);
     expect(r.stdout).toContain(keyIdOf(pub));
     expect(run(CATALOG, ['keygen', '--out', keyDir]).status).toBe(1);
   });

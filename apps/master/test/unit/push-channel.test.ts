@@ -1,5 +1,4 @@
 import { randomBytes } from 'node:crypto';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ConfigError, loadConfig } from '../../src/config.js';
 import {
@@ -126,7 +125,7 @@ describe('push configuration', () => {
         '/cwd',
       ).notifications.push,
     ).toEqual({
-      vapidKeyFile: resolve('/cwd/secrets/vapid.pem'),
+      vapidKeyFile: '/cwd/secrets/vapid.pem',
       subject: 'mailto:ops@example.com',
       endpointAllowlist: null,
     });

@@ -1,5 +1,4 @@
 import { createPublicKey, generateKeyPairSync, randomBytes, verify } from 'node:crypto';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SecretBox } from '../../src/auth/secret-box.js';
 import { ConfigError, loadConfig } from '../../src/config.js';
@@ -114,7 +113,7 @@ describe('p5-coolify-sso primitives', () => {
     expect(loadConfig(base, '/cwd').sso).toEqual({ consoleOrigin: null, oidc: null, coolifyHost: null });
     const cfg = loadConfig({ ...base, ...oidcVars, COOLIFY_SSO_HOST: 'Coolify.Example.Org' }, '/cwd').sso;
     expect(cfg.coolifyHost).toBe('coolify.example.org');
-    expect(cfg.oidc?.signingKeyFile).toBe(resolve('/cwd/secrets/oidc.pem'));
+    expect(cfg.oidc?.signingKeyFile).toBe('/cwd/secrets/oidc.pem');
     expect(cfg.oidc?.emails.get('alex')).toBe('owner@example.com');
     expect(() => loadConfig({ ...base, ...oidcVars, OIDC_EMAIL_MAP: undefined }, '/cwd')).toThrow(
       ConfigError,

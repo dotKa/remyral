@@ -19,11 +19,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, beforeAll, beforeEach, describe as vitestDescribe, expect, it } from 'vitest';
-
-// The control-plane tools are bash scripts for Linux hosts (remyral-ctl, install.sh): every suite here is skipped
-// on Windows.
-const describe = process.platform === 'win32' ? vitestDescribe.skip : vitestDescribe;
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const TOOL = join(ROOT, 'scripts/release/control-plane.mjs');
