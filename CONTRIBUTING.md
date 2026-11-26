@@ -42,9 +42,13 @@ pnpm --filter @remyral/web exec vitest run src/some/area        # one package, o
   throw-away database and uses its own Redis key prefix, so your development data is never touched. Without the stack
   they fail loudly; set `REMYRAL_INTEGRATION=skip` to skip them explicitly (they are then reported as skipped — CI runs
   them on Linux).
-- **What CI runs where:** Linux x64 and arm64 run the whole `pnpm verify` (the control plane runs on Linux only);
-  macOS and Windows run what ships to those machines — the worker and its packages (`agent-adapters`, `protocol`,
-  `observability`: type check, tests, build) and, on Windows, the installer plan tests.
+- **What CI runs where:** Linux x64 runs the whole `pnpm verify`; Linux arm64 the unit tests, the build and the
+  smoke start (the control plane runs on Linux only); macOS and Windows run what ships to those machines — the worker
+  and its packages (`agent-adapters`, `protocol`, `observability`: type check, tests, build) and, on Windows, the
+  installer plan tests.
+- **Load-flaky tests:** on CI the master tests run two files at once and a failed one is retried twice
+  (`REMYRAL_MASTER_TEST_WORKERS`, `REMYRAL_TEST_RETRY`); the job summary lists every test that passed only on a retry.
+  Known ones and their symptoms: [Flaky tests on hosted runners](https://github.com/dotKa/remyral/issues/4).
 - **Real container engine:** the worker's container-profile escape suite (`apps/worker/test/sandbox-escape/`) and the
   code-node image tests build and run the pinned images against a real Docker engine; they run only with
   `REMYRAL_TEST_DOCKER=1` (CI does not set it: a hosted runner's engine and user ids do not match a worker host).

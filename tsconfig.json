@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": { "types": ["node"] },
-  "include": ["vitest.config.ts", "vitest.shared.ts"]
+  "include": ["vitest.config.ts", "vitest.shared.ts", "scripts/test/flaky-reporter.ts"]
 }

@@ -704,6 +704,8 @@ export class FakeRuntimeAdapter implements AgentAdapter {
               ? await host.run(op.op, signal, op.purpose === undefined ? {} : { purpose: op.purpose })
               : { ok: false, text: op.error };
           }
+          // A cancel during the tool call already ended the log (terminal event): nothing more to report.
+          if (aborted() || s.log.closed) return;
           s.log.append({ kind: 'tool_result', callId, ok: out.ok, outputSummary: out.text.slice(0, 2048) });
           break;
         }
@@ -721,6 +723,8 @@ export class FakeRuntimeAdapter implements AgentAdapter {
             inputSummary: JSON.stringify(step.args).slice(0, 512),
           });
           const out = await runSubtaskTool(host, step.tool, { ...step.args }, signal);
+          // A cancel during the tool call already ended the log (terminal event): nothing more to report.
+          if (aborted() || s.log.closed) return;
           s.log.append({ kind: 'tool_result', callId, ok: out.ok, outputSummary: out.text.slice(0, 2048) });
           if (step.copyDeliveredTo !== undefined) {
             const root = resolve(s.ctx.workspaceRoot);
@@ -749,6 +753,8 @@ export class FakeRuntimeAdapter implements AgentAdapter {
             inputSummary: JSON.stringify(step.args).slice(0, 512),
           });
           const out = await runAskUserTool(host, step.tool, { ...step.args }, signal);
+          // A cancel during the tool call already ended the log (terminal event): nothing more to report.
+          if (aborted() || s.log.closed) return;
           s.log.append({ kind: 'tool_result', callId, ok: out.ok, outputSummary: out.text.slice(0, 2048) });
           if (step.writeAnswerTo !== undefined) {
             const root = resolve(s.ctx.workspaceRoot);
@@ -774,6 +780,8 @@ export class FakeRuntimeAdapter implements AgentAdapter {
             inputSummary: JSON.stringify(step.args).slice(0, 512),
           });
           const out = await runServiceTool(host, step.tool, { ...step.args });
+          // A cancel during the tool call already ended the log (terminal event): nothing more to report.
+          if (aborted() || s.log.closed) return;
           s.log.append({ kind: 'tool_result', callId, ok: out.ok, outputSummary: out.text.slice(0, 2048) });
           if (step.writeResultTo !== undefined) {
             const root = resolve(s.ctx.workspaceRoot);
@@ -803,6 +811,8 @@ export class FakeRuntimeAdapter implements AgentAdapter {
             inputSummary: JSON.stringify(step.args).slice(0, 512),
           });
           const out = await runPreviewTool(host, step.tool, { ...step.args }, signal);
+          // A cancel during the tool call already ended the log (terminal event): nothing more to report.
+          if (aborted() || s.log.closed) return;
           s.log.append({ kind: 'tool_result', callId, ok: out.ok, outputSummary: out.text.slice(0, 2048) });
           break;
         }
@@ -821,6 +831,8 @@ export class FakeRuntimeAdapter implements AgentAdapter {
           }
           if (step.kind === 'read-file') {
             const text = await readFile(target, 'utf8').catch(() => '(unreadable)');
+            // A cancel while the file was read already ended the log (terminal event): nothing more to report.
+            if (aborted() || s.log.closed) return;
             s.log.append({
               kind: 'message',
               role: 'assistant',
@@ -831,6 +843,7 @@ export class FakeRuntimeAdapter implements AgentAdapter {
           await mkdir(dirname(target), { recursive: true });
           if (step.kind === 'symlink') await symlink(step.target, target);
           else await writeFile(target, Buffer.from(step.content, step.encoding ?? 'utf8'));
+          if (aborted() || s.log.closed) return;
           s.log.append({
             kind: 'tool_result',
             callId: `fs-${String(s.turns)}`,
