@@ -24,11 +24,12 @@ as **worker machines** (Makineler → Makine ekle). The installer refuses other 
 
 1. Point the DNS name (e.g. `remyral.example.com`) at the server.
 2. Download the installer of the release and check it. The official release channel is
-   `https://releases.remyral.com/control-plane`; the current release is **1.0.0**, signed with the release key
-   **`9439dfaca133e249`** (the key id is also in each release announcement on GitHub):
+   `https://releases.remyral.com/control-plane`; the current release is **0.9.0** (the first public release, before
+   1.0), signed with the release key **`9439dfaca133e249`** (the key id is also in each release announcement on
+   GitHub):
 
    ```sh
-   curl -fsSLO https://releases.remyral.com/control-plane/1.0.0/install.sh
+   curl -fsSLO https://releases.remyral.com/control-plane/0.9.0/install.sh
    # the key id of the release key the installer trusts — must print 9439dfaca133e249:
    k="$(sed -n "s/^REMYRAL_TRUSTED_KEYS='\([^ ']*\).*/\1/p" install.sh)"
    printf '%s=' "$k" | tr '_-' '/+' | base64 -d | sha256sum | cut -c1-16

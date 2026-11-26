@@ -6,9 +6,9 @@ Release tooling reads the notes of a release from its section here (falling back
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-11-26
+## [0.9.0] - 2026-11-26
 
-This is the first public release of the control plane; the entries below describe the changes relative to earlier private builds.
+This is the first public release of the control plane (0.9.0, before 1.0); the entries below describe the changes relative to earlier private builds.
 
 ### Added
 

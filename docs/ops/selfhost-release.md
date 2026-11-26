@@ -77,7 +77,7 @@ when no installation is older than the overlap release.
 ## 6. First public release — checklist
 
 - [ ] Release key chosen, key id recorded; registry org and release URL exist.
-- [ ] CHANGELOG section `## [1.0.0]`.
+- [ ] CHANGELOG section `## [<version>]` (the first public release is 0.9.0, before 1.0).
 - [ ] `images` (real push), `bundle`, `verify`, `feed`.
 - [ ] Upload; scratch-VM install in all three TLS modes (at least Let's Encrypt), the setup token, the wizard,
       `upgrade --check`, `doctor`.
