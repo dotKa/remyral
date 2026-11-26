@@ -142,9 +142,16 @@ if (bundleDir !== undefined) {
     if (isBinary(buf)) continue;
     scannedFiles++;
     const text = buf.toString('utf8');
-    scanContent(display, text, { canaries }, 'bundle');
+    // A bundle carries help texts: a PEM header alone is not a key there, only a complete block is.
+    scanContent(display, text, { canaries, pemCompleteBlocks: true }, 'bundle');
     for (const name of serverEnv) {
       if (text.includes(name)) {
+        // The allowlist may name a server variable the console's help text mentions (the name only; a value
+        // is still caught by the canary and secret rules).
+        if (allowedFingerprints.has(`server-env-name:${name}`)) {
+          usedAllow.add(`server-env-name:${name}`);
+          continue;
+        }
         findings.push({
           path: display,
           origin: 'bundle',
@@ -217,7 +224,10 @@ for (const f of findings) {
 
 const stale =
   bundleDir === undefined
-    ? [...allowedPaths.map((p) => p.glob), ...allowedFingerprints.keys()].filter((k) => !usedAllow.has(k))
+    ? [...allowedPaths.map((p) => p.glob), ...allowedFingerprints.keys()].filter(
+        // server-env-name entries apply to the --bundle scan only.
+        (k) => !usedAllow.has(k) && !k.startsWith('server-env-name:'),
+      )
     : [];
 
 if (json) {

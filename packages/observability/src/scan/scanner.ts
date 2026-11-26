@@ -36,7 +36,27 @@ export interface ScanOptions {
   readonly highEntropy?: boolean;
   /** Exact values that must never appear (canaries); reported as rule `canary`. */
   readonly canaries?: readonly string[];
+  /**
+   * Build output: a private key is reported only as a complete PEM block (BEGIN line, a base64 body of at least
+   * {@link PEM_MIN_BODY} characters, the matching END line), so help text that names the header is not a finding.
+   * Default false: repositories and logs report a lone header too (the redactor's block rule).
+   */
+  readonly pemCompleteBlocks?: boolean;
 }
+
+/** Shortest plausible key body in base64 characters (a PKCS#8 Ed25519 key is 64). */
+export const PEM_MIN_BODY = 64;
+/** Line breaks inside a PEM block: real ones or `\n` / `\r` escapes (a key inside a JS string literal). */
+const PEM_SEP = String.raw`(?:\\[rn]|[\r\n \t])+`;
+const COMPLETE_PEM = new RegExp(
+  String.raw`-----BEGIN ([A-Z0-9 ]{0,40})PRIVATE KEY-----` +
+    // Optional headers of an encrypted key (Proc-Type: …, DEK-Info: …).
+    String.raw`(?:${PEM_SEP}[A-Za-z-]+: [^\\\r\n]*)*` +
+    `((?:${PEM_SEP}[A-Za-z0-9+/=]{1,128}){1,4000})` +
+    PEM_SEP +
+    String.raw`-----END \1PRIVATE KEY-----`,
+  'g',
+);
 
 /** A line containing this marker is never reported (like `gitleaks:allow`). */
 export const ALLOW_MARKER = 'secret-scan: allow';
@@ -122,10 +142,18 @@ export function scanText(text: string, opts: ScanOptions = {}): ScanFinding[] {
     out.push({ rule, ...at, preview: preview(value), fingerprint: fingerprintOf(rule, value) });
   };
 
+  const completePem = opts.pemCompleteBlocks ?? false;
   for (const span of redactor.spans(text)) {
+    if (completePem && span.label === 'pem-private-key') continue;
     const value = text.slice(span.start, span.end);
     if (CONTEXT_RULE_IDS.has(span.label) && !looksRandom(value, minEntropy, minContext)) continue;
     report(span.label, span.start, value);
+  }
+  if (completePem) {
+    for (const m of text.matchAll(COMPLETE_PEM)) {
+      const body = (m[2] ?? '').replace(/\\[rn]|[\r\n \t]/g, '');
+      if (body.length >= PEM_MIN_BODY) report('pem-private-key', m.index, m[0]);
+    }
   }
   if (opts.highEntropy ?? true) {
     for (const m of text.matchAll(HIGH_ENTROPY_LITERAL)) {

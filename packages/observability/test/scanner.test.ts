@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { generateKeyPairSync } from 'node:crypto';
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -80,6 +81,30 @@ describe('secret scanner (p7-secrets-scan)', () => {
 const CLI = fileURLToPath(new URL('../bin/scan-secrets.mjs', import.meta.url));
 const built = existsSync(fileURLToPath(new URL('../dist/index.js', import.meta.url)));
 
+describe('build output: a private key only as a complete PEM block (pemCompleteBlocks)', () => {
+  // Generated per run (never committed): a real-shaped Ed25519 PKCS#8 block (64 base64 characters of body).
+  const pem = generateKeyPairSync('ed25519').privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
+  const rules = (text: string) => scanText(text, { pemCompleteBlocks: true }).map((f) => f.rule);
+  // Built at run time, so this file itself is no finding of the repository scan.
+  const header = (kind: string, edge = 'BEGIN') => `-----${edge} ${kind}PRIVATE KEY-----`;
+
+  it('still finds a complete block, as written and inside a JS string literal', () => {
+    expect(rules(`const k = \`${pem}\`;`)).toContain('pem-private-key');
+    expect(rules(`var k=${JSON.stringify(pem)};`)).toContain('pem-private-key');
+    // The last line names the header once more: the real block before it is still reported.
+    expect(rules(`${JSON.stringify(pem)} "paste the text that starts with ${header('OPENSSH ')}"`)).toContain(
+      'pem-private-key',
+    );
+  });
+
+  it('a lone header in help text is not a key; without the option it still is (repositories, logs)', () => {
+    const help = `"Parolasız bir OpenSSH özel anahtarı (${header('OPENSSH ')}). Yalnız bu tarayıcıda."`;
+    expect(rules(help)).not.toContain('pem-private-key');
+    expect(rules(`${header('')}\\nshort\\n${header('', 'END')}`)).not.toContain('pem-private-key');
+    expect(scanText(help).map((f) => f.rule)).toContain('pem-private-key');
+  });
+});
+
 describe.skipIf(!built)('scan-secrets CLI --bundle (needs the built package)', () => {
   it('fails on a canary, a server env name or process.env in build output; passes a clean bundle', () => {
     const dir = mkdtempSync(join(tmpdir(), 'rw-bundle-'));
@@ -94,7 +119,8 @@ describe.skipIf(!built)('scan-secrets CLI --bundle (needs the built package)', (
       expect(run().status).toBe(0);
       writeFileSync(
         join(dir, 'leak.js'),
-        'const a = "canary-5a7d2c9e1b3f4a6d"; const b = "DATABASE_URL"; process.env.X;',
+        // DATABASE_URL is allowlisted as a name the console's help text uses; MASTER_HOST is not.
+        'const a = "canary-5a7d2c9e1b3f4a6d"; const b = "MASTER_HOST"; const c = "DATABASE_URL"; process.env.X;',
       );
       const res = run();
       expect(res.status).toBe(1);
@@ -105,6 +131,8 @@ describe.skipIf(!built)('scan-secrets CLI --bundle (needs the built package)', (
         'server-env-name',
       ]);
       expect(res.stdout).not.toContain('5a7d2c9e1b3f4a6d');
+      expect(res.stdout).toContain('MASTER_HOST');
+      expect(res.stdout).not.toContain('DATABASE_URL');
       const missing = spawnSync(
         process.execPath,
         [CLI, '--bundle', dir, '--canary-env', 'NOT_SET_ANYWHERE'],
