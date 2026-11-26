@@ -443,9 +443,22 @@ describeIntegration('object storage for job outputs (integration)', { timeout: 1
     await h.db.pool.query(
       `INSERT INTO job_artifacts (attempt_id, job_id, artifact_id, name, media_type, size_bytes, sha256, kind,
                                   redacted, content, created_at)
-       VALUES ($1, $2, 'ws-legacy-1', 'legacy.md', 'text/markdown', $3, $4, 'output', false, $5, now()),
-              ($1, $2, 'ws-legacy-2', 'corrupt.md', 'text/markdown', $6, $7, 'output', false, $8, now())`,
-      [j.attempt, j.id, legacy.length, sha(legacy), legacy, corrupt.length, 'f'.repeat(64), corrupt],
+       VALUES ($1, $2, 'ws-legacy-1', 'legacy.md', 'text/markdown', $3, $4, 'output', false, $5, $9),
+              ($1, $2, 'ws-legacy-2', 'corrupt.md', 'text/markdown', $6, $7, 'output', false, $8, $9)`,
+      // Created "now" on the master's (test) clock, which the previous test moved 3 days ahead: with the database's
+      // now() the rows were older than the 1-day retention a still running background sweep of that test applied,
+      // and it could prune them between the dry run and the run.
+      [
+        j.attempt,
+        j.id,
+        legacy.length,
+        sha(legacy),
+        legacy,
+        corrupt.length,
+        'f'.repeat(64),
+        corrupt,
+        h.clock.now(),
+      ],
     );
     const deps = {
       pool: h.db.pool,

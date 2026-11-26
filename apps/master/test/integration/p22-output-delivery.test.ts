@@ -160,6 +160,17 @@ describeIntegration('output delivery and bulk merge approval (integration)', { t
   async function state(id: string): Promise<string> {
     return (await admin.req('GET', `/jobs/${id}`)).json<{ job: { state: string } }>().job.state;
   }
+  /** The state and the last transitions: a poll that times out then says how the job got there. */
+  async function stateTrail(id: string): Promise<string> {
+    const d = (await admin.req('GET', `/jobs/${id}`)).json<{
+      job: { state: string };
+      transitions: { trigger: string; reason: string | null }[];
+    }>();
+    return `${d.job.state} [${d.transitions
+      .slice(-4)
+      .map((t) => `${t.trigger}: ${t.reason ?? ''}`)
+      .join(' | ')}]`;
+  }
   async function lastTransition(id: string): Promise<{ trigger: string; reason: string | null }> {
     const d = (await admin.req('GET', `/jobs/${id}`)).json<{
       transitions: { trigger: string; reason: string | null }[];
@@ -286,7 +297,8 @@ describeIntegration('output delivery and bulk merge approval (integration)', { t
     expect(bulk.rows.at(-1)?.metadata.approved).toEqual(ids);
 
     // a, b and the first shared.txt merge; the second shared.txt now conflicts and is not merged.
-    for (const id of [a, b, c1]) await expect.poll(() => state(id), { timeout: 30_000 }).toBe('SUCCEEDED');
+    for (const id of [a, b, c1])
+      await expect.poll(() => stateTrail(id), { timeout: 30_000 }).toMatch(/^SUCCEEDED /);
     expect(git(bare, 'show', 'main:a.txt')).toBe('alpha');
     expect(git(bare, 'show', 'main:b.txt')).toBe('beta');
     expect(git(bare, 'show', 'main:shared.txt')).toBe('one');
