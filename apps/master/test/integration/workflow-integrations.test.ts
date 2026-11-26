@@ -574,7 +574,7 @@ describeIntegration(
         expect(await states(runId)).toMatchObject({ w: 'succeeded', took: 'succeeded', late: 'skipped' });
         expect(await out(runId, 'took')).toBe('yes');
         const audits = await h.db.pool.query<{ outcome: string }>(
-          "SELECT outcome FROM audit_events WHERE action = 'workflow.hook.wait' AND target = $1 ORDER BY occurred_at",
+          "SELECT outcome FROM audit_events WHERE action = 'workflow.hook.wait' AND target = $1 ORDER BY occurred_at, id",
           [`workflow-run:${runId}`],
         );
         expect(audits.rows.map((r) => r.outcome)).toEqual(['success', 'denied']);
@@ -871,7 +871,7 @@ describeIntegration(
         });
         expect(changed.statusCode).toBe(403);
         const audit = await h.db.pool.query<{ metadata: { reason?: string; actions?: string[] } }>(
-          "SELECT metadata FROM audit_events WHERE action = 'workflow.define' AND outcome = 'denied' ORDER BY occurred_at DESC LIMIT 1",
+          "SELECT metadata FROM audit_events WHERE action = 'workflow.define' AND outcome = 'denied' ORDER BY occurred_at DESC, id DESC LIMIT 1",
         );
         expect(audit.rows[0]?.metadata).toMatchObject({
           reason: 'step_up_required',

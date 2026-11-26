@@ -362,7 +362,7 @@ describeIntegration(
       expect(ready.sentWithSecrets).toBe(true);
       expect(ready.secretFindings[0]).toMatchObject({ path: 'config/app.env', line: 2 });
       const audit = await h.db.pool.query<{ outcome: string; metadata: unknown }>(
-        `SELECT outcome, metadata FROM audit_events WHERE target = $1 AND action IN ('input.upload.complete', 'input.upload.secrets_override') ORDER BY occurred_at`,
+        `SELECT outcome, metadata FROM audit_events WHERE target = $1 AND action IN ('input.upload.complete', 'input.upload.secrets_override') ORDER BY occurred_at, id`,
         [`input-upload:${up.id}`],
       );
       expect(audit.rows.map((r) => r.outcome)).toEqual(['denied', 'success', 'success']);
@@ -456,9 +456,10 @@ describeIntegration(
         'refused',
       );
       const audit = await h.db.pool.query<{ outcome: string }>(
-        `SELECT outcome FROM audit_events WHERE action = 'job.input_bundle.read' AND target = $1 ORDER BY occurred_at`,
+        `SELECT outcome FROM audit_events WHERE action = 'job.input_bundle.read' AND target = $1 ORDER BY occurred_at, id`,
         [`job:${jobId}`],
       );
+      // The test clock does not move between the two reads: the row id keeps their order.
       expect(audit.rows.map((x) => x.outcome)).toEqual(['success', 'denied']);
       const page = await viewer.req('GET', `/jobs/${jobId}/input-upload`);
       expect(page.statusCode, page.body).toBe(200);
@@ -553,7 +554,7 @@ describeIntegration(
       const id = res.json<{ job: { id: string } }>().job.id;
       await expect.poll(() => state(operator, id), { timeout: 30_000 }).toMatch(/^(SUCCEEDED|FAILED)$/);
       const ends = await h.db.pool.query<{ trigger: string; reason: string | null }>(
-        'SELECT trigger, reason FROM job_transitions WHERE job_id = $1 ORDER BY occurred_at',
+        'SELECT trigger, reason FROM job_transitions WHERE job_id = $1 ORDER BY occurred_at, id',
         [id],
       );
       expect(await state(operator, id), JSON.stringify(ends.rows)).toBe('SUCCEEDED');

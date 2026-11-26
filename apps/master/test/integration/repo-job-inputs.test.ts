@@ -238,7 +238,7 @@ describeIntegration(
       // with pull requests: VERIFYING or SUCCEEDED both mean the attempt itself succeeded).
       await expect.poll(() => state(id), { timeout: 30_000 }).toMatch(/^(VERIFYING|SUCCEEDED|FAILED)$/);
       const ends = await h.db.pool.query<{ trigger: string; reason: string | null }>(
-        'SELECT trigger, reason FROM job_transitions WHERE job_id = $1 ORDER BY occurred_at',
+        'SELECT trigger, reason FROM job_transitions WHERE job_id = $1 ORDER BY occurred_at, id',
         [id],
       );
       expect(await state(id), JSON.stringify(ends.rows)).toMatch(/^(VERIFYING|SUCCEEDED)$/);

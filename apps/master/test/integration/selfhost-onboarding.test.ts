@@ -88,7 +88,8 @@ describeIntegration(
 
         const { token } = await h.app.setup.issue();
         r = await c.req('POST', '/setup/owner', {
-          token: `${token.slice(0, -1)}a`,
+          // Another last character (a token that already ends in "a" would otherwise stay valid).
+          token: `${token.slice(0, -1)}${token.endsWith('a') ? 'b' : 'a'}`,
           username: 'acme',
           password: PW,
         });

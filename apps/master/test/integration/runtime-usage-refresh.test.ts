@@ -305,7 +305,7 @@ describeIntegration('runtime usage refresh and account identity (integration)', 
     expect(res.json<{ removed: number }>().removed).toBe(1);
     expect((await overview()).entries.some((e) => e.account === 'ae6rh2mm')).toBe(false);
     const { rows } = await h.db.pool.query<{ metadata: { removed: number; logins: string[] } }>(
-      "SELECT metadata FROM audit_events WHERE action = 'runtime_usage.cleanup' ORDER BY occurred_at DESC LIMIT 1",
+      "SELECT metadata FROM audit_events WHERE action = 'runtime_usage.cleanup' ORDER BY occurred_at DESC, id DESC LIMIT 1",
     );
     expect(rows[0]?.metadata).toEqual({ removed: 1, logins: [`${a}/claude-code/subscription/ae6rh2mm`] });
   });

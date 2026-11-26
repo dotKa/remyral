@@ -437,7 +437,7 @@ describeIntegration('credential vault (integration, p5-credentials-models)', () 
         expect(body).not.toContain('"ct"');
       }
       const audit = await h.db.pool.query<{ action: string }>(
-        "SELECT action FROM audit_events WHERE action LIKE 'vault.%' ORDER BY occurred_at",
+        "SELECT action FROM audit_events WHERE action LIKE 'vault.%' ORDER BY occurred_at, id",
       );
       expect(audit.rows.map((r) => r.action)).toEqual(
         expect.arrayContaining([

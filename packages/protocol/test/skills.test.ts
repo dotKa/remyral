@@ -94,7 +94,7 @@ describe('skills signing script ↔ verifier', () => {
       ['scripts/collect.sh', process.platform !== 'win32'],
     ]);
     expect(v.manifestSha256).toBe(skillSha256(Buffer.from(bundle.manifest, 'base64')));
-    expect(run('verify', '--bundle', join(dir, 'bundle.json'), '--public-key', pub)).toContain(
+    expect(run('verify', '--bundle', join(dir, 'bundle.json'), `--public-key=${pub}`)).toContain(
       'OK skill release-notes@1.2.0',
     );
   });

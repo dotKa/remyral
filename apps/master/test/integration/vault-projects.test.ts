@@ -110,7 +110,7 @@ describeIntegration(
     }
     async function audits(action: string, outcome: string) {
       const { rows } = await h.db.pool.query<{ target: string; metadata: Record<string, unknown> }>(
-        'SELECT target, metadata FROM audit_events WHERE action = $1 AND outcome = $2 ORDER BY occurred_at',
+        'SELECT target, metadata FROM audit_events WHERE action = $1 AND outcome = $2 ORDER BY occurred_at, id',
         [action, outcome],
       );
       return rows;
