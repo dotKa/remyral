@@ -20,8 +20,15 @@ desteklenir: Makineler → Makine ekle.
 ## Kurulum
 
 1. Alan adını (ör. `remyral.example.com`) sunucuya yönlendir.
-2. Kurulum betiğini indir; sürüm duyurusundaki anahtar kimliğini betiktekiyle karşılaştır:
-   `curl -fsSLO https://<sürüm-adresi>/<sürüm>/install.sh && grep -n "REMYRAL_TRUSTED_KEYS=" install.sh`
+2. Kurulum betiğini indir ve denetle. Resmi sürüm kanalı `https://releases.remyral.com/control-plane`; güncel
+   sürüm **1.0.0**, **`9439dfaca133e249`** kimlikli sürüm anahtarıyla imzalı (anahtar kimliği GitHub’daki her sürüm
+   duyurusunda da yazar):
+   `curl -fsSLO https://releases.remyral.com/control-plane/1.0.0/install.sh`, sonra betiğin güvendiği anahtarın
+   kimliği (`9439dfaca133e249` çıkmalı):
+   `k="$(sed -n "s/^REMYRAL_TRUSTED_KEYS='\([^ ']*\).*/\1/p" install.sh)"; printf '%s=' "$k" | tr '_-' '/+' | base64 -d | sha256sum | cut -c1-16`
+   Önce `--dry-run` ile dene: `sudo bash install.sh --dry-run --domain remyral.example.com --tls letsencrypt
+   --email ops@example.com` (hiçbir şeyi değiştirmez, imzayı ve dosyaları doğrular). Kendi sürüm kanalın varsa
+   `--release-url https://<sürüm-adresi>`.
 3. Root olarak çalıştır, bir TLS biçimi seç:
    - Sunucu 80/443’te kendisi cevap verir, sertifikayı Let’s Encrypt verir:
      `sudo bash install.sh --domain remyral.example.com --tls letsencrypt --email ops@example.com`

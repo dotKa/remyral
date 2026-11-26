@@ -23,13 +23,20 @@ as **worker machines** (Makineler → Makine ekle). The installer refuses other 
 ## 2. Install
 
 1. Point the DNS name (e.g. `remyral.example.com`) at the server.
-2. Download the installer from your release URL and check it (the key id of the release key is printed in the
-   release announcement; compare it with the one in `install.sh`):
+2. Download the installer of the release and check it. The official release channel is
+   `https://releases.remyral.com/control-plane`; the current release is **1.0.0**, signed with the release key
+   **`9439dfaca133e249`** (the key id is also in each release announcement on GitHub):
 
    ```sh
-   curl -fsSLO https://<release-url>/<version>/install.sh
-   grep -n "REMYRAL_TRUSTED_KEYS=" install.sh
+   curl -fsSLO https://releases.remyral.com/control-plane/1.0.0/install.sh
+   # the key id of the release key the installer trusts — must print 9439dfaca133e249:
+   k="$(sed -n "s/^REMYRAL_TRUSTED_KEYS='\([^ ']*\).*/\1/p" install.sh)"
+   printf '%s=' "$k" | tr '_-' '/+' | base64 -d | sha256sum | cut -c1-16
+   sudo bash install.sh --dry-run --domain remyral.example.com --tls letsencrypt --email ops@example.com
    ```
+
+   `--dry-run` downloads the release, verifies its signature and every file, and prints each step without changing
+   anything. A channel of your own works the same way (`--release-url https://<release-url>`).
 
 3. Run it as root. Pick one TLS mode:
 
