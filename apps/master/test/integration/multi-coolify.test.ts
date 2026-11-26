@@ -452,7 +452,7 @@ describeIntegration(
       expect(gone.statusCode).toBe(409);
       expect(gone.json<{ error: string }>().error).toBe('coolify_connection_removed');
       const audit = await h.db.pool.query<{ action: string; metadata: unknown }>(
-        `SELECT action, metadata FROM audit_events WHERE action LIKE 'ops.coolify_connection.%' ORDER BY occurred_at`,
+        `SELECT action, metadata FROM audit_events WHERE action LIKE 'ops.coolify_connection.%' ORDER BY occurred_at, id`,
       );
       const actions = audit.rows.map((r) => r.action);
       for (const a of ['create', 'update', 'test', 'remove'])

@@ -247,8 +247,7 @@ describe('scripts/release/sign.mjs', () => {
       'verify',
       '--dir',
       join(dir, 'rel'),
-      '--public-key',
-      pub,
+      `--public-key=${pub}`,
     ]);
     expect(ok.stdout).toMatch(/OK remyral-worker 2.0.0 \(canary\)/);
     const upload = JSON.parse(await readFile(join(dir, 'rel', 'release.json'), 'utf8')) as Record<
@@ -259,12 +258,12 @@ describe('scripts/release/sign.mjs', () => {
 
     await writeFile(join(dir, 'rel', 'remyral-worker.mjs'), 'console.log(2)\n');
     await expect(
-      run(process.execPath, [script, 'verify', '--dir', join(dir, 'rel'), '--public-key', pub]),
+      run(process.execPath, [script, 'verify', '--dir', join(dir, 'rel'), `--public-key=${pub}`]),
     ).rejects.toThrow(/does not match/);
     const manifest = await readFile(join(dir, 'rel', 'manifest.json'), 'utf8');
     await writeFile(join(dir, 'rel', 'manifest.json'), manifest.replace('canary', 'stable'));
     await expect(
-      run(process.execPath, [script, 'verify', '--dir', join(dir, 'rel'), '--public-key', pub]),
+      run(process.execPath, [script, 'verify', '--dir', join(dir, 'rel'), `--public-key=${pub}`]),
     ).rejects.toThrow(/BAD signature/);
   });
 

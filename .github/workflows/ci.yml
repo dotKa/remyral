@@ -46,6 +46,10 @@ jobs:
         env:
           REMYRAL_INTEGRATION: run
       - run: pnpm build
+      # The built master refuses to start on a database with pending migrations (the dev stack starts empty).
+      - name: Migrate the dev database
+        working-directory: apps/master
+        run: node --env-file=../../.env dist/cli/migrate.js
       - name: Smoke-start the built master
         run: node scripts/smoke-master.mjs
       # p7-secrets-scan (A-SEC-3): working tree + every commit, then the built web bundle with canaries in

@@ -166,7 +166,7 @@ describeIntegration(
       const audit = await h.db.pool.query<{ action: string }>(
         `SELECT action FROM audit_events WHERE target = $1 AND action IN
          ('worker.remove.request', 'worker.ops.worker.uninstall', 'worker.remove.result', 'worker.revoke')
-       ORDER BY occurred_at`,
+       ORDER BY occurred_at, id`,
         [id],
       );
       expect(audit.rows.map((r) => r.action)).toEqual(

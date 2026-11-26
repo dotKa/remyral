@@ -93,7 +93,7 @@ function Get-Texts($Plan) { @($Plan.Actions | ForEach-Object { $_.Text }) }
 
 # --- 3. Fresh install ------------------------------------------------------------------------
 $plan = Get-RemyralInstallPlan -Settings (New-Settings) -Probe (New-FakeProbe)
-Assert-Equal 'Mkdir,Copy,Download,InstallShawl,WriteFile,Mkdir,Mkdir,Mkdir,Mkdir,WriteFile,CimCreate,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Service' (Get-Kinds $plan) 'fresh install: action sequence (service before the ACLs that name its SID)'
+Assert-Equal 'Mkdir,Copy,Download,InstallShawl,WriteFile,Mkdir,Mkdir,Mkdir,Mkdir,WriteFile,CimCreate,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Service' (Get-Kinds $plan) 'fresh install: action sequence (service before the ACLs that name its SID)'
 $texts = Get-Texts $plan
 $sid = 'S-1-5-80-3873781773-1309777572-2309334471-3127388086-2944079060'
 Assert-True ($texts -contains "icacls C:\ProgramData\RemyralWorker /inheritance:r /grant:r *S-1-5-18:(OI)(CI)F *S-1-5-32-544:(OI)(CI)F *$($sid):(RX)") 'data root: inheritance removed, SYSTEM + Administrators full, service read only'
@@ -152,7 +152,7 @@ $upToDate = New-FakeProbe @{
   GetService = New-ServiceFn $installedCmd 'NT SERVICE\RemyralWorker'
 }
 $rerun = Get-RemyralInstallPlan -Settings (New-Settings) -Probe $upToDate
-Assert-Equal 'Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec' (Get-Kinds $rerun) 're-run: no copies, no service changes, no restart'
+Assert-Equal 'Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec,Exec' (Get-Kinds $rerun) 're-run: no copies, no service changes, no restart'
 Assert-True ($rerun.Warnings -contains 'config exists and was NOT changed (edit it, or pass -ReplaceConfig)') 're-run: existing config kept'
 # Local ceiling of machine administration: -NoMachineAdmin / -AllowMachineAdmin on an existing config (only that key,
 # through the updater, then a restart) and in a new config.
