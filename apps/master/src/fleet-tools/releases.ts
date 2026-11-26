@@ -71,7 +71,7 @@ function view(r: Row): RuntimeCandidate {
 
 /** The registry URL of one exact version document (scoped names keep their `/` encoded). */
 export function versionDocumentUrl(pkg: string, version: string): string {
-  return `https://registry.npmjs.org/${pkg.replace('/', '%2F')}/${encodeURIComponent(version)}`;
+  return `https://registry.npmjs.org/${pkg.replaceAll('/', '%2F')}/${encodeURIComponent(version)}`;
 }
 
 export class RuntimeReleases {

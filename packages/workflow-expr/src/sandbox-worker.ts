@@ -116,7 +116,6 @@ export class ExprError extends Error {
 
 // ===================================================================================================== static scan
 
-const TEMPLATE_RE = /\{\{([\s\S]*?)\}\}/g;
 /** A nested quantifier — `(…+)+`, `(…*)*`, `(…{n,})+` … — the classic catastrophic-backtracking shape. */
 const NESTED_QUANTIFIER = /\((?:[^()\\]|\\.)*[+*}](?:[^()\\]|\\.)*\)\s*(?:[+*]|\{\d+,?\d*\})/;
 /** A quantified group of alternatives that overlap trivially (`(a|a)*`, `(a|ab)+`) is caught by the deadline only. */
@@ -199,17 +198,25 @@ export function compileChecked(source: string): ReturnType<typeof jsonata> {
 /** The parts of a template string: literal text and `{{ expression }}` sources. */
 export function templateParts(text: string): { literal: string; expr: string | null }[] {
   const parts: { literal: string; expr: string | null }[] = [];
+  // Same split as `/\{\{([\s\S]*?)\}\}/g`, by index search: the lazy regex rescans to the end from every unclosed `{{`.
   let last = 0;
-  for (const m of text.matchAll(TEMPLATE_RE)) {
-    const at = m.index;
-    parts.push({ literal: text.slice(last, at), expr: (m[1] ?? '').trim() });
-    last = at + m[0].length;
+  for (;;) {
+    const at = text.indexOf('{{', last);
+    if (at < 0) break;
+    const end = text.indexOf('}}', at + 2);
+    if (end < 0) break; // no `}}` after this `{{`, so none after any later one either
+    parts.push({ literal: text.slice(last, at), expr: text.slice(at + 2, end).trim() });
+    last = end + 2;
   }
   parts.push({ literal: text.slice(last), expr: null });
   return parts;
 }
 
-export const isTemplate = (s: string): boolean => /\{\{[\s\S]*?\}\}/.test(s);
+/** Whether `s` holds a `{{ … }}` template (a `{{` with a `}}` after it). */
+export const isTemplate = (s: string): boolean => {
+  const at = s.indexOf('{{');
+  return at >= 0 && s.indexOf('}}', at + 2) >= 0;
+};
 
 /** Static check of a template or `$expr` source (validation at save, without evaluating). Returns null when fine. */
 export function checkSource(source: string, mode: 'expr' | 'template'): ExprError | null {

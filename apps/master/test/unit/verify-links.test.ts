@@ -56,6 +56,38 @@ describe('extractHtmlRefs', () => {
       'z.svg',
     ]);
   });
+
+  it('a script ends at `</script >` and `</script\n>` too (as browsers read it)', () => {
+    const raws = extractHtmlRefs(
+      '<script>var u = "<a href=/in-script>";</script ><a href="/after">a</a>',
+    ).map((r) => r.raw);
+    expect(raws).toEqual(['/after']);
+    expect(extractHtmlRefs('<script src="/s.js">x</script\n><img src="/i.png">').map((r) => r.raw)).toEqual([
+      '/s.js',
+      '/i.png',
+    ]);
+  });
+
+  it('runs in linear time on hostile markup (unclosed comments, scripts, tags, styles, css urls)', () => {
+    const n = 512 * 1024;
+    for (const html of [
+      '<!--'.repeat(n / 4),
+      '<script'.repeat(n / 7),
+      `${'<script>'.repeat(n / 8)}</script`,
+      '<a '.repeat(n / 3),
+      '<style>'.repeat(n / 7),
+      `<style>${'url("'.repeat(n / 5)}</style>`,
+      `<a ${'a'.repeat(3_990)}=>`.repeat(n / 4_000),
+    ]) {
+      const started = performance.now();
+      extractHtmlRefs(html);
+      expect(performance.now() - started).toBeLessThan(1_000);
+    }
+    const started = performance.now();
+    cssUrls('url("'.repeat(n / 5));
+    cssUrls(`${'url('.repeat(n / 4)}${' '.repeat(n)}`);
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
 });
 
 describe('classifyLink', () => {

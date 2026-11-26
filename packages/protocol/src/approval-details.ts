@@ -1,4 +1,5 @@
 import { classifyCommand, MAX_SAFE_COMMAND_LENGTH, type SafeVerdict } from './safe-commands/index.js';
+import { trimEndWhile } from './text-trim.js';
 
 /**
  * p10-approval-readable (docs/design/p10-approval-readable.md): the structured, bounded fields of a runtime tool call
@@ -801,7 +802,7 @@ const DEVICE_TARGETS = new Set([
 ]);
 
 function normPath(p: string): string {
-  return p.replace(/\\/g, '/').replace(/\/+$/, '');
+  return trimEndWhile(p.replace(/\\/g, '/'), (c) => c === '/');
 }
 
 /** Where `p` lies relative to the workspace: null when inside (or unknown and relative). */
@@ -863,7 +864,7 @@ export function approvalHints(d: ApprovalDetails): ApprovalHints {
   const command = d.command;
   if (command !== undefined) {
     const shell = d.shell ?? guessShell(d.tool, command);
-    for (const m of command.matchAll(URL_RE)) reaches.add(m[0].replace(/[.,:;!?]+$/, ''));
+    for (const m of command.matchAll(URL_RE)) reaches.add(trimEndWhile(m[0], (c) => '.,:;!?'.includes(c)));
     envVars(command, shell, env);
     const vars = new Map<string, string>();
     const subs: string[] = [];

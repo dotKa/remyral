@@ -22,8 +22,10 @@ export const MAX_STEP_OUTCOME_NOTE = 300;
 const MAX_SCAN = 64 * 1024;
 
 // Upper-case keyword at the start of a line (optionally a bullet / bold), like LESSON:. The value words are fixed.
+// The separator after the word sits in a lookahead + backreference (an atomic group), so a long line can never make
+// the engine retry every split of its whitespace against the `(.*)$` tail.
 const LINE =
-  /^\s{0,3}(?:[-*•]\s+)?(?:\*\*)?OUTCOME(?:\*\*)?\s*[:：]\s*(?:\*\*)?\s*(partial|none|ok|done|PARTIAL|NONE|OK|DONE)\b(?:\*\*)?\s*(?:[—–:-]\s*)?(.*)$/u;
+  /^\s{0,3}(?:[-*•]\s+)?(?:\*\*)?OUTCOME(?:\*\*)?\s*[:：]\s*(?:\*\*\s*)?(partial|none|ok|done|PARTIAL|NONE|OK|DONE)\b(?=((?:\*\*)?\s*(?:[—–:-]\s*)?))\2(.*)$/u;
 const FENCE = /^\s{0,3}(```|~~~)/u;
 
 function tidy(s: string): string {
@@ -53,7 +55,7 @@ export function parseStepOutcome(text: string): StepOutcome | null {
       found = null;
       continue;
     }
-    let note = tidy(m[2] ?? '');
+    let note = tidy(m[3] ?? '');
     if (/^<.*>$/u.test(note)) note = '';
     if (note.length > MAX_STEP_OUTCOME_NOTE) note = `${note.slice(0, MAX_STEP_OUTCOME_NOTE - 1)}…`;
     found = { kind: word === 'none' ? 'none' : 'partial', note };

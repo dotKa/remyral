@@ -147,7 +147,7 @@ async function hashUrl(url) {
 }
 
 const npmDoc = (pkg, version) =>
-  getJson(`https://registry.npmjs.org/${pkg.replace('/', '%2F')}/${encodeURIComponent(version)}`);
+  getJson(`https://registry.npmjs.org/${pkg.replaceAll('/', '%2F')}/${encodeURIComponent(version)}`);
 
 async function resolveRuntime(rt, wanted) {
   const pin = pins()[rt];

@@ -132,7 +132,9 @@ export function ancestors(graph: Pick<WorkflowGraph, 'nodes' | 'edges'>, id: str
   return seen;
 }
 
-const PLACEHOLDER = /\{\{\s*([^{}]*?)\s*\}\}/g;
+// The inner text is trimmed in code: `\s*([^{}]*?)\s*` lets three quantifiers share the same whitespace (cubic on an
+// unclosed `{{` followed by spaces).
+const PLACEHOLDER = /\{\{([^{}]*)\}\}/g;
 
 export type TemplateRef =
   | { readonly kind: 'input'; readonly name: string }
@@ -154,7 +156,10 @@ export function parseRef(expr: string): TemplateRef | null {
 
 /** All `{{…}}` references of a template (null entries: unparseable). */
 export function templateRefs(template: string): { expr: string; ref: TemplateRef | null }[] {
-  return [...template.matchAll(PLACEHOLDER)].map((m) => ({ expr: m[1] ?? '', ref: parseRef(m[1] ?? '') }));
+  return [...template.matchAll(PLACEHOLDER)].map((m) => {
+    const expr = (m[1] ?? '').trim();
+    return { expr, ref: parseRef(expr) };
+  });
 }
 
 /**

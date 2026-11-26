@@ -42,12 +42,19 @@ export function spokenNumberEnd(n: bigint): string {
   return 'milyar';
 }
 
+const LETTER_OR_NUMBER = /^[\p{L}\p{N}]$/u;
+const ASCII_DIGIT = /^[0-9]$/;
+
 /** The pronounced tail of a name: trailing punctuation dropped, a trailing number read out. */
 function spokenTail(word: string): string {
-  const trimmed = word.replace(/[^\p{L}\p{N}]+$/u, '');
-  const digits = /(\d+)$/.exec(trimmed);
-  if (digits?.[1] !== undefined) return spokenNumberEnd(BigInt(digits[1]));
-  return trimmed.toLocaleLowerCase('tr-TR');
+  // Scanned back from the end (a `/…+$/` regex is quadratic on a long run that is not at the end).
+  const chars = Array.from(word);
+  let end = chars.length;
+  while (end > 0 && !LETTER_OR_NUMBER.test(chars[end - 1] ?? '')) end -= 1;
+  let start = end;
+  while (start > 0 && ASCII_DIGIT.test(chars[start - 1] ?? '')) start -= 1;
+  if (start < end) return spokenNumberEnd(BigInt(chars.slice(start, end).join('')));
+  return chars.slice(0, end).join('').toLocaleLowerCase('tr-TR');
 }
 
 interface Sound {

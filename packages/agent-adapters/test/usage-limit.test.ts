@@ -306,3 +306,14 @@ describe('Pi / OpenCode session core', () => {
     expect(ok.resetAt()).toEqual({});
   });
 });
+
+describe('parseResetTime in linear time', () => {
+  it('a long run of spaces after "resets" (backtracked between two `\\s*` before)', () => {
+    const started = performance.now();
+    expect(parseResetTime(`resets${' '.repeat(60_000)}`, NOW)).toBeUndefined();
+    expect(performance.now() - started).toBeLessThan(1_000);
+    expect(parseResetTime('try again at : 2026-10-17T12:00:00Z', NOW)?.toISOString()).toBe(
+      '2026-10-17T12:00:00.000Z',
+    );
+  });
+});

@@ -163,7 +163,7 @@ export class McpStdio {
     }
     const url =
       input.manager === 'npm'
-        ? `https://${MCP_PACKAGE_HOSTS.npm[0] ?? ''}/${input.name.replace('/', '%2f')}/${encodeURIComponent(input.version)}`
+        ? `https://${MCP_PACKAGE_HOSTS.npm[0] ?? ''}/${input.name.replaceAll('/', '%2f')}/${encodeURIComponent(input.version)}`
         : `https://pypi.org/pypi/${encodeURIComponent(input.name)}/${encodeURIComponent(input.version)}/json`;
     const fetch: McpFetch = this.d.fetch ?? ((u, i) => globalThis.fetch(u, i));
     const signal = AbortSignal.timeout(LOOKUP_TIMEOUT_MS);

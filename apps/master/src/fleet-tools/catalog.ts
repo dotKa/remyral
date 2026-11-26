@@ -123,7 +123,7 @@ export function runtimePin(runtime: RuntimeKind): string {
 export function feedUrl(f: FeedSource): string {
   switch (f.kind) {
     case 'npm':
-      return `https://registry.npmjs.org/${f.pkg.replace('/', '%2F')}/latest`;
+      return `https://registry.npmjs.org/${f.pkg.replaceAll('/', '%2F')}/latest`;
     case 'github':
       return `https://api.github.com/repos/${f.repo}/releases/latest`;
     case 'nuget':

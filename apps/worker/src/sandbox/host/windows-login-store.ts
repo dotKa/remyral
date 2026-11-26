@@ -57,7 +57,7 @@ const SID = /^S-1-5(-\d{1,10}){1,14}$/;
  */
 export function loginStoreShared(icaclsOutput: string, groupSid: string): boolean {
   if (icaclsOutput.includes(groupSid)) return true;
-  const group = SLOT_GROUP.replace(/[-]/g, '\\-');
+  const group = SLOT_GROUP.replace(/[\\^$.*+?()[\]{}|/-]/g, '\\$&');
   return new RegExp(`\\\\(?:${group}|remyral\\-job\\-[1-9][0-9]?):\\(`, 'i').test(icaclsOutput);
 }
 

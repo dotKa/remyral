@@ -31,12 +31,125 @@ function decodeEntities(s: string): string {
   return s.replace(/&(amp|quot|apos|lt|gt|#39);/g, (_m, e: string) => ENTITY[e] ?? '');
 }
 
-const TAG = /<([a-zA-Z][a-zA-Z0-9-]*)\b([^>]{0,4000})>/g;
-const ATTR = /([a-zA-Z_:][a-zA-Z0-9_:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g;
-const CSS_URL = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s]*))\s*\)/gi;
-const STYLE_BLOCK = /<style\b[^>]*>([\s\S]{0,200000}?)<\/style>/gi;
-/** Comments and script bodies are skipped (a URL inside a script is not a link the page shows). */
-const SKIPPED = /<!--[\s\S]*?-->|<script\b[^>]*>[\s\S]*?<\/script>/gi;
+const ATTR =
+  /(?<![a-zA-Z0-9_:.-])[0-9.-]*([a-zA-Z_:][a-zA-Z0-9_:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g;
+const LINK_SKIP_REL = /\b(canonical|alternate|next|prev|dns-prefetch|preconnect)\b/i;
+
+/*
+ * The markup is untrusted (a crawled page or a bundle file, up to megabytes), so the scans below are linear: the
+ * openings are found by regexes without unbounded backtracking and every closing delimiter by an index search whose
+ * result is reused while it is still ahead (`aheadFinder`). The equivalent single regexes (`/<!--[\s\S]*?-->/`,
+ * `/<([a-zA-Z][a-zA-Z0-9-]*)\b([^>]{0,4000})>/`, `/url\(\s*(?:"…"|'…'|[^)\s]*)\s*\)/` …) rescan to the end of the
+ * text from every unclosed opening, which is quadratic (a 200 KB stylesheet of `url("` took over 20 s).
+ */
+
+/** Max length of the attribute text of one tag (a longer one is not read as a tag). */
+const MAX_TAG_ATTRS = 4_000;
+/** Max length of one `<style>` body. */
+const MAX_STYLE_BODY = 200_000;
+
+/** `find(from)` (first index ≥ from, -1 for none) for non-decreasing `from`s, reusing a result that is still ahead. */
+function aheadFinder(find: (from: number) => number): (from: number) => number {
+  let lastFrom = -1;
+  let last = -1;
+  return (from) => {
+    if (lastFrom >= 0 && from >= lastFrom && (last === -1 || last >= from)) return last;
+    lastFrom = from;
+    last = find(from);
+    return last;
+  };
+}
+
+/** First match index of the global/sticky-free `re` at or after `from` (-1 for none). */
+function searchFrom(re: RegExp, text: string, from: number): number {
+  re.lastIndex = from;
+  return re.exec(text)?.index ?? -1;
+}
+
+const SKIP_OPEN = /<!--|<script\b/gi;
+/** A script end tag as the HTML tokenizer reads it: `</script` then whitespace, `/` or `>` (`</script >` too). */
+const SCRIPT_CLOSE = /<\/script[\t\n\f\r />]/gi;
+
+/**
+ * Comments and script bodies removed (a URL inside a script is not a link the page shows); a script's opening tag is
+ * kept, so its `src` still counts. An unclosed comment or script is left as it is.
+ */
+function withoutSkipped(html: string): string {
+  const open = new RegExp(SKIP_OPEN);
+  const scriptClose = new RegExp(SCRIPT_CLOSE);
+  const commentEnd = aheadFinder((f) => html.indexOf('-->', f));
+  const tagEnd = aheadFinder((f) => html.indexOf('>', f));
+  const closeAt = aheadFinder((f) => searchFrom(scriptClose, html, f));
+  const closeTagEnd = aheadFinder((f) => html.indexOf('>', f));
+  let out = '';
+  let copied = 0;
+  for (let m = open.exec(html); m !== null; m = open.exec(html)) {
+    const at = m.index;
+    let keep: number;
+    let resume: number;
+    if (m[0] === '<!--') {
+      const end = commentEnd(at + 4);
+      keep = at;
+      resume = end < 0 ? -1 : end + 3;
+    } else {
+      const gt = tagEnd(at + 7);
+      const close = gt < 0 ? -1 : closeAt(gt + 1);
+      const closeGt = close < 0 ? -1 : closeTagEnd(close + 8);
+      keep = gt + 1;
+      resume = closeGt < 0 ? -1 : closeGt + 1;
+    }
+    if (resume < 0) {
+      open.lastIndex = at + 1;
+      continue;
+    }
+    out += html.slice(copied, keep);
+    copied = resume;
+    open.lastIndex = resume;
+  }
+  return copied === 0 ? html : out + html.slice(copied);
+}
+
+const TAG_OPEN = /<([a-zA-Z][a-zA-Z0-9-]*)\b/g;
+
+/** Start tags as `[name, attribute text]`: a `>` within {@link MAX_TAG_ATTRS} characters closes each. */
+function* tags(text: string): Generator<[string, string]> {
+  const open = new RegExp(TAG_OPEN);
+  const tagEnd = aheadFinder((f) => text.indexOf('>', f));
+  for (let m = open.exec(text); m !== null; m = open.exec(text)) {
+    const attrsAt = m.index + m[0].length;
+    const gt = tagEnd(attrsAt);
+    if (gt < 0) return;
+    if (gt - attrsAt > MAX_TAG_ATTRS) {
+      open.lastIndex = m.index + 1;
+      continue;
+    }
+    yield [m[1] ?? '', text.slice(attrsAt, gt)];
+    open.lastIndex = gt + 1;
+  }
+}
+
+const STYLE_OPEN = /<style\b/gi;
+const STYLE_CLOSE = /<\/style>/gi;
+
+/** Bodies of the `<style>` blocks (each at most {@link MAX_STYLE_BODY} characters). */
+function* styleBodies(text: string): Generator<string> {
+  const open = new RegExp(STYLE_OPEN);
+  const styleClose = new RegExp(STYLE_CLOSE);
+  const tagEnd = aheadFinder((f) => text.indexOf('>', f));
+  const closeAt = aheadFinder((f) => searchFrom(styleClose, text, f));
+  for (let m = open.exec(text); m !== null; m = open.exec(text)) {
+    const gt = tagEnd(m.index + 6);
+    if (gt < 0) return;
+    const close = closeAt(gt + 1);
+    if (close < 0) return;
+    if (close - (gt + 1) > MAX_STYLE_BODY) {
+      open.lastIndex = m.index + 1;
+      continue;
+    }
+    yield text.slice(gt + 1, close);
+    open.lastIndex = close + 8;
+  }
+}
 
 const ASSET_TAGS = new Set([
   'img',
@@ -49,7 +162,6 @@ const ASSET_TAGS = new Set([
   'input',
   'iframe',
 ]);
-const LINK_SKIP_REL = /\b(canonical|alternate|next|prev|dns-prefetch|preconnect)\b/i;
 
 /** `href` / `src` / `srcset` / CSS `url()` references of an HTML document, in document order, at most `max`. */
 export function extractHtmlRefs(html: string, max = MAX_REFS_PER_DOCUMENT): ExtractedRef[] {
@@ -59,17 +171,14 @@ export function extractHtmlRefs(html: string, max = MAX_REFS_PER_DOCUMENT): Extr
     const v = decodeEntities(raw).trim();
     if (v !== '') out.push({ raw: v.slice(0, 2_000), kind });
   };
-  // Script bodies, but not the tag itself (its src counts): keep `<script src=…>` by re-adding the opening tags.
-  const text = html.replace(SKIPPED, (m) =>
-    m.startsWith('<script') ? (/^<script\b[^>]*>/i.exec(m)?.[0] ?? '') : '',
-  );
-  for (const m of text.matchAll(TAG)) {
+  const text = withoutSkipped(html);
+  for (const [name, attrText] of tags(text)) {
     if (out.length >= max) break;
-    const tag = (m[1] ?? '').toLowerCase();
+    const tag = name.toLowerCase();
     const attrs: Record<string, string> = {};
-    for (const a of (m[2] ?? '').matchAll(ATTR)) {
-      const name = (a[1] ?? '').toLowerCase();
-      if (!(name in attrs)) attrs[name] = a[2] ?? a[3] ?? a[4] ?? '';
+    for (const a of attrText.matchAll(ATTR)) {
+      const attr = (a[1] ?? '').toLowerCase();
+      if (!(attr in attrs)) attrs[attr] = a[2] ?? a[3] ?? a[4] ?? '';
     }
     if (tag === 'a' || tag === 'area') push(attrs.href, 'page');
     else if (tag === 'link') {
@@ -83,19 +192,62 @@ export function extractHtmlRefs(html: string, max = MAX_REFS_PER_DOCUMENT): Extr
     if (attrs.poster !== undefined) push(attrs.poster, 'asset');
     if (attrs.style !== undefined) for (const u of cssUrls(attrs.style)) push(u, 'asset');
   }
-  for (const m of text.matchAll(STYLE_BLOCK)) {
-    for (const u of cssUrls(m[1] ?? '')) push(u, 'asset');
+  for (const body of styleBodies(text)) {
+    for (const u of cssUrls(body)) push(u, 'asset');
   }
   return out;
 }
 
+const URL_OPEN = /url\(/gi;
+const SPACE = /\s/;
+const BARE_STOP = /[)\s]/g;
+
 /** `url(...)` references of a CSS text (data: URLs included; the classifier skips them). */
 export function cssUrls(css: string, max = MAX_REFS_PER_DOCUMENT): string[] {
   const out: string[] = [];
-  for (const m of css.matchAll(CSS_URL)) {
-    if (out.length >= max) break;
-    const v = (m[1] ?? m[2] ?? m[3] ?? '').trim();
+  const open = new RegExp(URL_OPEN);
+  const quoteAt = {
+    '"': aheadFinder((f) => css.indexOf('"', f)),
+    "'": aheadFinder((f) => css.indexOf("'", f)),
+  };
+  const bareStop = new RegExp(BARE_STOP);
+  const bareEnd = aheadFinder((f) => searchFrom(bareStop, css, f));
+  const skipSpace = (i: number): number => {
+    let j = i;
+    while (j < css.length && SPACE.test(css.charAt(j))) j += 1;
+    return j;
+  };
+  // `\s*\)` after an unquoted value: many openings can share one value end, so its answer is kept.
+  let bareFrom = -1;
+  let bareClose = -1;
+  // Same match as `url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s]*))\s*\)`: quoted value, else the unquoted run.
+  const valueAt = (q: number): { value: string; end: number } | null => {
+    const c = css.charAt(q);
+    if (c === '"' || c === "'") {
+      const j = quoteAt[c](q + 1);
+      if (j >= 0) {
+        const k = skipSpace(j + 1);
+        if (css.charAt(k) === ')') return { value: css.slice(q + 1, j), end: k + 1 };
+      }
+    }
+    const e = bareEnd(q);
+    const k = e < 0 ? css.length : e;
+    if (k !== bareFrom) {
+      bareFrom = k;
+      const after = skipSpace(k);
+      bareClose = css.charAt(after) === ')' ? after : -1;
+    }
+    return bareClose < 0 ? null : { value: css.slice(q, k), end: bareClose + 1 };
+  };
+  for (let m = open.exec(css); m !== null && out.length < max; m = open.exec(css)) {
+    const found = valueAt(skipSpace(m.index + 4));
+    if (found === null) {
+      open.lastIndex = m.index + 1;
+      continue;
+    }
+    const v = found.value.trim();
     if (v !== '') out.push(v.slice(0, 2_000));
+    open.lastIndex = found.end;
   }
   return out;
 }

@@ -232,7 +232,7 @@ export class InstallScriptApprovals {
         'The npm package name or version is invalid (an exact version is needed).',
       );
     }
-    const base = `https://${MCP_PACKAGE_HOSTS.npm[0] ?? 'registry.npmjs.org'}/${input.name.replace('/', '%2f')}`;
+    const base = `https://${MCP_PACKAGE_HOSTS.npm[0] ?? 'registry.npmjs.org'}/${input.name.replaceAll('/', '%2f')}`;
     const body = await this.#get(`${base}/${encodeURIComponent(input.version)}`, MAX_VERSION_BYTES, input);
     // The publish time is only in the full document; a too large one (thousands of versions) leaves it unknown.
     let publishedAt: string | null = null;

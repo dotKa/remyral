@@ -9,7 +9,7 @@ import {
   type WorkflowEdge,
   type WorkflowNodeDef,
 } from '@remyral/scheduler';
-import { type ExprContext, schemaIssues } from '@remyral/workflow-expr';
+import { type ExprContext, isTemplate, schemaIssues, templateParts } from '@remyral/workflow-expr';
 import {
   aiProjection,
   backoffSec,
@@ -813,7 +813,7 @@ export class WorkflowEngineV2 {
     const source =
       typeof raw === 'object' && typeof (raw as { $expr?: unknown }).$expr === 'string'
         ? { text: (raw as { $expr: string }).$expr, mode: 'expr' as const }
-        : typeof raw === 'string' && /\{\{[\s\S]*?\}\}/.test(raw)
+        : typeof raw === 'string' && isTemplate(raw)
           ? { text: raw, mode: 'template' as const }
           : null;
     if (source !== null) {
@@ -2351,13 +2351,7 @@ export class WorkflowEngineV2 {
     if (raw !== null && typeof raw === 'object' && typeof (raw as { $expr?: unknown }).$expr === 'string') {
       parts.push({ literal: '', expr: (raw as { $expr: string }).$expr });
     } else {
-      const text = typeof raw === 'string' ? raw : '';
-      let at = 0;
-      for (const m of text.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
-        parts.push({ literal: text.slice(at, m.index), expr: (m[1] ?? '').trim() });
-        at = m.index + m[0].length;
-      }
-      parts.push({ literal: text.slice(at), expr: null });
+      parts.push(...templateParts(typeof raw === 'string' ? raw : ''));
     }
     const values: unknown[] = [];
     let instruction = '';

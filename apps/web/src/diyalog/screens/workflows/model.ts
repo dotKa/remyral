@@ -482,14 +482,17 @@ export function renameRefusal(doc: Doc, from: string, to: string, text: ModelTex
   return null;
 }
 
+/** `s` as a literal inside a `RegExp` source (every metacharacter, the backslash included, escaped). */
+const escapeRegExp = (s: string): string => s.replace(/[\\^$.*+?()[\]{}|/-]/g, '\\$&');
+
 /** Renames a step: its edges, its position and every `{{upstream.<id>.…}}` reference follow. */
 export function renameNode(doc: Doc, from: string, to: string): Doc {
   if (renameRefusal(doc, from, to) !== null || from === to) return doc;
-  const ref = new RegExp(`\\{\\{\\s*upstream\\.${from.replace(/[-]/g, '\\-')}\\.`, 'g');
+  const ref = new RegExp(`\\{\\{\\s*upstream\\.${escapeRegExp(from)}\\.`, 'g');
   const old = positionsOf(doc);
   const moved = old[from];
   const pos = moved === undefined ? old : { ...without(old, from), [to]: moved };
-  const nodeRef = new RegExp(`\\$node\\.${from.replace(/[-]/g, '\\-')}(?![a-z0-9_-])`, 'g');
+  const nodeRef = new RegExp(`\\$node\\.${escapeRegExp(from)}(?![a-z0-9_-])`, 'g');
   const next: Doc = {
     ...doc,
     nodes: doc.nodes.map((n): AnyNode => {
