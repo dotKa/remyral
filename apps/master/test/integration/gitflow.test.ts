@@ -261,6 +261,17 @@ describeIntegration(
     async function state(id: string): Promise<string> {
       return (await admin.req('GET', `/jobs/${id}`)).json<{ job: { state: string } }>().job.state;
     }
+    /** The state and the last transitions: a poll that times out then says how the job got there. */
+    async function stateTrail(id: string): Promise<string> {
+      const d = (await admin.req('GET', `/jobs/${id}`)).json<{
+        job: { state: string };
+        transitions: { trigger: string }[];
+      }>();
+      return `${d.job.state} [${d.transitions
+        .slice(-6)
+        .map((t) => t.trigger)
+        .join(', ')}]`;
+    }
 
     async function changes(id: string): Promise<Changes> {
       const res = await admin.req('GET', `/jobs/${id}/changes`);
@@ -624,7 +635,7 @@ describeIntegration(
           },
         )
         .toBe(2);
-      await expect.poll(() => state(id), { timeout: 20_000 }).toBe('RUNNING');
+      await expect.poll(() => stateTrail(id), { timeout: 20_000 }).toMatch(/^RUNNING /);
       // The worker adopted the new epoch (RENEW_LEASE) before the run ends.
       await expect.poll(() => w.runner.runningJobs()[0]?.epoch, { timeout: 20_000 }).toBe(2);
       // Hold verification, let the run finish and push (trailer …/2).
